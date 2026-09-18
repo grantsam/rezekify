@@ -111,6 +111,7 @@ Represents virtual goal and commitment enclosures (Sinking Funds) that partition
 * `id`: UUID (Primary Key)
 * `user_id`: UUID (Foreign Key -> `users.id`, Indexed)
 * `name`: VARCHAR(100) (e.g., "Tabungan UKT Semester 6", "Dana Darurat", "Sewa Kos")
+* `vault_type`: VARCHAR(20) (Enum: `SAVINGS`, `FIXED_BILL`, Default `SAVINGS`, Not Null)
 * `target_amount`: NUMERIC(15, 2) (Not Null)
 * `allocated_amount`: NUMERIC(15, 2) (Not Null, Default 0.00)
 * `target_date`: DATE (Nullable)
@@ -185,6 +186,24 @@ Fungsi `simulate_purchase_impact(user_id, planned_amount, item_name)`:
 * Menghitung $\Delta \text{Runway} = \text{Current Daily Runway} - \frac{\text{Operational Free Cash} - \text{planned\_amount}}{\text{Days Remaining}}$.
 * Menghasilkan laporan dampak kognitif langsung sebelum pengguna melakukan transaksi impulsif.
 
+### 4.6 Upcoming Bills & Fixed Commitments Reminder
+Komponen peringatan dini untuk kewajiban jatuh tempo:
+* **Kriteria Filter**: Memindai tabel `vaults` untuk record di mana:
+  $$\text{vault\_type} = \text{'FIXED\_BILL'} \quad \wedge \quad \text{allocated\_amount} < \text{target\_amount} \quad \wedge \quad (\text{target\_date} - \text{today}) \le 7 \text{ hari}$$
+* **Telemetri & Peringatan**:
+  * Menghasilkan payload `upcoming_bills` yang berisi daftar tagihan mendesak dengan atribut: `name`, `target_amount`, `allocated_amount`, `target_date`, dan `days_until_due`.
+  * Mengembalikan daftar ini dalam ringkasan dasbor (*dashboard summary*) sebagai telemetri peringatan dini (`upcoming_bills`) untuk early warning melalui bot Telegram dan kartu peringatan (*UpcomingBillsCard*) pada Web Dashboard.
+
+### 4.7 Analytics Spending Breakdown: Daily & Monthly Periods
+Penyajian visual dan agregasi pengeluaran yang terarah tanpa beban kueri tahunan:
+* **Period Daily (`period=daily`)**:
+  * Mengagregasi pengeluaran per hari selama rentang 7 hingga 14 hari terakhir.
+  * Membandingkan realisasi pengeluaran harian terhadap garis patokan *Daily Safe Runway* untuk mengevaluasi disiplin finansial.
+* **Period Monthly (`period=monthly`)**:
+  * Mengelompokkan total pengeluaran berdasarkan kategori untuk siklus berjalan saat ini (`current cycle`).
+  * Menyajikan distribusi persentase pos belanja guna mendeteksi pos pengeluaran terbesar.
+* **Prinsip Efisiensi**: Menghindari kueri tahunan (*yearly analytics*) yang membebani database dan tidak relevan dengan kebutuhan taktis runway harian.
+
 ---
 
 ## 5. Agentic Runtime & AI-First Multimodal Ingestion (Layer 2)
@@ -243,6 +262,10 @@ Untuk kebutuhan audit presisi dan kustomisasi:
 4. User membuka Telegram Bot -> Mengetik `/link RZ-7482`.
 5. Bot memverifikasi kode, memperbarui `users.telegram_chat_id = message.chat_id`, dan mengirimkan pesan konfirmasi:  
    *"Selamat datang di rezekify (UNAPPROVED)! Akun Anda berhasil terhubung. Anda sekarang dapat mencatat pengeluaran langsung dari sini."*
+
+### 6.4 Dashboard Widgets & Spending Telemetry
+* **Upcoming Bills Banner (`UpcomingBillsCard`):** Menampilkan banner peringatan prioritas tinggi jika terdapat komitmen `FIXED_BILL` yang jatuh tempo dalam $\le 7$ hari dan alokasinya belum tuntas.
+* **Spending Breakdown Visuals:** Komponen grafik analitik menyediakan toggle antara tampilan `daily` (tren 7–14 hari vs ambang batas runway harian) dan `monthly` (alokasi kategori pengeluaran siklus berjalan), secara eksplisit meniadakan opsi kueri tahunan demi kesederhanaan beban kerja dan fokus atensi pengguna.
 
 ---
 

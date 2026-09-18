@@ -43,7 +43,10 @@
 import pytest
 from uuid import uuid4
 from decimal import Decimal
-from rezekify.db.models import User, Account, Vault, Category, Transaction, LedgerEntry, AccountType, CategoryType, EntryType
+from rezekify.db.models import (
+    User, Account, Vault, Category, Transaction, LedgerEntry,
+    AccountType, CategoryType, EntryType, VaultType
+)
 
 def test_models_instantiation():
     user = User(
@@ -58,8 +61,17 @@ def test_models_instantiation():
         account_type=AccountType.BANK,
         current_balance=Decimal("1500000.00")
     )
+    vault = Vault(
+        user=user,
+        name="Sewa Kos",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("800000.00"),
+        allocated_amount=Decimal("500000.00")
+    )
     assert account.name == "BCA"
     assert account.current_balance == Decimal("1500000.00")
+    assert vault.vault_type == VaultType.FIXED_BILL
+    assert vault.allocated_amount == Decimal("500000.00")
     assert user.monthly_cycle_day == 25
 ```
 
@@ -99,6 +111,10 @@ class EntryType(str, Enum):
     DEBIT = "DEBIT"
     CREDIT = "CREDIT"
 
+class VaultType(str, Enum):
+    SAVINGS = "SAVINGS"
+    FIXED_BILL = "FIXED_BILL"
+
 class User(Base):
     __tablename__ = "users"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -133,6 +149,7 @@ class Vault(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False)
+    vault_type = Column(SQLEnum(VaultType), nullable=False, default=VaultType.SAVINGS)
     target_amount = Column(Numeric(15, 2), nullable=False)
     allocated_amount = Column(Numeric(15, 2), nullable=False, default=Decimal("0.00"))
     target_date = Column(Date, nullable=True)
