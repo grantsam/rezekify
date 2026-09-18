@@ -13,12 +13,17 @@ from rezekify.services.runway import RunwayService
 
 
 class AgentOrchestrator:
-    """Coordinates between ReActAgent entity extraction and deterministic Layer 1 financial services."""
+    """Coordinates between ReActAgent entity extraction and deterministic Layer 1 financial services.
+
+    ponytail: direct sync dispatch; add queue/background worker if LLM latency or webhook timeouts require it.
+    """
 
     def __init__(self, db: Session, key_pool=None, agent: Optional[ReActAgent] = None):
         self.db = db
         self.key_pool = key_pool
         self.agent = agent
+        if self.agent is None and self.key_pool is not None:
+            self.agent = ReActAgent(gemini_pool=self.key_pool)
         self.ledger = LedgerService(db)
         self.runway = RunwayService(db)
 
@@ -144,12 +149,17 @@ class AgentOrchestrator:
 
         elif action == "query_runway":
             runway = self.runway.calculate_runway(user_id)
-            return (
+            reply = (
                 f"📈 **Status Keuangan Rezekify:**\n"
                 f"• Saldo Bebas Operasional: Rp {runway.operational_free_cash:,.0f}\n"
                 f"• Jatah Aman Belanja Hari Ini: Rp {runway.daily_safe_runway:,.0f}/hari\n"
                 f"• Sisa Hari Siklus: {runway.days_remaining} hari\n"
                 f"• Status: **{runway.health_status}**"
             )
+            if runway.upcoming_bills:
+                reply += "\n\n⚠️ **Tagihan Mendatang (H-7):**"
+                for b in runway.upcoming_bills:
+                    reply += f"\n• {b.name}: Rp {b.target_amount:,.0f} (sisa {b.days_until_due} hari)"
+            return reply
 
         return "Saya siap membantu mencatat pengeluaran, pemasukan, transfer, atau memeriksa status jatah belanja harian Anda."

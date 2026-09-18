@@ -135,3 +135,68 @@ def test_agent_fallback_to_highest_balance_account(db_session, sample_user):
     resolved = orchestrator._resolve_account(user_id=sample_user.id, account_name="UnknownAccount")
     assert resolved.id == acc2.id
     assert resolved.name == "BCA"
+
+
+def test_agent_extract_entities_delegates_to_react_agent(db_session, sample_user):
+    mock_agent = MagicMock()
+    mock_agent.process_input.return_value = {
+        "action": "expense",
+        "amount": 15000,
+        "note": "Roti",
+    }
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    res = orchestrator.extract_entities(text="beli roti 15rb", user_id=sample_user.id)
+
+    mock_agent.process_input.assert_called_once_with(
+        user_id=sample_user.id, text="beli roti 15rb", image_bytes=None
+    )
+    assert res["amount"] == 15000
+
+
+def test_agent_query_runway_includes_upcoming_bills(db_session, sample_user):
+    from datetime import date, timedelta
+    from rezekify.db.models import Vault, VaultType
+
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    # Add bill due in 3 days
+    bill = Vault(
+        user_id=sample_user.id,
+        name="Kost Bulanan",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("800000.00"),
+        allocated_amount=Decimal("200000.00"),
+        target_date=date.today() + timedelta(days=3),
+    )
+    db_session.add_all([acc, bill])
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(return_value={"action": "query_runway"})
+
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="cek runway")
+    assert "Tagihan Mendatang (H-7):" in reply
+    assert "Kost Bulanan" in reply
+    assert "800,000" in reply
+    assert "sisa 3 hari" in reply
+
+
+def test_agent_handles_unknown_action(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(return_value={"action": "unknown"})
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="halo apa kabar")
+    assert "Saya siap membantu mencatat pengeluaran" in reply
+
+
+def test_agent_expense_no_account_fails_gracefully(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={"action": "expense", "amount": 10000}
+    )
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="jajan 10rb")
+    assert "Gagal: Anda belum memiliki akun keuangan" in reply
+
