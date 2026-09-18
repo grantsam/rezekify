@@ -67,3 +67,21 @@ def test_invalid_pairing_code_rejected(db_session):
     auth = AuthService(db_session)
     with pytest.raises(ValueError, match="Kode pairing tidak valid atau telah kedaluwarsa"):
         auth.link_telegram_chat_id(telegram_chat_id=999, pairing_code="DK-0000")
+
+
+def test_telegram_pairing_reassigns_chat_id_cleanly(db_session):
+    auth = AuthService(db_session)
+    user1 = auth.register("user1@test.local", "Password123!", "User 1")
+    user2 = auth.register("user2@test.local", "Password123!", "User 2")
+
+    code1 = auth.generate_telegram_pairing_code(user1.id)
+    auth.link_telegram_chat_id(telegram_chat_id=1234567, pairing_code=code1)
+    assert user1.telegram_chat_id == 1234567
+
+    code2 = auth.generate_telegram_pairing_code(user2.id)
+    auth.link_telegram_chat_id(telegram_chat_id=1234567, pairing_code=code2)
+    db_session.refresh(user1)
+    db_session.refresh(user2)
+    assert user1.telegram_chat_id is None
+    assert user2.telegram_chat_id == 1234567
+

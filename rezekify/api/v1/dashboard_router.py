@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.orchestrator import AgentOrchestrator
 from rezekify.api.deps import get_current_user, get_db
 from rezekify.db.models import User
@@ -77,7 +78,7 @@ def ai_chat_omni_input(
     db: Session = Depends(get_db),
 ):
     """Processes natural language omni-input into ledger mutations."""
-    orchestrator = AgentOrchestrator(db=db)
+    orchestrator = AgentOrchestrator(db=db, key_pool=RotaryKeyPool.from_env("GEMINI_API_KEYS"))
     reply = orchestrator.handle_message(user_id=current_user.id, text=req.message)
     return ChatResponse(reply=reply)
 

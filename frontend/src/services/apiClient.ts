@@ -23,13 +23,19 @@ export function getAuthHeader(): Record<string, string> {
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...getAuthHeader(),
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
     ...options,
     headers,
   });

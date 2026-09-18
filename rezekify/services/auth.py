@@ -63,6 +63,12 @@ class AuthService:
         if not user:
             raise ValueError("Kode pairing tidak valid atau telah kedaluwarsa.")
 
+        # If telegram_chat_id was already linked to an old user, cleanly unlink it first
+        existing = self.db.query(User).filter_by(telegram_chat_id=telegram_chat_id).first()
+        if existing and existing.id != user.id:
+            existing.telegram_chat_id = None
+            self.db.flush()
+
         user.telegram_chat_id = telegram_chat_id
         user.telegram_pairing_code = None
         user.pairing_code_expires_at = None

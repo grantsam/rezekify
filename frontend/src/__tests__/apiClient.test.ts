@@ -69,4 +69,31 @@ describe('apiClient authentication headers and utilities', () => {
 
     await expect(apiFetch('/broken-endpoint')).rejects.toThrow('Request failed with status 500');
   });
+
+  it('apiFetch omits Content-Type header when body is FormData', async () => {
+    setAuthToken('form-token');
+    const formData = new FormData();
+    formData.append('key', 'value');
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    await apiFetch('/upload', { method: 'POST', body: formData });
+    const callArgs = (global.fetch as any).mock.calls[0];
+    const headers = callArgs[1].headers;
+    expect(headers['Content-Type']).toBeUndefined();
+    expect(headers['Authorization']).toBe('Bearer form-token');
+  });
+
+  it('apiFetch normalizes endpoints missing leading slash', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    await apiFetch('no-leading-slash');
+    expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/no-leading-slash', expect.anything());
+  });
 });

@@ -31,6 +31,10 @@ class AgentOrchestrator:
         self, text: str, image_bytes: Optional[bytes] = None, user_id: Optional[UUID] = None
     ) -> Dict[str, Any]:
         """Extracts structured financial transaction entities using ReActAgent runtime."""
+        lower = text.lower().strip()
+        if lower in ("cek runway", "runway", "saldo", "cek saldo", "status", "cek status", "cek runway hari ini"):
+            return {"action": "query_runway"}
+
         if self.agent:
             uid = user_id or UUID("00000000-0000-0000-0000-000000000000")
             return self.agent.process_input(user_id=uid, text=text, image_bytes=image_bytes)
@@ -147,7 +151,7 @@ class AgentOrchestrator:
             )
             return f"🔁 **Transfer Berhasil:** Rp {amount:,.0f} dari {from_acc.name} ke {to_acc.name}."
 
-        elif action == "query_runway":
+        elif action == "query_runway" or text.lower().strip() in ("cek runway", "/runway", "/saldo", "runway", "saldo", "status"):
             runway = self.runway.calculate_runway(user_id)
             reply = (
                 f"📈 **Status Keuangan Rezekify:**\n"
