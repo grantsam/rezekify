@@ -34,3 +34,49 @@ def test_root_dockerignore_entries():
     required_ignores = [".git", "__pycache__/", ".env", "frontend/node_modules/"]
     for pattern in required_ignores:
         assert any(pattern in line for line in lines), f"Missing required ignore pattern: {pattern}"
+
+
+def test_frontend_nginx_configuration():
+    """Verifies Nginx configuration directives for receipt buffer, proxy, and SPA fallback."""
+    nginx_path = Path("frontend/nginx.conf")
+    assert nginx_path.exists(), "frontend/nginx.conf must exist"
+    content = nginx_path.read_text(encoding="utf-8")
+
+    # Receipt upload payload limit (20 Megabytes)
+    assert "client_max_body_size 20M;" in content, "Nginx must allow 20M receipt uploads"
+
+    # Reverse proxy directives
+    assert "proxy_pass http://backend:8000/api/;" in content
+    assert "proxy_pass http://backend:8000/healthz;" in content
+
+    # SPA client routing fallback
+    assert "try_files $uri $uri/ /index.html;" in content
+
+    # Performance & Security
+    assert "gzip on;" in content
+    assert 'X-Frame-Options "DENY"' in content
+    assert 'X-Content-Type-Options "nosniff"' in content
+
+
+def test_frontend_dockerfile_and_dockerignore():
+    """Verifies frontend multi-stage Dockerfile and .dockerignore exclusions."""
+    dockerfile_path = Path("frontend/Dockerfile")
+    assert dockerfile_path.exists(), "frontend/Dockerfile must exist"
+    content = dockerfile_path.read_text(encoding="utf-8")
+
+    # Multi-stage build
+    assert "FROM node:20-alpine AS builder" in content
+    assert "FROM nginx:1.27-alpine AS runner" in content
+
+    # Build config & expose
+    assert "ENV VITE_API_URL=/api/v1" in content
+    assert "EXPOSE 80" in content
+    assert "HEALTHCHECK" in content
+
+    # Frontend dockerignore
+    ignore_path = Path("frontend/.dockerignore")
+    assert ignore_path.exists(), "frontend/.dockerignore must exist"
+    ignore_content = ignore_path.read_text(encoding="utf-8")
+    assert "node_modules" in ignore_content
+    assert "dist" in ignore_content
+
