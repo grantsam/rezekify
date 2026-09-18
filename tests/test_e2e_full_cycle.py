@@ -136,3 +136,91 @@ def test_full_system_e2e():
     assert tx_list.status_code == 200
     assert len(tx_list.json()) == 1
     assert tx_list.json()[0]["description"] == "Beli Buku Referensi"
+
+    # 8. Manual Transaction CRUD & Balance Reversal
+    manual_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": bca_id,
+            "amount": 200000.00,
+            "description": "Beli Perlengkapan Meja",
+        },
+        headers=headers,
+    )
+    assert manual_res.status_code == 200
+    manual_tx = manual_res.json()
+    assert manual_tx["description"] == "Beli Perlengkapan Meja"
+    manual_id = manual_tx["id"]
+
+    # Check operational free cash drops by 200,000 (1,300,000 -> 1,100,000)
+    dash_after_manual = client.get("/api/v1/dashboard/summary", headers=headers)
+    assert dash_after_manual.status_code == 200
+    assert Decimal(str(dash_after_manual.json()["operational_free_cash"])) == Decimal("1100000.00")
+
+    # Delete transaction and verify deterministic balance reversal
+    del_res = client.delete(f"/api/v1/transactions/{manual_id}", headers=headers)
+    assert del_res.status_code == 200
+
+    # Check operational free cash is reversed back to 1,300,000
+    dash_after_del = client.get("/api/v1/dashboard/summary", headers=headers)
+    assert dash_after_del.status_code == 200
+    assert Decimal(str(dash_after_del.json()["operational_free_cash"])) == Decimal("1300000.00")
+
+    # Ensure transaction is no longer in list
+    tx_list_after_del = client.get("/api/v1/transactions", headers=headers)
+    assert tx_list_after_del.status_code == 200
+    assert len(tx_list_after_del.json()) == 1
+
+    # 9. Telegram Bot Pairing & Autonomous Command Execution
+    # Request OTP pairing code
+    pairing_res = client.post("/api/v1/auth/telegram-pairing-code", headers=headers)
+    assert pairing_res.status_code == 200
+    pairing_code = pairing_res.json()["pairing_code"]
+    assert pairing_code.startswith("DK-")
+
+    # Connect to database via TelegramGateway
+    tg_db = TestingSessionLocal()
+    try:
+        tg_gateway = TelegramGateway(db=tg_db)
+        chat_id = 99887766
+
+        # Step A: Link Telegram account
+        link_reply = tg_gateway.process_text_message(
+            chat_id=chat_id, text=f"/link {pairing_code}"
+        )
+        assert "berhasil terhubung" in link_reply
+        assert "Mahasiswa Mandiri" in link_reply
+
+        # Step B: Execute /runway command
+        runway_reply = tg_gateway.process_text_message(chat_id=chat_id, text="/runway")
+        assert "Status Keuangan Rezekify" in runway_reply
+        assert "Saldo Bebas Operasional: Rp 1,300,000" in runway_reply
+        assert "Sewa Kos" in runway_reply
+
+        # Step C: Log natural language expense via Telegram
+        tg_gateway.orchestrator.extract_entities = MagicMock(
+            return_value={
+                "action": "expense",
+                "amount": 25000,
+                "account_name": "GoPay",
+                "category_name": "Konsumsi",
+                "note": "Kopi Sore",
+            }
+        )
+        expense_reply = tg_gateway.process_text_message(
+            chat_id=chat_id, text="ngopi sore 25rb gopay"
+        )
+        assert "Tercatat" in expense_reply
+        assert "Kopi Sore" in expense_reply
+        assert "Rp 25,000" in expense_reply
+
+        # Step D: Final check on Dashboard API reflecting Telegram expense
+        final_dash = client.get("/api/v1/dashboard/summary", headers=headers)
+        assert final_dash.status_code == 200
+        final_summary = final_dash.json()
+        assert Decimal(str(final_summary["total_liquid_cash"])) == Decimal("1875000.00")
+        assert Decimal(str(final_summary["operational_free_cash"])) == Decimal("1275000.00")
+    finally:
+        tg_db.close()
+
