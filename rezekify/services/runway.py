@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Dict, List, NamedTuple, Optional
 from uuid import UUID
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from rezekify.db.models import (
@@ -75,7 +75,7 @@ class DailySpendingBreakdownReport(NamedTuple):
 
 
 class CategoryBreakdownItem(NamedTuple):
-    category_id: UUID
+    category_id: Optional[UUID]
     category_name: str
     amount: Decimal
     percentage: Decimal
@@ -230,11 +230,11 @@ class RunwayService:
                 func.coalesce(func.sum(LedgerEntry.amount), Decimal("0.00")).label("total_amount"),
             )
             .join(LedgerEntry, LedgerEntry.transaction_id == Transaction.id)
-            .join(Category, LedgerEntry.category_id == Category.id)
+            .outerjoin(Category, LedgerEntry.category_id == Category.id)
             .filter(
                 Transaction.user_id == user_id,
                 LedgerEntry.entry_type == EntryType.DEBIT,
-                Category.category_type == CategoryType.EXPENSE,
+                or_(Category.category_type == CategoryType.EXPENSE, Category.id.is_(None)),
                 func.date(Transaction.transaction_date) >= start_date.isoformat(),
                 func.date(Transaction.transaction_date) <= end_date.isoformat(),
             )
@@ -309,12 +309,13 @@ class RunwayService:
                 Category.color.label("category_color"),
                 func.coalesce(func.sum(LedgerEntry.amount), Decimal("0.00")).label("total_amount"),
             )
-            .join(LedgerEntry, LedgerEntry.category_id == Category.id)
+            .select_from(LedgerEntry)
             .join(Transaction, LedgerEntry.transaction_id == Transaction.id)
+            .outerjoin(Category, LedgerEntry.category_id == Category.id)
             .filter(
                 Transaction.user_id == user_id,
                 LedgerEntry.entry_type == EntryType.DEBIT,
-                Category.category_type == CategoryType.EXPENSE,
+                or_(Category.category_type == CategoryType.EXPENSE, Category.id.is_(None)),
                 func.date(Transaction.transaction_date) >= cycle_start.isoformat(),
                 func.date(Transaction.transaction_date) <= cycle_end.isoformat(),
             )
@@ -330,13 +331,15 @@ class RunwayService:
             for r in rows:
                 amt = Decimal(str(r.total_amount))
                 pct = ((amt / total_spent) * Decimal("100")).quantize(Decimal("0.1"))
+                cat_name = r.category_name if r.category_name is not None else "Lainnya / Tanpa Kategori"
+                cat_color = r.category_color or "#64748b"
                 items.append(
                     CategoryBreakdownItem(
                         category_id=r.category_id,
-                        category_name=r.category_name,
+                        category_name=cat_name,
                         amount=amt,
                         percentage=pct,
-                        color=r.category_color or "#6366f1",
+                        color=cat_color,
                     )
                 )
 

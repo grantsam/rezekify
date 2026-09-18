@@ -135,7 +135,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
       ) : period === 'monthly' && monthlyData ? (
         <div className="space-y-3 py-2">
           {monthlyData.items.map((item, idx) => (
-            <div key={item.category_id} className="space-y-1">
+            <div key={item.category_id || item.category_name} className="space-y-1">
               <div className="flex justify-between text-xs">
                 <span className="text-slate-300 font-medium">{item.category_name}</span>
                 <span className="text-slate-400 tabular-nums">

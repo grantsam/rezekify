@@ -63,7 +63,11 @@ export const DashboardPage: React.FC = () => {
           method: 'POST',
           body: formData,
         });
-        setAiMessage({ text: res.reply || 'Struk berhasil dicatat ke dalam ledger!' });
+        const isError = res.transaction_id == null;
+        setAiMessage({
+          text: res.reply || (isError ? 'Gagal mencatat struk belanja.' : 'Struk berhasil dicatat ke dalam ledger!'),
+          isError,
+        });
       } else {
         const res = await apiFetch<ChatResponse>('/dashboard/ai-chat', {
           method: 'POST',

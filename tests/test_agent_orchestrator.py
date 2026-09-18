@@ -200,3 +200,68 @@ def test_agent_expense_no_account_fails_gracefully(db_session, sample_user):
     reply = orchestrator.handle_message(user_id=sample_user.id, text="jajan 10rb")
     assert "Gagal: Anda belum memiliki akun keuangan" in reply
 
+
+def test_handle_receipt_safe_amount_guard(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("100000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    mock_agent = MagicMock()
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+
+    # 1. Valid receipt with positive amount
+    mock_agent.process_input.return_value = {
+        "action": "expense",
+        "amount": "45000",
+        "account_name": "BCA",
+        "category_name": "Makanan",
+        "note": "Makan Padang",
+    }
+    res_valid = orchestrator.handle_receipt(
+        user_id=sample_user.id,
+        image_bytes=b"fake_image_bytes",
+    )
+    assert res_valid["transaction_id"] is not None
+    assert "Tercatat dari Struk" in res_valid["reply"]
+
+    # 2. Amount is non-numeric string
+    mock_agent.process_input.return_value = {
+        "action": "expense",
+        "amount": "not_a_number",
+    }
+    res_invalid_str = orchestrator.handle_receipt(
+        user_id=sample_user.id,
+        image_bytes=b"fake_image_bytes",
+    )
+    assert res_invalid_str["transaction_id"] is None
+    assert "Struk tidak terbaca jelas" in res_invalid_str["reply"]
+
+    # 3. Amount is None
+    mock_agent.process_input.return_value = {
+        "action": "expense",
+        "amount": None,
+    }
+    res_none = orchestrator.handle_receipt(
+        user_id=sample_user.id,
+        image_bytes=b"fake_image_bytes",
+    )
+    assert res_none["transaction_id"] is None
+    assert "Struk tidak terbaca jelas" in res_none["reply"]
+
+    # 4. Amount is zero or negative
+    mock_agent.process_input.return_value = {
+        "action": "expense",
+        "amount": 0,
+    }
+    res_zero = orchestrator.handle_receipt(
+        user_id=sample_user.id,
+        image_bytes=b"fake_image_bytes",
+    )
+    assert res_zero["transaction_id"] is None
+    assert "Struk tidak terbaca jelas" in res_zero["reply"]
+

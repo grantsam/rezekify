@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.orchestrator import AgentOrchestrator
@@ -78,7 +79,7 @@ class DailySpendingResponse(BaseModel):
 
 
 class CategorySpendingItemModel(BaseModel):
-    category_id: UUID
+    category_id: Optional[UUID] = None
     category_name: str
     amount: Decimal
     percentage: Decimal = Field(..., description="Percentage of total cycle spending, e.g. 42.5")
@@ -163,7 +164,8 @@ async def ai_receipt_upload(
         )
 
     orchestrator = AgentOrchestrator(db=db, key_pool=RotaryKeyPool.from_env("GEMINI_API_KEYS"))
-    result = orchestrator.handle_receipt(
+    result = await run_in_threadpool(
+        orchestrator.handle_receipt,
         user_id=current_user.id,
         image_bytes=content,
         mime_type=file.content_type,

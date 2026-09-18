@@ -378,3 +378,63 @@ def test_analytics_tenant_isolation(db_session, sample_user):
     assert daily_report.total_spent_in_period == Decimal("0.00")
     assert category_report.total_spent == Decimal("0.00")
     assert category_report.items == []
+
+
+def test_uncategorized_expense_included_in_daily_and_monthly_breakdowns(db_session, sample_user):
+    """Verifies that expenses with no category (category_id=None) are captured in daily and monthly reports."""
+    sample_user.monthly_cycle_day = 1
+    acc = Account(
+        user_id=sample_user.id,
+        name="Cash",
+        account_type=AccountType.CASH,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    ref_date = date(2026, 9, 19)
+
+    tx = Transaction(
+        user_id=sample_user.id,
+        description="Belanja Parkir & Tips",
+        transaction_date=datetime(2026, 9, 19, 10, 0, tzinfo=timezone.utc),
+    )
+    db_session.add(tx)
+    db_session.flush()
+
+    # Expense debit entry without category (category_id=None)
+    debit_entry = LedgerEntry(
+        transaction_id=tx.id,
+        user_id=sample_user.id,
+        category_id=None,
+        account_id=None,
+        entry_type=EntryType.DEBIT,
+        amount=Decimal("15000.00"),
+    )
+    credit_entry = LedgerEntry(
+        transaction_id=tx.id,
+        user_id=sample_user.id,
+        category_id=None,
+        account_id=acc.id,
+        entry_type=EntryType.CREDIT,
+        amount=Decimal("15000.00"),
+    )
+    db_session.add_all([debit_entry, credit_entry])
+    db_session.commit()
+
+    service = RunwayService(db_session)
+
+    # 1. Daily breakdown should include this 15.000 expense
+    daily = service.get_daily_spending_breakdown(user_id=sample_user.id, days=7, today=ref_date)
+    assert daily.total_spent_in_period == Decimal("15000.00")
+    today_item = daily.items[-1]
+    assert today_item.amount == Decimal("15000.00")
+
+    # 2. Monthly breakdown should include it under "Lainnya / Tanpa Kategori"
+    monthly = service.get_category_spending_breakdown(user_id=sample_user.id, today=ref_date)
+    assert monthly.total_spent == Decimal("15000.00")
+    assert len(monthly.items) == 1
+    assert monthly.items[0].category_id is None
+    assert monthly.items[0].category_name == "Lainnya / Tanpa Kategori"
+    assert monthly.items[0].amount == Decimal("15000.00")
+    assert monthly.items[0].percentage == Decimal("100.0")

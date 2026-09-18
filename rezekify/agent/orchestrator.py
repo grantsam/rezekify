@@ -188,8 +188,15 @@ class AgentOrchestrator:
             entities = {"action": "unknown", "text": prompt_text}
 
         action = entities.get("action")
-        if action == "expense":
-            amount = Decimal(str(entities.get("amount", 0)))
+        amount = Decimal("0.00")
+        raw_amount = entities.get("amount")
+        if raw_amount is not None:
+            try:
+                amount = Decimal(str(raw_amount))
+            except Exception:
+                amount = Decimal("0.00")
+
+        if action == "expense" and amount > Decimal("0"):
             account = self._resolve_account(user_id, entities.get("account_name"))
             if not account:
                 return {

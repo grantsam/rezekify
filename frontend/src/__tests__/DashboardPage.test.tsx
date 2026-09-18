@@ -129,4 +129,37 @@ describe('DashboardPage Component', () => {
       expect(screen.getByText(/Tercatat dari Struk: Rp 48\.500/i)).toBeInTheDocument();
     });
   });
+
+  it('renders unrecorded receipt with isError: true warning banner when transaction_id is null', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string, options?: any) => {
+      if (endpoint === '/dashboard/summary') return mockSummary;
+      if (endpoint === '/transactions') return mockTransactions;
+      if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint.includes('/analytics/spending-breakdown')) {
+        return { period: 'daily', daily_safe_runway: 100000, total_spent_in_period: 0, items: [] };
+      }
+      if (endpoint === '/dashboard/ai-receipt' && options?.method === 'POST') {
+        return {
+          reply: '⚠️ Struk tidak terbaca jelas. Pastikan foto terang dan menampilkan total belanja.',
+          transaction_id: null,
+          extracted_data: { action: 'unknown', amount: 0 },
+        };
+      }
+      return null;
+    });
+
+    render(<DashboardPage />);
+
+    const file = new File(['blurry_bytes'], 'blurry_struk.jpg', { type: 'image/jpeg' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    const input = screen.getByPlaceholderText(/Ketik pengeluaran santai/i);
+    fireEvent.submit(input);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Gagal Memproses/i)).toBeInTheDocument();
+      expect(screen.getByText(/Struk tidak terbaca jelas/i)).toBeInTheDocument();
+    });
+  });
 });

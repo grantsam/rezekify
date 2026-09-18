@@ -421,6 +421,8 @@ def test_analytics_spending_breakdown_full_payload(sample_user, db_session):
     finally:
         if old_override is not None:
             app.dependency_overrides[get_db] = old_override
+        else:
+            app.dependency_overrides.pop(get_db, None)
 
 
 @contextmanager
@@ -434,6 +436,8 @@ def db_override(session):
     finally:
         if old is not None:
             app.dependency_overrides[get_db] = old
+        else:
+            app.dependency_overrides.pop(get_db, None)
 
 
 def test_ai_receipt_upload_success(sample_user, db_session):

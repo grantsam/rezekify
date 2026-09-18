@@ -109,7 +109,7 @@ export interface DailySpendingResponse {
 }
 
 export interface CategorySpendingItemModel {
-  category_id: string;
+  category_id?: string | null;
   category_name: string;
   amount: number;
   percentage: number;
