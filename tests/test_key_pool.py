@@ -1,4 +1,9 @@
+import os
+import sys
 import time
+from unittest.mock import MagicMock, patch
+import pytest
+
 from rezekify.agent.key_pool import RotaryKeyPool
 
 
@@ -26,8 +31,6 @@ def test_key_pool_cooldown_recovery():
 
 
 def test_key_pool_from_env(monkeypatch=None):
-    import os
-
     os.environ["TEST_KEYS"] = " key_x , key_y , "
     try:
         pool = RotaryKeyPool.from_env("TEST_KEYS")
@@ -37,8 +40,38 @@ def test_key_pool_from_env(monkeypatch=None):
         del os.environ["TEST_KEYS"]
 
 
-if __name__ == "__main__":
-    test_key_pool_rotates_on_rate_limit()
-    test_key_pool_cooldown_recovery()
-    test_key_pool_from_env()
-    print("All key_pool tests passed!")
+def test_key_pool_empty_keys_raises_value_error():
+    pool = RotaryKeyPool(keys=[])
+    with pytest.raises(ValueError, match="No API keys configured"):
+        pool.get_current_key()
+
+
+def test_key_pool_get_gemini_client():
+    pool = RotaryKeyPool(keys=["GEMINI_TEST_KEY"])
+    with patch("google.genai.Client") as mock_client_cls:
+        client = pool.get_gemini_client()
+        mock_client_cls.assert_called_once_with(api_key="GEMINI_TEST_KEY")
+        assert client == mock_client_cls.return_value
+
+
+def test_key_pool_get_groq_client():
+    pool = RotaryKeyPool(keys=["GROQ_TEST_KEY"])
+    with patch("groq.Groq") as mock_groq_cls:
+        client = pool.get_groq_client()
+        mock_groq_cls.assert_called_once_with(api_key="GROQ_TEST_KEY")
+        assert client == mock_groq_cls.return_value
+
+
+def test_key_pool_get_gemini_client_missing_import():
+    pool = RotaryKeyPool(keys=["GEMINI_TEST_KEY"])
+    with patch.dict(sys.modules, {"google.genai": None, "google": None}):
+        with pytest.raises(ImportError, match="google-genai package is required"):
+            pool.get_gemini_client()
+
+
+def test_key_pool_get_groq_client_missing_import():
+    pool = RotaryKeyPool(keys=["GROQ_TEST_KEY"])
+    with patch.dict(sys.modules, {"groq": None}):
+        with pytest.raises(ImportError, match="groq package is required"):
+            pool.get_groq_client()
+
