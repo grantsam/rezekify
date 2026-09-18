@@ -2,9 +2,10 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Literal, Optional, Union
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from rezekify.agent.key_pool import RotaryKeyPool
@@ -41,6 +42,40 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+class DailySpendingItemModel(BaseModel):
+    date: date
+    day_label: str = Field(..., description="Localized Indonesian day abbreviation (e.g. Sen, Sel, Rab)")
+    amount: Decimal = Field(..., description="Total expenses recorded on this day")
+    safe_runway_threshold: Decimal = Field(..., description="Benchmark daily safe runway threshold")
+    is_over_budget: bool = Field(..., description="True if amount exceeds safe_runway_threshold")
+
+
+class DailySpendingResponse(BaseModel):
+    period: Literal["daily"]
+    daily_safe_runway: Decimal
+    total_spent_in_period: Decimal
+    items: List[DailySpendingItemModel]
+
+
+class CategorySpendingItemModel(BaseModel):
+    category_id: UUID
+    category_name: str
+    amount: Decimal
+    percentage: Decimal = Field(..., description="Percentage of total cycle spending, e.g. 42.5")
+    color: str
+
+
+class MonthlySpendingResponse(BaseModel):
+    period: Literal["monthly"]
+    cycle_start_date: date
+    cycle_end_date: date
+    total_spent: Decimal
+    items: List[CategorySpendingItemModel]
+
+
+SpendingBreakdownResponse = Union[DailySpendingResponse, MonthlySpendingResponse]
 
 
 @dashboard_router.get("/summary", response_model=DashboardSummaryResponse)
@@ -83,15 +118,47 @@ def ai_chat_omni_input(
     return ChatResponse(reply=reply)
 
 
-@analytics_router.get("/spending-breakdown")
+@analytics_router.get("/spending-breakdown", response_model=SpendingBreakdownResponse)
 def get_spending_breakdown(
     period: str = Query("daily", pattern="^(daily|monthly)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Returns spending analytics for either 'daily' (7-14 day trend vs runway)
-    or 'monthly' (category breakdown). Rejects yearly queries (422) for zero-bloat efficiency."""
-    return {
-        "period": period,
-        "breakdown": [],
-    }
+    """Returns spending analytics for either 'daily' (7-day trend vs runway)
+    or 'monthly' (category breakdown for active cycle). Rejects yearly queries (422) for zero-bloat efficiency."""
+    service = RunwayService(db)
+    if period == "daily":
+        daily_report = service.get_daily_spending_breakdown(user_id=current_user.id, days=7)
+        return DailySpendingResponse(
+            period="daily",
+            daily_safe_runway=daily_report.daily_safe_runway,
+            total_spent_in_period=daily_report.total_spent_in_period,
+            items=[
+                DailySpendingItemModel(
+                    date=item.date,
+                    day_label=item.day_label,
+                    amount=item.amount,
+                    safe_runway_threshold=item.safe_runway_threshold,
+                    is_over_budget=item.is_over_budget,
+                )
+                for item in daily_report.items
+            ],
+        )
+
+    monthly_report = service.get_category_spending_breakdown(user_id=current_user.id)
+    return MonthlySpendingResponse(
+        period="monthly",
+        cycle_start_date=monthly_report.cycle_start_date,
+        cycle_end_date=monthly_report.cycle_end_date,
+        total_spent=monthly_report.total_spent,
+        items=[
+            CategorySpendingItemModel(
+                category_id=item.category_id,
+                category_name=item.category_name,
+                amount=item.amount,
+                percentage=item.percentage,
+                color=item.color,
+            )
+            for item in monthly_report.items
+        ],
+    )

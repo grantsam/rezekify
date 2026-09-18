@@ -329,3 +329,94 @@ def test_api_ai_chat():
     assert chat_res.status_code == 200
     assert "reply" in chat_res.json()
     assert len(chat_res.json()["reply"]) > 0
+
+
+def test_analytics_spending_breakdown_full_payload(sample_user, db_session):
+    """Tests that GET /api/v1/analytics/spending-breakdown returns valid Daily and Monthly schemas."""
+    from rezekify.core.security import create_access_token
+    from rezekify.db.models import Category, CategoryType, EntryType, LedgerEntry, Transaction
+    from datetime import datetime, timezone
+
+    def _get_db_override():
+        yield db_session
+
+    old_override = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = _get_db_override
+    try:
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Seed an account, category, and an expense
+        acc = Account(
+            user_id=sample_user.id,
+            name="Bank Mandiri",
+            account_type=AccountType.BANK,
+            current_balance=Decimal("1500000.00"),
+        )
+        cat = Category(
+            user_id=sample_user.id,
+            name="Kebutuhan Rumah",
+            category_type=CategoryType.EXPENSE,
+            color="#10b981",
+        )
+        db_session.add_all([acc, cat])
+        db_session.commit()
+
+        tx = Transaction(
+            user_id=sample_user.id,
+            description="Belanja Sabun",
+            transaction_date=datetime.now(timezone.utc),
+        )
+        db_session.add(tx)
+        db_session.flush()
+
+        le = LedgerEntry(
+            transaction_id=tx.id,
+            user_id=sample_user.id,
+            account_id=acc.id,
+            category_id=cat.id,
+            entry_type=EntryType.DEBIT,
+            amount=Decimal("50000.00"),
+        )
+        db_session.add(le)
+        db_session.commit()
+
+        # 1. Test Daily Breakdown
+        res_daily = client.get("/api/v1/analytics/spending-breakdown?period=daily", headers=headers)
+        assert res_daily.status_code == 200
+        data_daily = res_daily.json()
+        assert data_daily["period"] == "daily"
+        assert "daily_safe_runway" in data_daily
+        assert "total_spent_in_period" in data_daily
+        assert len(data_daily["items"]) == 7
+        # Verify item schema
+        item = data_daily["items"][-1]
+        assert "date" in item
+        assert "day_label" in item
+        assert "amount" in item
+        assert "safe_runway_threshold" in item
+        assert "is_over_budget" in item
+        assert isinstance(item["is_over_budget"], bool)
+
+        # 2. Test Monthly Breakdown
+        res_monthly = client.get("/api/v1/analytics/spending-breakdown?period=monthly", headers=headers)
+        assert res_monthly.status_code == 200
+        data_monthly = res_monthly.json()
+        assert data_monthly["period"] == "monthly"
+        assert "cycle_start_date" in data_monthly
+        assert "cycle_end_date" in data_monthly
+        assert Decimal(str(data_monthly["total_spent"])) >= Decimal("50000.00")
+        assert len(data_monthly["items"]) >= 1
+        cat_item = data_monthly["items"][0]
+        assert cat_item["category_name"] == "Kebutuhan Rumah"
+        assert Decimal(str(cat_item["percentage"])) == Decimal("100.0")
+        assert cat_item["color"] == "#10b981"
+
+        # 3. Test Yearly Rejection (Zero-Bloat Invariant)
+        res_yearly = client.get("/api/v1/analytics/spending-breakdown?period=yearly", headers=headers)
+        assert res_yearly.status_code == 422
+    finally:
+        if old_override is not None:
+            app.dependency_overrides[get_db] = old_override
+        else:
+            app.dependency_overrides.pop(get_db, None)
