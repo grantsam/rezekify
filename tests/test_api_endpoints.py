@@ -2,6 +2,9 @@
 
 from datetime import date, timedelta
 from decimal import Decimal
+import io
+from contextlib import contextmanager
+from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -418,5 +421,106 @@ def test_analytics_spending_breakdown_full_payload(sample_user, db_session):
     finally:
         if old_override is not None:
             app.dependency_overrides[get_db] = old_override
-        else:
-            app.dependency_overrides.pop(get_db, None)
+
+
+@contextmanager
+def db_override(session):
+    def _gen():
+        yield session
+    old = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = _gen
+    try:
+        yield
+    finally:
+        if old is not None:
+            app.dependency_overrides[get_db] = old
+
+
+def test_ai_receipt_upload_success(sample_user, db_session):
+    """Tests successful multipart upload with mocked vision OCR returning balanced transaction."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Add default account
+        acc = Account(
+            user_id=sample_user.id,
+            name="BCA",
+            account_type=AccountType.BANK,
+            current_balance=Decimal("500000.00"),
+        )
+        db_session.add(acc)
+        db_session.commit()
+
+        mock_entities = {
+            "action": "expense",
+            "amount": 48500,
+            "account_name": "BCA",
+            "category_name": "Makanan & Minuman",
+            "note": "Kopi Kenangan & Roti",
+        }
+
+        # Mock ReActAgent.process_input
+        with patch("rezekify.agent.runtime.ReActAgent.process_input", return_value=mock_entities):
+            file_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF" + b"fake_jpeg_data"
+            files = {"file": ("receipt.jpg", io.BytesIO(file_bytes), "image/jpeg")}
+            data = {"message": "beli kopi pagi"}
+
+            res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files, data=data)
+
+        assert res.status_code == 200
+        res_data = res.json()
+        assert "reply" in res_data
+        assert "Tercatat" in res_data["reply"]
+        assert res_data["transaction_id"] is not None
+        assert res_data["extracted_data"]["action"] == "expense"
+        assert Decimal(str(res_data["extracted_data"]["amount"])) == Decimal("48500.00")
+        assert res_data["extracted_data"]["account_name"] == "BCA"
+        assert res_data["extracted_data"]["category_name"] == "Makanan & Minuman"
+
+
+def test_ai_receipt_upload_invalid_mime(sample_user, db_session):
+    """Tests that non-image MIME types (e.g. PDF) are rejected with HTTP 400."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        files = {"file": ("statement.pdf", io.BytesIO(b"%PDF-1.4..."), "application/pdf")}
+        res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files)
+        assert res.status_code == 400
+        assert "Format file tidak didukung" in res.json()["detail"]
+
+
+def test_ai_receipt_upload_size_limit_exceeded(sample_user, db_session):
+    """Tests that payloads exceeding 10MB are rejected with HTTP 413."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 10.5 MB payload (11MB)
+        large_bytes = b"0" * (11 * 1024 * 1024)
+        files = {"file": ("huge_receipt.png", io.BytesIO(large_bytes), "image/png")}
+        res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files)
+        assert res.status_code == 413
+        assert "melebihi batas maksimal 10MB" in res.json()["detail"]
+
+
+def test_ai_receipt_upload_empty_file(sample_user, db_session):
+    """Tests that empty 0-byte file uploads are rejected with HTTP 400."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        files = {"file": ("empty.jpg", io.BytesIO(b""), "image/jpeg")}
+        res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files)
+        assert res.status_code == 400
+        assert "File yang diunggah kosong" in res.json()["detail"]
+

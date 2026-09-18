@@ -42,7 +42,11 @@ class ReActAgent:
             return {"action": "unknown", "raw": text}
 
     def process_input(
-        self, user_id: UUID, text: str, image_bytes: Optional[bytes] = None
+        self,
+        user_id: UUID,
+        text: str,
+        image_bytes: Optional[bytes] = None,
+        mime_type: str = "image/jpeg",
     ) -> Dict[str, Any]:
         """Processes natural language text or receipt image into structured transaction entities."""
         # Try Gemini first using rotary key pool
@@ -54,7 +58,7 @@ class ReActAgent:
                 if image_bytes:
                     from google.genai import types
                     contents.append(
-                        types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+                        types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
                     )
 
                 response = client.models.generate_content(

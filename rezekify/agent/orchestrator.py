@@ -167,3 +167,86 @@ class AgentOrchestrator:
             return reply
 
         return "Saya siap membantu mencatat pengeluaran, pemasukan, transfer, atau memeriksa status jatah belanja harian Anda."
+
+    def handle_receipt(
+        self,
+        user_id: UUID,
+        image_bytes: bytes,
+        mime_type: str = "image/jpeg",
+        user_note: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Processes receipt image via vision OCR, records double-entry transaction, and returns structured result."""
+        prompt_text = user_note or "Struk belanja"
+        if self.agent:
+            entities = self.agent.process_input(
+                user_id=user_id,
+                text=prompt_text,
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+            )
+        else:
+            entities = {"action": "unknown", "text": prompt_text}
+
+        action = entities.get("action")
+        if action == "expense":
+            amount = Decimal(str(entities.get("amount", 0)))
+            account = self._resolve_account(user_id, entities.get("account_name"))
+            if not account:
+                return {
+                    "reply": "❌ Gagal: Anda belum memiliki akun keuangan. Silakan tambahkan akun terlebih dahulu.",
+                    "transaction_id": None,
+                    "extracted_data": {
+                        "action": "expense",
+                        "amount": amount,
+                        "account_name": None,
+                        "category_name": None,
+                        "note": prompt_text,
+                    },
+                }
+
+            category = self._resolve_or_create_category(
+                user_id, entities.get("category_name"), CategoryType.EXPENSE
+            )
+            note = entities.get("note") or prompt_text
+
+            tx = self.ledger.record_expense(
+                user_id=user_id,
+                account_id=account.id,
+                category_id=category.id,
+                amount=amount,
+                description=note,
+                source_channel="WEB_AI",
+                raw_input_text=prompt_text,
+            )
+
+            runway = self.runway.calculate_runway(user_id)
+            reply = (
+                f"✅ **Tercatat dari Struk:** Rp {amount:,.0f} ({note}) via {account.name}.\n"
+                f"📊 **Sisa Jatah Belanja Hari Ini:** Rp {runway.daily_safe_runway:,.0f} "
+                f"({runway.days_remaining} hari menuju siklus baru)."
+            )
+
+            return {
+                "reply": reply,
+                "transaction_id": tx.id,
+                "extracted_data": {
+                    "action": "expense",
+                    "amount": amount,
+                    "account_name": account.name,
+                    "category_name": category.name,
+                    "note": note,
+                },
+            }
+
+        return {
+            "reply": "⚠️ Struk tidak terbaca jelas. Pastikan foto terang dan menampilkan total belanja.",
+            "transaction_id": None,
+            "extracted_data": {
+                "action": "unknown",
+                "amount": Decimal("0.00"),
+                "account_name": None,
+                "category_name": None,
+                "note": prompt_text,
+            },
+        }
+

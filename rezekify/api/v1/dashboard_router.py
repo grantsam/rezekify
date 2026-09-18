@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal
 from typing import List, Literal, Optional, Union
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -16,6 +16,9 @@ from rezekify.services.runway import RunwayService
 
 dashboard_router = APIRouter()
 analytics_router = APIRouter()
+
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
 class UpcomingBillResponse(BaseModel):
@@ -42,6 +45,21 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+class ReceiptExtractedData(BaseModel):
+    action: str
+    amount: Decimal
+    account_name: Optional[str] = None
+    category_name: Optional[str] = None
+    note: Optional[str] = None
+
+
+class ReceiptUploadResponse(BaseModel):
+    reply: str
+    transaction_id: Optional[UUID] = None
+    extracted_data: ReceiptExtractedData
+
 
 
 class DailySpendingItemModel(BaseModel):
@@ -116,6 +134,54 @@ def ai_chat_omni_input(
     orchestrator = AgentOrchestrator(db=db, key_pool=RotaryKeyPool.from_env("GEMINI_API_KEYS"))
     reply = orchestrator.handle_message(user_id=current_user.id, text=req.message)
     return ChatResponse(reply=reply)
+
+
+@dashboard_router.post("/ai-receipt", response_model=ReceiptUploadResponse)
+async def ai_receipt_upload(
+    file: UploadFile = File(...),
+    message: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Processes uploaded receipt image (JPEG, PNG, WebP up to 10MB) through Gemini 2.5 Flash Vision."""
+    if file.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Format file tidak didukung. Harap unggah struk berformat JPEG, PNG, atau WebP.",
+        )
+
+    content = await file.read()
+    if len(content) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="File yang diunggah kosong.",
+        )
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail="Ukuran file melebihi batas maksimal 10MB.",
+        )
+
+    orchestrator = AgentOrchestrator(db=db, key_pool=RotaryKeyPool.from_env("GEMINI_API_KEYS"))
+    result = orchestrator.handle_receipt(
+        user_id=current_user.id,
+        image_bytes=content,
+        mime_type=file.content_type,
+        user_note=message,
+    )
+
+    return ReceiptUploadResponse(
+        reply=result["reply"],
+        transaction_id=result["transaction_id"],
+        extracted_data=ReceiptExtractedData(
+            action=result["extracted_data"]["action"],
+            amount=Decimal(str(result["extracted_data"]["amount"])),
+            account_name=result["extracted_data"]["account_name"],
+            category_name=result["extracted_data"]["category_name"],
+            note=result["extracted_data"]["note"],
+        ),
+    )
+
 
 
 @analytics_router.get("/spending-breakdown", response_model=SpendingBreakdownResponse)
