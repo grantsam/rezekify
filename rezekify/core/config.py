@@ -1,5 +1,6 @@
 """Application configuration settings using pydantic-settings."""
 
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
 
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_WEBHOOK_SECRET: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

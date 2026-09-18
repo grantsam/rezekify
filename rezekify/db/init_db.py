@@ -1,6 +1,5 @@
 """Database schema initialization and migration bootstrap."""
 
-import logging
 import sys
 import time
 from typing import Optional
@@ -9,8 +8,6 @@ from sqlalchemy.exc import OperationalError
 
 from rezekify.db.models import Base
 from rezekify.db.session import engine as default_engine
-
-logger = logging.getLogger(__name__)
 
 
 def init_db(

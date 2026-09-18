@@ -88,3 +88,34 @@ def test_telegram_webhook_unlinked_user(client):
     data = response.json()
     assert data["status"] == "ok"
     assert "belum terhubung" in data["result"]
+
+
+def test_telegram_webhook_secret_token_enforcement(client, monkeypatch):
+    from rezekify.core.config import settings
+
+    monkeypatch.setattr(settings, "TELEGRAM_WEBHOOK_SECRET", "super-secret-telegram-token")
+
+    payload = {"update_id": 10003}
+
+    # 1. Missing secret token -> 403 Forbidden
+    resp_missing = client.post("/api/v1/gateway/telegram/webhook", json=payload)
+    assert resp_missing.status_code == 403
+    assert resp_missing.json()["detail"] == "Invalid Telegram webhook secret token"
+
+    # 2. Invalid secret token -> 403 Forbidden
+    resp_invalid = client.post(
+        "/api/v1/gateway/telegram/webhook",
+        json=payload,
+        headers={"X-Telegram-Bot-Api-Secret-Token": "wrong-secret"},
+    )
+    assert resp_invalid.status_code == 403
+
+    # 3. Matching secret token -> 200 OK
+    resp_valid = client.post(
+        "/api/v1/gateway/telegram/webhook",
+        json=payload,
+        headers={"X-Telegram-Bot-Api-Secret-Token": "super-secret-telegram-token"},
+    )
+    assert resp_valid.status_code == 200
+    assert resp_valid.json()["status"] == "ok"
+
