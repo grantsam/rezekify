@@ -48,6 +48,9 @@ describe('DashboardPage Component', () => {
       if (endpoint === '/dashboard/summary') return mockSummary;
       if (endpoint === '/transactions') return mockTransactions;
       if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint.includes('/analytics/spending-breakdown')) {
+        return { period: 'daily', daily_safe_runway: 100000, total_spent_in_period: 25000, items: [] };
+      }
       return null;
     });
 
@@ -63,27 +66,14 @@ describe('DashboardPage Component', () => {
     });
   });
 
-  it('opens manual modal when Catat Manual button is clicked', async () => {
-    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
-      if (endpoint === '/dashboard/summary') return mockSummary;
-      if (endpoint === '/transactions') return mockTransactions;
-      if (endpoint === '/accounts') return mockAccounts;
-      return null;
-    });
-
-    render(<DashboardPage />);
-
-    const catatButton = screen.getByRole('button', { name: /Catat Manual/i });
-    fireEvent.click(catatButton);
-
-    expect(screen.getByText(/Catat Transaksi Manual/i)).toBeInTheDocument();
-  });
-
-  it('handles AI Omni-input submission and displays confirmation banner', async () => {
+  it('handles text-only submission to /dashboard/ai-chat and refreshes data', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string, options?: any) => {
       if (endpoint === '/dashboard/summary') return mockSummary;
       if (endpoint === '/transactions') return mockTransactions;
       if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint.includes('/analytics/spending-breakdown')) {
+        return { period: 'daily', daily_safe_runway: 100000, total_spent_in_period: 35000, items: [] };
+      }
       if (endpoint === '/dashboard/ai-chat' && options?.method === 'POST') {
         return { reply: 'Berhasil mencatat pengeluaran bensin Rp 35.000 dari BCA.' };
       }
@@ -99,6 +89,44 @@ describe('DashboardPage Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Hasil Konfirmasi AI/i)).toBeInTheDocument();
       expect(screen.getByText(/Berhasil mencatat pengeluaran bensin Rp 35.000/i)).toBeInTheDocument();
+    });
+  });
+
+  it('handles receipt file submission via FormData to /dashboard/ai-receipt and triggers reactive refresh', async () => {
+    let calledWithFormData = false;
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string, options?: any) => {
+      if (endpoint === '/dashboard/summary') return mockSummary;
+      if (endpoint === '/transactions') return mockTransactions;
+      if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint.includes('/analytics/spending-breakdown')) {
+        return { period: 'daily', daily_safe_runway: 100000, total_spent_in_period: 48500, items: [] };
+      }
+      if (endpoint === '/dashboard/ai-receipt' && options?.method === 'POST') {
+        if (options?.body instanceof FormData) {
+          calledWithFormData = true;
+        }
+        return {
+          reply: 'Tercatat dari Struk: Rp 48.500 (Kopi Kenangan) via BCA.',
+          transaction_id: 'tx-202',
+          extracted_data: { action: 'expense', amount: 48500, account_name: 'BCA', note: 'Kopi Kenangan' },
+        };
+      }
+      return null;
+    });
+
+    render(<DashboardPage />);
+
+    const file = new File(['dummy_jpeg_bytes'], 'kopi_struk.jpg', { type: 'image/jpeg' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    const input = screen.getByPlaceholderText(/Ketik pengeluaran santai/i);
+    fireEvent.change(input, { target: { value: 'kopi sore' } });
+    fireEvent.submit(input);
+
+    await waitFor(() => {
+      expect(calledWithFormData).toBe(true);
+      expect(screen.getByText(/Tercatat dari Struk: Rp 48\.500/i)).toBeInTheDocument();
     });
   });
 });

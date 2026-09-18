@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { apiFetch } from '../services/apiClient';
-import { DashboardSummaryResponse, Transaction, Account, ChatResponse } from '../types/api';
+import {
+  DashboardSummaryResponse,
+  Transaction,
+  Account,
+  ChatResponse,
+  ReceiptUploadResponse,
+} from '../types/api';
 import { OmniInputHero } from '../components/OmniInputHero';
 import { UpcomingBillsCard } from '../components/UpcomingBillsCard';
 import { RunwayMetricCard } from '../components/RunwayMetricCard';
@@ -17,6 +23,7 @@ export const DashboardPage: React.FC = () => {
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [aiMessage, setAiMessage] = useState<{ text: string; isError?: boolean } | null>(null);
 
   const loadData = useCallback(async () => {
@@ -42,18 +49,31 @@ export const DashboardPage: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const handleAiSubmit = async (text: string, file: File | null) => {
+  const handleAiSubmit = async (payload: { text: string; file: File | null }) => {
     setIsAiLoading(true);
     setAiMessage(null);
     try {
-      const promptText = file ? `${text} [Lampiran file: ${file.name}]`.trim() : text;
-      const res = await apiFetch<ChatResponse>('/dashboard/ai-chat', {
-        method: 'POST',
-        body: JSON.stringify({ message: promptText }),
-      });
-      setAiMessage({ text: res.reply || 'Berhasil dicatat ke dalam ledger!' });
-      // Refresh ledger state & runway calculations
+      if (payload.file) {
+        const formData = new FormData();
+        formData.append('file', payload.file);
+        if (payload.text.trim()) {
+          formData.append('message', payload.text.trim());
+        }
+        const res = await apiFetch<ReceiptUploadResponse>('/dashboard/ai-receipt', {
+          method: 'POST',
+          body: formData,
+        });
+        setAiMessage({ text: res.reply || 'Struk berhasil dicatat ke dalam ledger!' });
+      } else {
+        const res = await apiFetch<ChatResponse>('/dashboard/ai-chat', {
+          method: 'POST',
+          body: JSON.stringify({ message: payload.text.trim() }),
+        });
+        setAiMessage({ text: res.reply || 'Berhasil dicatat ke dalam ledger!' });
+      }
+
       await loadData();
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err: any) {
       setAiMessage({
         text: err?.message || 'Gagal memproses input AI. Silakan coba lagi.',
@@ -69,6 +89,7 @@ export const DashboardPage: React.FC = () => {
       setIsDeleting(true);
       await apiFetch(`/transactions/${id}`, { method: 'DELETE' });
       await loadData();
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err: any) {
       alert(err?.message || 'Gagal menghapus transaksi.');
     } finally {
@@ -78,7 +99,6 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* TopBar */}
       <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -87,9 +107,7 @@ export const DashboardPage: React.FC = () => {
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-950" />
             </div>
             <div>
-              <span className="font-bold text-lg tracking-tight text-white">
-                Rezekify
-              </span>
+              <span className="font-bold text-lg tracking-tight text-white">Rezekify</span>
               <span className="hidden sm:inline-block ml-2 text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-medium">
                 Deterministic Runway
               </span>
@@ -99,7 +117,10 @@ export const DashboardPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={loadData}
+              onClick={() => {
+                loadData();
+                setRefreshTrigger((prev) => prev + 1);
+              }}
               disabled={isLoading}
               className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/60 transition-colors disabled:opacity-40"
               title="Perbarui Data"
@@ -118,12 +139,9 @@ export const DashboardPage: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* AI Action Hero Input */}
         <OmniInputHero onSubmit={handleAiSubmit} isLoading={isAiLoading} />
 
-        {/* AI Response Notice Banner */}
         {aiMessage && (
           <div
             className={`p-4 rounded-2xl border flex items-start justify-between gap-3 text-sm transition-all ${
@@ -155,20 +173,17 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* H-7 Impending Bills Banner */}
         {summary?.upcoming_bills && <UpcomingBillsCard bills={summary.upcoming_bills} />}
 
-        {/* Mid Row: Runway Metric (Left) + Charts (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5">
             <RunwayMetricCard summary={summary} />
           </div>
           <div className="lg:col-span-7">
-            <ExpenseCharts />
+            <ExpenseCharts refreshTrigger={refreshTrigger} />
           </div>
         </div>
 
-        {/* Bottom Row: Transactions Ledger Table */}
         <TransactionsTable
           transactions={transactions}
           onDelete={handleDeleteTransaction}
@@ -176,12 +191,14 @@ export const DashboardPage: React.FC = () => {
         />
       </main>
 
-      {/* Auxiliary Manual Modal */}
       <ManualTransactionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         accounts={accounts}
-        onSuccess={loadData}
+        onSuccess={() => {
+          loadData();
+          setRefreshTrigger((prev) => prev + 1);
+        }}
       />
     </div>
   );
