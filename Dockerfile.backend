@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1.7
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+# Install required build utilities
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies in isolated prefix layer
+COPY pyproject.toml .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --prefix=/install .
+
+# ------------------------------------------------------------------------------
+# Production Runtime Stage
+# ------------------------------------------------------------------------------
+FROM python:3.12-slim AS runner
+
+WORKDIR /app
+
+# Install runtime PostgreSQL client library and curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create dedicated non-root application user (UID 10001)
+RUN groupadd -g 10001 rezekify && \
+    useradd -u 10001 -g rezekify -s /bin/bash -m rezekify
+
+# Copy installed wheels and dependencies from builder
+COPY --from=builder /install /usr/local
+
+# Copy application source tree with non-root ownership
+COPY --chown=rezekify:rezekify rezekify/ /app/rezekify/
+COPY --chown=rezekify:rezekify pyproject.toml /app/
+COPY --chown=rezekify:rezekify docker/backend/docker-entrypoint.sh /app/docker-entrypoint.sh
+
+RUN chmod +x /app/docker-entrypoint.sh
+
+USER rezekify
+
+EXPOSE 8000
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
