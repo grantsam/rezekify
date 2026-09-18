@@ -61,11 +61,13 @@ def test_init_db_exhausts_retries_raises():
 
 
 def test_entrypoint_script_executable():
-    """Verifies entrypoint shell script structure and invocations."""
+    """Verifies entrypoint shell script structure, invocations, and UNIX LF line endings."""
     script_path = Path("docker/backend/docker-entrypoint.sh")
     assert script_path.exists(), "docker-entrypoint.sh must exist"
-    content = script_path.read_text(encoding="utf-8")
+    raw_bytes = script_path.read_bytes()
+    assert b"\r\n" not in raw_bytes, "docker-entrypoint.sh must use UNIX LF line endings"
 
+    content = raw_bytes.decode("utf-8")
     assert content.startswith("#!/usr/bin/env bash")
     assert "set -eo pipefail" in content
     assert "python -m rezekify.db.init_db" in content

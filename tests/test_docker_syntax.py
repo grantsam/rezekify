@@ -55,6 +55,7 @@ def test_frontend_nginx_configuration():
 
     # Performance & Security
     assert "gzip on;" in content
+    assert "listen [::]:80;" in content
     assert 'X-Frame-Options "DENY"' in content
     assert 'X-Content-Type-Options "nosniff"' in content
 
