@@ -160,3 +160,132 @@ def test_negative_or_zero_amount_rejected(db_session, sample_user):
             amount=Decimal("-5000.00"),
             description="Negative amount",
         )
+
+
+def test_delete_income_transaction_reverses_balance(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("200000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_income(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("300000.00"),
+        description="Freelance",
+    )
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("500000.00")
+
+    deleted = service.delete_transaction(user_id=sample_user.id, transaction_id=tx.id)
+    assert deleted is True
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("200000.00")
+
+
+def test_delete_transfer_transaction_reverses_balance(db_session, sample_user):
+    acc1 = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    acc2 = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("100000.00"),
+    )
+    db_session.add_all([acc1, acc2])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_transfer(
+        user_id=sample_user.id,
+        from_account_id=acc1.id,
+        to_account_id=acc2.id,
+        amount=Decimal("150000.00"),
+    )
+    db_session.refresh(acc1)
+    db_session.refresh(acc2)
+    assert acc1.current_balance == Decimal("350000.00")
+    assert acc2.current_balance == Decimal("250000.00")
+
+    deleted = service.delete_transaction(user_id=sample_user.id, transaction_id=tx.id)
+    assert deleted is True
+    db_session.refresh(acc1)
+    db_session.refresh(acc2)
+    assert acc1.current_balance == Decimal("500000.00")
+    assert acc2.current_balance == Decimal("100000.00")
+
+
+def test_transfer_same_account_rejected(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    with pytest.raises(ValueError, match="Source and destination accounts must be distinct"):
+        service.record_transfer(
+            user_id=sample_user.id,
+            from_account_id=acc.id,
+            to_account_id=acc.id,
+            amount=Decimal("50000.00"),
+        )
+
+
+def test_cross_tenant_isolation_enforced(db_session, sample_user):
+    from sqlalchemy.orm.exc import NoResultFound
+    from rezekify.db.models import User
+    import uuid
+
+    other_user = User(
+        email="other_user@rezekify.local",
+        password_hash="hash_other",
+        full_name="User Lain",
+    )
+    db_session.add(other_user)
+    db_session.commit()
+
+    other_acc = Account(
+        user_id=other_user.id,
+        name="Other Bank",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    db_session.add(other_acc)
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    # sample_user cannot spend from other_user's account
+    with pytest.raises(NoResultFound):
+        service.record_expense(
+            user_id=sample_user.id,
+            account_id=other_acc.id,
+            category_id=None,
+            amount=Decimal("50000.00"),
+            description="Illegal spend",
+        )
+
+    # other_user creates a transaction, sample_user cannot delete it
+    other_tx = service.record_expense(
+        user_id=other_user.id,
+        account_id=other_acc.id,
+        category_id=None,
+        amount=Decimal("50000.00"),
+        description="Valid other spend",
+    )
+    with pytest.raises(NoResultFound):
+        service.delete_transaction(user_id=sample_user.id, transaction_id=other_tx.id)
+

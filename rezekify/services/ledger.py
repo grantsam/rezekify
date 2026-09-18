@@ -10,7 +10,10 @@ from rezekify.db.models import Account, EntryType, LedgerEntry, Transaction
 
 
 class LedgerService:
-    """Provides deterministic financial ledger transaction operations."""
+    """Provides deterministic financial ledger transaction operations.
+
+    ponytail: synchronous session with filter_by user_id isolation; add with_for_update row locking when concurrent multi-channel writes demand it.
+    """
 
     def __init__(self, db: Session):
         self.db = db
@@ -27,7 +30,7 @@ class LedgerService:
         receipt_image_url: Optional[str] = None,
     ) -> Transaction:
         """Records an expense transaction with balanced debit/credit entries."""
-        if amount <= Decimal("0.00"):
+        if amount <= 0:
             raise ValueError("Amount must be positive.")
 
         account = (
@@ -76,7 +79,7 @@ class LedgerService:
         source_channel: str = "WEB_AI",
     ) -> Transaction:
         """Records an income transaction with balanced debit/credit entries."""
-        if amount <= Decimal("0.00"):
+        if amount <= 0:
             raise ValueError("Amount must be positive.")
 
         account = (
@@ -122,7 +125,7 @@ class LedgerService:
         description: str = "Transfer Antar Akun",
     ) -> Transaction:
         """Records a balance transfer between two accounts with balanced entries."""
-        if amount <= Decimal("0.00"):
+        if amount <= 0:
             raise ValueError("Amount must be positive.")
         if from_account_id == to_account_id:
             raise ValueError("Source and destination accounts must be distinct.")
