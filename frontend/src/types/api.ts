@@ -78,3 +78,51 @@ export interface Transaction {
 export interface ChatResponse {
   reply: string;
 }
+
+export interface ReceiptExtractedData {
+  action: string;
+  amount: number;
+  account_name?: string | null;
+  category_name?: string | null;
+  note?: string | null;
+}
+
+export interface ReceiptUploadResponse {
+  reply: string;
+  transaction_id?: string | null;
+  extracted_data: ReceiptExtractedData;
+}
+
+export interface DailySpendingItemModel {
+  date: string;
+  day_label: string;
+  amount: number;
+  safe_runway_threshold: number;
+  is_over_budget: boolean;
+}
+
+export interface DailySpendingResponse {
+  period: 'daily';
+  daily_safe_runway: number;
+  total_spent_in_period: number;
+  items: DailySpendingItemModel[];
+}
+
+export interface CategorySpendingItemModel {
+  category_id: string;
+  category_name: string;
+  amount: number;
+  percentage: number;
+  color: string;
+}
+
+export interface MonthlySpendingResponse {
+  period: 'monthly';
+  cycle_start_date: string;
+  cycle_end_date: string;
+  total_spent: number;
+  items: CategorySpendingItemModel[];
+}
+
+export type SpendingBreakdownResponse = DailySpendingResponse | MonthlySpendingResponse;
+
