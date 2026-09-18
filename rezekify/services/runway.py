@@ -1,15 +1,36 @@
 """Dynamic Runway Calculator & Spending Simulation Engine."""
 
 from calendar import monthrange
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
-from typing import List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional
 from uuid import UUID
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from rezekify.db.models import Account, AccountType, User, Vault, VaultType
+from rezekify.db.models import (
+    Account,
+    AccountType,
+    Category,
+    CategoryType,
+    EntryType,
+    LedgerEntry,
+    Transaction,
+    User,
+    Vault,
+    VaultType,
+)
+
+INDONESIAN_DAY_LABELS: Dict[int, str] = {
+    0: "Sen",
+    1: "Sel",
+    2: "Rab",
+    3: "Kam",
+    4: "Jum",
+    5: "Sab",
+    6: "Min",
+}
 
 
 class UpcomingBill(NamedTuple):
@@ -36,6 +57,37 @@ class SimulationReport(NamedTuple):
     daily_drop_amount: Decimal
     is_safe: bool
     advice: str
+
+
+class DailyBreakdownItem(NamedTuple):
+    date: date
+    day_label: str
+    amount: Decimal
+    safe_runway_threshold: Decimal
+    is_over_budget: bool
+
+
+class DailySpendingBreakdownReport(NamedTuple):
+    period: str
+    daily_safe_runway: Decimal
+    total_spent_in_period: Decimal
+    items: List[DailyBreakdownItem]
+
+
+class CategoryBreakdownItem(NamedTuple):
+    category_id: UUID
+    category_name: str
+    amount: Decimal
+    percentage: Decimal
+    color: str
+
+
+class CategorySpendingBreakdownReport(NamedTuple):
+    period: str
+    cycle_start_date: date
+    cycle_end_date: date
+    total_spent: Decimal
+    items: List[CategoryBreakdownItem]
 
 
 class RunwayService:
@@ -160,4 +212,138 @@ class RunwayService:
             daily_drop_amount=drop,
             is_safe=is_safe,
             advice=advice,
+        )
+
+    def get_daily_spending_breakdown(
+        self, user_id: UUID, days: int = 7, today: Optional[date] = None
+    ) -> DailySpendingBreakdownReport:
+        """Computes continuous daily spending over the last N days benchmarked against safe runway."""
+        if today is None:
+            today = date.today()
+
+        start_date = today - timedelta(days=days - 1)
+        end_date = today
+
+        rows = (
+            self.db.query(
+                func.date(Transaction.transaction_date).label("tx_date"),
+                func.coalesce(func.sum(LedgerEntry.amount), Decimal("0.00")).label("total_amount"),
+            )
+            .join(LedgerEntry, LedgerEntry.transaction_id == Transaction.id)
+            .join(Category, LedgerEntry.category_id == Category.id)
+            .filter(
+                Transaction.user_id == user_id,
+                LedgerEntry.entry_type == EntryType.DEBIT,
+                Category.category_type == CategoryType.EXPENSE,
+                func.date(Transaction.transaction_date) >= start_date.isoformat(),
+                func.date(Transaction.transaction_date) <= end_date.isoformat(),
+            )
+            .group_by(func.date(Transaction.transaction_date))
+            .all()
+        )
+
+        date_totals: Dict[date, Decimal] = {}
+        for row in rows:
+            d = date.fromisoformat(row.tx_date) if isinstance(row.tx_date, str) else row.tx_date
+            date_totals[d] = Decimal(str(row.total_amount))
+
+        current_runway = self.calculate_runway(user_id=user_id, today=today)
+        safe_threshold = current_runway.daily_safe_runway
+
+        items: List[DailyBreakdownItem] = []
+        total_spent = Decimal("0.00")
+
+        for i in range(days):
+            cur_date = start_date + timedelta(days=i)
+            day_amount = date_totals.get(cur_date, Decimal("0.00"))
+            total_spent += day_amount
+            is_over = day_amount > safe_threshold
+            items.append(
+                DailyBreakdownItem(
+                    date=cur_date,
+                    day_label=INDONESIAN_DAY_LABELS[cur_date.weekday()],
+                    amount=day_amount,
+                    safe_runway_threshold=safe_threshold,
+                    is_over_budget=is_over,
+                )
+            )
+
+        return DailySpendingBreakdownReport(
+            period="daily",
+            daily_safe_runway=safe_threshold,
+            total_spent_in_period=total_spent,
+            items=items,
+        )
+
+    def get_category_spending_breakdown(
+        self, user_id: UUID, today: Optional[date] = None
+    ) -> CategorySpendingBreakdownReport:
+        """Computes spending distribution grouped by category for the current billing cycle."""
+        if today is None:
+            today = date.today()
+
+        user = self.db.query(User).filter_by(id=user_id).one()
+        cycle_day = user.monthly_cycle_day
+
+        if today.day >= cycle_day:
+            _, max_days = monthrange(today.year, today.month)
+            effective_day = min(cycle_day, max_days)
+            cycle_start = date(today.year, today.month, effective_day)
+        else:
+            if today.month == 1:
+                prev_year = today.year - 1
+                prev_month = 12
+            else:
+                prev_year = today.year
+                prev_month = today.month - 1
+            _, max_days = monthrange(prev_year, prev_month)
+            effective_day = min(cycle_day, max_days)
+            cycle_start = date(prev_year, prev_month, effective_day)
+
+        cycle_end = today
+
+        rows = (
+            self.db.query(
+                Category.id.label("category_id"),
+                Category.name.label("category_name"),
+                Category.color.label("category_color"),
+                func.coalesce(func.sum(LedgerEntry.amount), Decimal("0.00")).label("total_amount"),
+            )
+            .join(LedgerEntry, LedgerEntry.category_id == Category.id)
+            .join(Transaction, LedgerEntry.transaction_id == Transaction.id)
+            .filter(
+                Transaction.user_id == user_id,
+                LedgerEntry.entry_type == EntryType.DEBIT,
+                Category.category_type == CategoryType.EXPENSE,
+                func.date(Transaction.transaction_date) >= cycle_start.isoformat(),
+                func.date(Transaction.transaction_date) <= cycle_end.isoformat(),
+            )
+            .group_by(Category.id, Category.name, Category.color)
+            .order_by(func.sum(LedgerEntry.amount).desc())
+            .all()
+        )
+
+        total_spent = sum((Decimal(str(r.total_amount)) for r in rows), Decimal("0.00"))
+        items: List[CategoryBreakdownItem] = []
+
+        if total_spent > Decimal("0.00"):
+            for r in rows:
+                amt = Decimal(str(r.total_amount))
+                pct = ((amt / total_spent) * Decimal("100")).quantize(Decimal("0.1"))
+                items.append(
+                    CategoryBreakdownItem(
+                        category_id=r.category_id,
+                        category_name=r.category_name,
+                        amount=amt,
+                        percentage=pct,
+                        color=r.category_color or "#6366f1",
+                    )
+                )
+
+        return CategorySpendingBreakdownReport(
+            period="monthly",
+            cycle_start_date=cycle_start,
+            cycle_end_date=cycle_end,
+            total_spent=total_spent,
+            items=items,
         )
