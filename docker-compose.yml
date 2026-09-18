@@ -1,0 +1,95 @@
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Relational Database Engine
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: rezekify_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_production_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rezekify}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - rezekify_postgres_data:/var/lib/postgresql/data
+    networks:
+      - rezekify_net
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-rezekify}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # 2. Rezekify FastAPI Core & Agentic Orchestrator
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: rezekify_backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      PROJECT_NAME: rezekify
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_secure_production_password}@db:5432/${POSTGRES_DB:-rezekify}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be provided in production}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-10080}
+      GEMINI_API_KEYS: ${GEMINI_API_KEYS:-}
+      GROQ_API_KEYS: ${GROQ_API_KEYS:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rezekify_net
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ----------------------------------------------------------------------------
+  # 3. Nginx Edge Proxy & Static SPA Host
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rezekify_frontend
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - rezekify_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+# ------------------------------------------------------------------------------
+# Storage Volumes & Network Topologies
+# ------------------------------------------------------------------------------
+volumes:
+  rezekify_postgres_data:
+    name: rezekify_postgres_data
+
+networks:
+  rezekify_net:
+    name: rezekify_net
+    driver: bridge

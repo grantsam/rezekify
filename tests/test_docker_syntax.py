@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import re
+import yaml
 
 
 def test_backend_dockerfile_syntax_and_security():
@@ -79,4 +80,62 @@ def test_frontend_dockerfile_and_dockerignore():
     ignore_content = ignore_path.read_text(encoding="utf-8")
     assert "node_modules" in ignore_content
     assert "dist" in ignore_content
+
+
+def test_docker_compose_manifest_schema_and_isolation():
+    """Verifies Docker Compose valid YAML, network boundaries, and healthcheck dependencies."""
+    compose_path = Path("docker-compose.yml")
+    assert compose_path.exists(), "docker-compose.yml must exist at repo root"
+
+    with open(compose_path, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    services = config.get("services", {})
+    assert "db" in services, "db service missing in docker-compose.yml"
+    assert "backend" in services, "backend service missing in docker-compose.yml"
+    assert "frontend" in services, "frontend service missing in docker-compose.yml"
+
+    # Network topology isolation: ONLY frontend exposes ports to host
+    assert "ports" not in services["db"], "db port must NOT be exposed to host"
+    assert "ports" not in services["backend"], "backend port must NOT be exposed to host"
+    assert "ports" in services["frontend"], "frontend must expose host port"
+    assert any("80" in str(p) for p in services["frontend"]["ports"])
+
+    # Internal expose directives for internal mesh
+    assert "expose" in services["db"] and "5432" in [str(x) for x in services["db"]["expose"]]
+    assert "expose" in services["backend"] and "8000" in [str(x) for x in services["backend"]["expose"]]
+
+    # Ordered healthcheck dependencies
+    backend_deps = services["backend"].get("depends_on", {})
+    assert backend_deps.get("db", {}).get("condition") == "service_healthy"
+
+    frontend_deps = services["frontend"].get("depends_on", {})
+    assert frontend_deps.get("backend", {}).get("condition") == "service_healthy"
+
+    # Volume and network topologies
+    assert "rezekify_postgres_data" in config.get("volumes", {})
+    assert "rezekify_net" in config.get("networks", {})
+
+
+def test_env_docker_example_completeness():
+    """Verifies that .env.docker.example contains all required production configuration keys."""
+    env_path = Path(".env.docker.example")
+    assert env_path.exists(), ".env.docker.example must exist"
+    content = env_path.read_text(encoding="utf-8")
+
+    expected_vars = [
+        "APP_PORT",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "SECRET_KEY",
+        "ACCESS_TOKEN_EXPIRE_MINUTES",
+        "WEB_CONCURRENCY",
+        "GEMINI_API_KEYS",
+        "GROQ_API_KEYS",
+        "TELEGRAM_BOT_TOKEN",
+    ]
+    for var in expected_vars:
+        assert f"{var}=" in content, f"Missing required env variable: {var}"
+
 
