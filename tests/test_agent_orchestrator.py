@@ -1,0 +1,137 @@
+"""Tests for AgentOrchestrator translating extracted intents into deterministic ledger transactions."""
+
+from decimal import Decimal
+from unittest.mock import MagicMock
+import pytest
+
+from rezekify.agent.orchestrator import AgentOrchestrator
+from rezekify.db.models import Account, AccountType
+
+
+def test_agent_parses_natural_language_and_records_expense(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("100000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "expense",
+            "amount": 25000,
+            "account_name": "GoPay",
+            "category_name": "Makanan",
+            "note": "Kopi Susu",
+        }
+    )
+
+    reply = orchestrator.handle_message(
+        user_id=sample_user.id, text="tadi beli kopi susu 25rb pake gopay"
+    )
+    db_session.refresh(acc)
+
+    assert acc.current_balance == Decimal("75000.00")
+    assert "Rp 25,000" in reply
+    assert "Kopi Susu" in reply
+    assert "Sisa Jatah Belanja Hari Ini" in reply
+
+
+def test_agent_queries_runway_telemetry(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("700000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(return_value={"action": "query_runway"})
+
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="cek runway hari ini")
+    assert "Status Keuangan Rezekify" in reply
+    assert "Saldo Bebas Operasional: Rp 700,000" in reply
+    assert "Jatah Aman Belanja Hari Ini" in reply
+    assert "HEALTHY" in reply
+
+
+def test_agent_parses_income(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "income",
+            "amount": 500000,
+            "account_name": "BCA",
+            "category_name": "Freelance",
+            "note": "Proyek Web",
+        }
+    )
+
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="dapat transferan proyek 500rb bca")
+    db_session.refresh(acc)
+
+    assert acc.current_balance == Decimal("1000000.00")
+    assert "Pemasukan Berhasil Dicatat" in reply
+    assert "Rp 500,000" in reply
+
+
+def test_agent_parses_transfer(db_session, sample_user):
+    acc_bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    acc_gopay = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("50000.00"),
+    )
+    db_session.add_all([acc_bca, acc_gopay])
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "transfer",
+            "amount": 100000,
+            "from_account": "BCA",
+            "to_account": "GoPay",
+            "note": "Top up GoPay",
+        }
+    )
+
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="transfer 100rb dari bca ke gopay")
+    db_session.refresh(acc_bca)
+    db_session.refresh(acc_gopay)
+
+    assert acc_bca.current_balance == Decimal("400000.00")
+    assert acc_gopay.current_balance == Decimal("150000.00")
+    assert "Transfer Berhasil" in reply
+
+
+def test_agent_fallback_to_highest_balance_account(db_session, sample_user):
+    acc1 = Account(user_id=sample_user.id, name="Cash", account_type=AccountType.CASH, current_balance=Decimal("20000.00"))
+    acc2 = Account(user_id=sample_user.id, name="BCA", account_type=AccountType.BANK, current_balance=Decimal("500000.00"))
+    db_session.add_all([acc1, acc2])
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    resolved = orchestrator._resolve_account(user_id=sample_user.id, account_name="UnknownAccount")
+    assert resolved.id == acc2.id
+    assert resolved.name == "BCA"
