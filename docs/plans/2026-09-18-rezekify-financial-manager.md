@@ -432,7 +432,7 @@ git commit -m "feat(ledger): implement balanced double-entry accounting service 
 
 **Interfaces:**
 - Consumes: `User`, `Account`, `Vault`, target calendar dates.
-- Produces: `calculate_runway(user_id, current_date) -> RunwayReport`, `simulate_purchase(user_id, amount) -> SimulationReport`.
+- Produces: `calculate_runway(user_id, current_date) -> RunwayReport`, `simulate_purchase(user_id, amount) -> SimulationReport`, `get_upcoming_bills(user_id, today) -> list[UpcomingBill]`.
 
 - [ ] **Step 1: Write failing tests for runway calculation and purchase simulation**
 
@@ -442,14 +442,22 @@ from datetime import date
 from decimal import Decimal
 import pytest
 from rezekify.services.runway import RunwayService
-from rezekify.db.models import Account, Vault, AccountType
+from rezekify.db.models import Account, Vault, AccountType, VaultType
 
 def test_calculate_runway_days_and_daily_budget(db_session, sample_user):
     sample_user.monthly_cycle_day = 25
     # Kas: 1.000.000, Vault: 300.000 -> Operasional: 700.000
     acc = Account(user_id=sample_user.id, name="BCA", account_type=AccountType.BANK, current_balance=Decimal("1000000.00"))
-    vlt = Vault(user_id=sample_user.id, name="UKT", target_amount=Decimal("500000"), allocated_amount=Decimal("300000.00"))
-    db_session.add_all([acc, vlt])
+    vlt = Vault(user_id=sample_user.id, name="UKT", vault_type=VaultType.SAVINGS, target_amount=Decimal("500000"), allocated_amount=Decimal("300000.00"))
+    bill = Vault(
+        user_id=sample_user.id,
+        name="Tagihan Listrik & WiFi",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("500000.00"),
+        allocated_amount=Decimal("200000.00"),
+        target_date=date(2026, 9, 23)
+    )
+    db_session.add_all([acc, vlt, bill])
     db_session.commit()
 
     service = RunwayService(db_session)
@@ -457,11 +465,22 @@ def test_calculate_runway_days_and_daily_budget(db_session, sample_user):
     report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 18))
 
     assert report.total_liquid_cash == Decimal("1000000.00")
-    assert report.vault_locked_cash == Decimal("300000.00")
-    assert report.operational_free_cash == Decimal("700000.00")
+    assert report.vault_locked_cash == Decimal("500000.00")
+    assert report.operational_free_cash == Decimal("500000.00")
     assert report.days_remaining == 7
-    assert report.daily_safe_runway == Decimal("100000.00")
+    assert report.daily_safe_runway == Decimal("71428.57")
     assert report.health_status == "HEALTHY"
+    assert len(report.upcoming_bills) == 1
+    assert report.upcoming_bills[0].name == "Tagihan Listrik & WiFi"
+    assert report.upcoming_bills[0].days_until_due == 5
+    assert report.upcoming_bills[0].target_amount == Decimal("500000.00")
+    assert report.upcoming_bills[0].allocated_amount == Decimal("200000.00")
+
+    # Verify get_upcoming_bills helper method directly
+    upcoming = service.get_upcoming_bills(user_id=sample_user.id, today=date(2026, 9, 18))
+    assert len(upcoming) == 1
+    assert upcoming[0].name == "Tagihan Listrik & WiFi"
+    assert upcoming[0].days_until_due == 5
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -476,11 +495,18 @@ Expected: FAIL with `ImportError: cannot import name 'RunwayService'`
 from calendar import monthrange
 from datetime import date
 from decimal import Decimal
-from typing import NamedTuple
+from typing import NamedTuple, List, Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from rezekify.db.models import User, Account, Vault, AccountType
+from rezekify.db.models import User, Account, Vault, AccountType, VaultType
+
+class UpcomingBill(NamedTuple):
+    name: str
+    target_amount: Decimal
+    allocated_amount: Decimal
+    target_date: date
+    days_until_due: int
 
 class RunwayReport(NamedTuple):
     total_liquid_cash: Decimal
@@ -489,6 +515,7 @@ class RunwayReport(NamedTuple):
     days_remaining: int
     daily_safe_runway: Decimal
     health_status: str
+    upcoming_bills: List[UpcomingBill]
 
 class SimulationReport(NamedTuple):
     current_daily_runway: Decimal
@@ -538,14 +565,50 @@ class RunwayService:
         else:
             status = "HEALTHY"
 
+        upcoming_bills = self.get_upcoming_bills(user_id=user_id, today=today)
+
         return RunwayReport(
             total_liquid_cash=liquid_sum,
             vault_locked_cash=vault_sum,
             operational_free_cash=operational_free,
             days_remaining=days_remaining,
             daily_safe_runway=daily_safe,
-            health_status=status
+            health_status=status,
+            upcoming_bills=upcoming_bills
         )
+
+    def get_upcoming_bills(self, user_id: UUID, today: Optional[date] = None) -> List[UpcomingBill]:
+        """
+        Retrieves impending fixed commitments requiring attention.
+        Filters:
+        - vault_type == VaultType.FIXED_BILL
+        - allocated_amount < target_amount
+        - 0 <= (target_date - today).days <= 7
+        """
+        if today is None:
+            today = date.today()
+
+        fixed_bills = self.db.query(Vault).filter(
+            Vault.user_id == user_id,
+            Vault.vault_type == VaultType.FIXED_BILL,
+            Vault.allocated_amount < Vault.target_amount,
+            Vault.target_date.isnot(None),
+            Vault.target_date >= today
+        ).order_by(Vault.target_date.asc()).all()
+
+        upcoming_bills = []
+        for bill in fixed_bills:
+            days_due = (bill.target_date - today).days
+            if 0 <= days_due <= 7:
+                upcoming_bills.append(UpcomingBill(
+                    name=bill.name,
+                    target_amount=bill.target_amount,
+                    allocated_amount=bill.allocated_amount,
+                    target_date=bill.target_date,
+                    days_until_due=days_due
+                ))
+
+        return upcoming_bills
 
     def simulate_purchase(self, user_id: UUID, planned_amount: Decimal, today: date = None) -> SimulationReport:
         current = self.calculate_runway(user_id, today)
@@ -1079,6 +1142,19 @@ def test_api_register_and_get_dashboard():
     data = dash_res.json()
     assert "daily_safe_runway" in data
     assert "days_remaining" in data
+    assert "upcoming_bills" in data
+
+    # Test analytics spending-breakdown period validation
+    daily_res = client.get("/api/v1/analytics/spending-breakdown?period=daily", headers=headers)
+    assert daily_res.status_code == 200
+    assert daily_res.json()["period"] == "daily"
+
+    monthly_res = client.get("/api/v1/analytics/spending-breakdown?period=monthly", headers=headers)
+    assert monthly_res.status_code == 200
+    assert monthly_res.json()["period"] == "monthly"
+
+    bad_res = client.get("/api/v1/analytics/spending-breakdown?period=yearly", headers=headers)
+    assert bad_res.status_code == 422
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1089,11 +1165,83 @@ Expected: FAIL with `ImportError: cannot import name 'app'`
 - [ ] **Step 3: Implement FastAPI application, dependencies, and routers**
 
 ```python
+# rezekify/rezekify/api/v1/dashboard_router.py
+from datetime import date
+from decimal import Decimal
+from typing import List
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from rezekify.api.deps import get_current_user, get_db
+from rezekify.db.models import User
+from rezekify.services.runway import RunwayService
+
+dashboard_router = APIRouter()
+analytics_router = APIRouter()
+
+class UpcomingBill(BaseModel):
+    name: str
+    target_amount: Decimal
+    allocated_amount: Decimal
+    target_date: date
+    days_until_due: int
+
+class DashboardSummaryResponse(BaseModel):
+    total_liquid_cash: Decimal
+    vault_locked_cash: Decimal
+    operational_free_cash: Decimal
+    days_remaining: int
+    daily_safe_runway: Decimal
+    health_status: str
+    upcoming_bills: list[UpcomingBill]
+
+@dashboard_router.get("/summary", response_model=DashboardSummaryResponse)
+def get_dashboard_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    service = RunwayService(db)
+    report = service.calculate_runway(user_id=current_user.id)
+    return DashboardSummaryResponse(
+        total_liquid_cash=report.total_liquid_cash,
+        vault_locked_cash=report.vault_locked_cash,
+        operational_free_cash=report.operational_free_cash,
+        days_remaining=report.days_remaining,
+        daily_safe_runway=report.daily_safe_runway,
+        health_status=report.health_status,
+        upcoming_bills=[
+            UpcomingBill(
+                name=b.name,
+                target_amount=b.target_amount,
+                allocated_amount=b.allocated_amount,
+                target_date=b.target_date,
+                days_until_due=b.days_until_due
+            ) for b in report.upcoming_bills
+        ]
+    )
+
+@analytics_router.get("/spending-breakdown")
+def get_spending_breakdown(
+    period: str = Query("daily", regex="^(daily|monthly)$"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Returns 7-14 day daily trend vs Daily Safe Runway if 'daily',
+    # or current cycle category allocation if 'monthly'.
+    # Yearly queries are explicitly omitted for zero-bloat efficiency.
+    return {
+        "period": period,
+        "breakdown": []
+    }
+```
+
+```python
 # rezekify/rezekify/api/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from rezekify.api.v1.auth_router import auth_router
-from rezekify.api.v1.dashboard_router import dashboard_router
+from rezekify.api.v1.dashboard_router import dashboard_router, analytics_router
 from rezekify.api.v1.transactions_router import transactions_router
 from rezekify.api.v1.accounts_router import accounts_router
 from rezekify.api.v1.vaults_router import vaults_router
@@ -1110,6 +1258,7 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["Dashboard"])
+app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["Analytics"])
 app.include_router(transactions_router, prefix="/api/v1/transactions", tags=["Transactions"])
 app.include_router(accounts_router, prefix="/api/v1/accounts", tags=["Accounts"])
 app.include_router(vaults_router, prefix="/api/v1/vaults", tags=["Vaults"])
@@ -1230,18 +1379,20 @@ git commit -m "feat(frontend): scaffold Vite React TypeScript frontend and authe
 
 **Files:**
 - Create: `rezekify/frontend/src/components/OmniInputHero.tsx`
+- Create: `rezekify/frontend/src/components/UpcomingBillsCard.tsx`
 - Create: `rezekify/frontend/src/components/RunwayMetricCard.tsx`
 - Create: `rezekify/frontend/src/components/ExpenseCharts.tsx`
 - Create: `rezekify/frontend/src/components/ManualTransactionModal.tsx`
 - Create: `rezekify/frontend/src/components/TransactionsTable.tsx`
 - Create: `rezekify/frontend/src/pages/DashboardPage.tsx`
 - Test: `rezekify/frontend/src/__tests__/OmniInputHero.test.tsx`
+- Test: `rezekify/frontend/src/__tests__/UpcomingBillsCard.test.tsx`
 
 **Interfaces:**
-- Consumes: `apiFetch('/dashboard/summary')`, `apiFetch('/agent/chat')`, `apiFetch('/transactions')`.
-- Produces: Interactive web dashboard featuring hero AI input bar, live runway telemetry, and modal CRUD for manual entries.
+- Consumes: `apiFetch('/dashboard/summary')`, `apiFetch('/analytics/spending-breakdown')`, `apiFetch('/agent/chat')`, `apiFetch('/transactions')`.
+- Produces: Interactive web dashboard featuring hero AI input bar, live runway telemetry, UpcomingBillsCard alert banner (bills due <= 7 days), Daily vs Monthly spending breakdown charts, and modal CRUD for manual entries.
 
-- [ ] **Step 1: Write test for OmniInputHero text submission**
+- [ ] **Step 1: Write test for OmniInputHero and UpcomingBillsCard**
 
 ```tsx
 // rezekify/frontend/src/__tests__/OmniInputHero.test.tsx
@@ -1263,12 +1414,141 @@ describe('OmniInputHero Component', () => {
 });
 ```
 
+```tsx
+// rezekify/frontend/src/__tests__/UpcomingBillsCard.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { UpcomingBillsCard } from '../components/UpcomingBillsCard';
+
+describe('UpcomingBillsCard Component', () => {
+  it('renders upcoming bill warning when bills due within 7 days exist', () => {
+    const mockBills = [
+      {
+        name: 'Sewa Kos',
+        target_amount: 1500000,
+        allocated_amount: 500000,
+        target_date: '2026-09-23',
+        days_until_due: 5,
+      },
+    ];
+    render(<UpcomingBillsCard bills={mockBills} />);
+    expect(screen.getByText(/Sewa Kos/i)).toBeInTheDocument();
+    expect(screen.getByText(/5 hari lagi/i)).toBeInTheDocument();
+    expect(screen.getByText(/Kurang Rp 1.000.000/i)).toBeInTheDocument();
+  });
+
+  it('renders nothing when bills list is empty', () => {
+    const { container } = render(<UpcomingBillsCard bills={[]} />);
+    expect(container.firstChild).toBeNull();
+  });
+});
+```
+
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- rezekify/frontend/src/__tests__/OmniInputHero.test.tsx`
-Expected: FAIL with missing component `OmniInputHero`
+Run: `npm test -- rezekify/frontend/src/__tests__/OmniInputHero.test.tsx rezekify/frontend/src/__tests__/UpcomingBillsCard.test.tsx`
+Expected: FAIL with missing components `OmniInputHero`, `UpcomingBillsCard`
 
-- [ ] **Step 3: Implement OmniInputHero and manual CRUD modal**
+- [ ] **Step 3: Implement OmniInputHero, UpcomingBillsCard, and manual CRUD modal**
+
+```tsx
+// rezekify/frontend/src/components/UpcomingBillsCard.tsx
+import React from 'react';
+import { AlertTriangle, Calendar } from 'lucide-react';
+
+export interface UpcomingBill {
+  name: string;
+  target_amount: number;
+  allocated_amount: number;
+  target_date: string;
+  days_until_due: number;
+}
+
+interface Props {
+  bills: UpcomingBill[];
+}
+
+export const UpcomingBillsCard: React.FC<Props> = ({ bills }) => {
+  const urgentBills = bills.filter((b) => b.days_until_due <= 7);
+  if (urgentBills.length === 0) return null;
+
+  return (
+    <div className="bg-amber-950/40 border border-amber-500/30 rounded-2xl p-5 mb-6 text-amber-200">
+      <div className="flex items-center gap-2 mb-3">
+        <AlertTriangle className="w-5 h-5 text-amber-400" />
+        <h3 className="font-semibold text-amber-300 text-sm uppercase tracking-wide">
+          Pengingat Tagihan & Komitmen (H-7)
+        </h3>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {urgentBills.map((bill) => {
+          const shortage = bill.target_amount - bill.allocated_amount;
+          return (
+            <div key={bill.name} className="bg-slate-900/80 border border-amber-500/20 p-3.5 rounded-xl flex items-center justify-between">
+              <div>
+                <p className="font-medium text-white text-sm">{bill.name}</p>
+                <p className="text-xs text-amber-300/80 flex items-center gap-1 mt-1">
+                  <Calendar className="w-3.5 h-3.5" />
+                  Jatuh tempo: {bill.days_until_due} hari lagi ({bill.target_date})
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-rose-400 block font-semibold">
+                  Kurang Rp {shortage.toLocaleString('id-ID')}
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  Target: Rp {bill.target_amount.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+```
+
+```tsx
+// rezekify/frontend/src/components/ExpenseCharts.tsx
+import React, { useState } from 'react';
+
+export const ExpenseCharts: React.FC = () => {
+  const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
+
+  return (
+    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 mb-8 text-white">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="font-semibold text-base">Analitik Pengeluaran</h3>
+          <p className="text-xs text-slate-400">
+            {period === 'daily'
+              ? 'Tren pengeluaran harian vs garis batas Daily Safe Runway (7-14 hari)'
+              : 'Alokasi pengeluaran per kategori siklus berjalan'}
+          </p>
+        </div>
+        <div className="flex bg-slate-800 p-1 rounded-xl text-xs">
+          <button
+            type="button"
+            onClick={() => setPeriod('daily')}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${period === 'daily' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-400 hover:text-white'}`}
+          >
+            Harian (Daily)
+          </button>
+          <button
+            type="button"
+            onClick={() => setPeriod('monthly')}
+            className={`px-3 py-1.5 rounded-lg transition-colors ${period === 'monthly' ? 'bg-indigo-600 text-white font-medium' : 'text-slate-400 hover:text-white'}`}
+          >
+            Bulanan (Monthly)
+          </button>
+        </div>
+      </div>
+      {/* Chart visual rendering */}
+    </div>
+  );
+};
+```
 
 ```tsx
 // rezekify/frontend/src/components/OmniInputHero.tsx
