@@ -155,10 +155,19 @@ async def ai_receipt_upload(
     if len(content) > MAX_RECEIPT_BYTES:
         raise HTTPException(status_code=400, detail="Ukuran file melebihi batas maksimal 10MB.")
 
+    is_jpeg = content.startswith(b"\xff\xd8\xff")
+    is_png = content.startswith(b"\x89PNG\r\n\x1a\n")
+    is_webp = content.startswith(b"RIFF") and b"WEBP" in content[:16]
+    if not (is_jpeg or is_png or is_webp):
+        raise HTTPException(status_code=400, detail="Format file tidak didukung atau header file tidak valid.")
+
     orchestrator = AgentOrchestrator(db=db, key_pool=RotaryKeyPool.from_env("GEMINI_API_KEYS"))
     prompt_text = (message or "").strip() or "Foto struk kasir"
     reply = orchestrator.handle_message(
-        user_id=current_user.id, text=prompt_text, image_bytes=content
+        user_id=current_user.id,
+        text=prompt_text,
+        image_bytes=content,
+        mime_type=file.content_type,
     )
     return ChatResponse(reply=reply)
 

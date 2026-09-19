@@ -148,7 +148,7 @@ def test_agent_extract_entities_delegates_to_react_agent(db_session, sample_user
     res = orchestrator.extract_entities(text="beli roti 15rb", user_id=sample_user.id)
 
     mock_agent.process_input.assert_called_once_with(
-        user_id=sample_user.id, text="beli roti 15rb", image_bytes=None
+        user_id=sample_user.id, text="beli roti 15rb", image_bytes=None, mime_type="image/jpeg"
     )
     assert res["amount"] == 15000
 

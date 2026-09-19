@@ -161,7 +161,7 @@ describe('DashboardPage Component', () => {
       }
       if (endpoint === '/dashboard/ai-receipt' && options?.method === 'POST') {
         return {
-          reply: '⚠️ Struk tidak terbaca jelas. Pastikan foto terang dan menampilkan total belanja.',
+          reply: '❌ Gagal: Struk tidak terbaca jelas. Pastikan foto terang dan menampilkan total belanja.',
           transaction_id: null,
           extracted_data: { action: 'unknown', amount: 0 },
         };

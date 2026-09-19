@@ -28,7 +28,6 @@ import { ManualTransactionModal } from '../components/ManualTransactionModal';
 import { AccountModal } from '../components/AccountModal';
 import { VaultModal } from '../components/VaultModal';
 import { SimulatePurchaseModal } from '../components/SimulatePurchaseModal';
-import { AuthModal } from '../components/AuthModal';
 
 export const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -41,7 +40,6 @@ export const DashboardPage: React.FC = () => {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState<boolean>(false);
   const [isSimulateModalOpen, setIsSimulateModalOpen] = useState<boolean>(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [aiMessage, setAiMessage] = useState<{ text: string; isError?: boolean } | null>(null);
@@ -96,7 +94,7 @@ export const DashboardPage: React.FC = () => {
           method: 'POST',
           body: formData,
         });
-        const isError = res.transaction_id == null;
+        const isError = !res.reply || res.reply.startsWith('❌') || res.reply.includes('Gagal');
         setAiMessage({
           text: res.reply || (isError ? 'Gagal mencatat struk belanja.' : 'Struk berhasil dicatat ke dalam ledger!'),
           isError,
@@ -298,7 +296,7 @@ export const DashboardPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5">
-            <RunwayMetricCard summary={summary} onOpenAuth={() => setIsAuthModalOpen(true)} />
+            <RunwayMetricCard summary={summary} />
           </div>
           <div className="lg:col-span-7">
             <ExpenseCharts refreshTrigger={refreshTrigger} />
@@ -339,15 +337,6 @@ export const DashboardPage: React.FC = () => {
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
         accounts={accounts}
-        onSuccess={() => {
-          loadData();
-          setRefreshTrigger((prev) => prev + 1);
-        }}
-      />
-
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
         onSuccess={() => {
           loadData();
           setRefreshTrigger((prev) => prev + 1);

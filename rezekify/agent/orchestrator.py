@@ -28,7 +28,11 @@ class AgentOrchestrator:
         self.runway = RunwayService(db)
 
     def extract_entities(
-        self, text: str, image_bytes: Optional[bytes] = None, user_id: Optional[UUID] = None
+        self,
+        text: str,
+        image_bytes: Optional[bytes] = None,
+        user_id: Optional[UUID] = None,
+        mime_type: Optional[str] = "image/jpeg",
     ) -> Dict[str, Any]:
         """Extracts structured financial transaction entities using ReActAgent runtime."""
         lower = text.lower().strip()
@@ -37,7 +41,12 @@ class AgentOrchestrator:
 
         if self.agent:
             uid = user_id or UUID("00000000-0000-0000-0000-000000000000")
-            return self.agent.process_input(user_id=uid, text=text, image_bytes=image_bytes)
+            return self.agent.process_input(
+                user_id=uid,
+                text=text,
+                image_bytes=image_bytes,
+                mime_type=mime_type or "image/jpeg",
+            )
         return {"action": "unknown", "text": text}
 
     def _resolve_account(self, user_id: UUID, account_name: Optional[str]) -> Optional[Account]:
@@ -75,10 +84,21 @@ class AgentOrchestrator:
         return category
 
     def handle_message(
-        self, user_id: UUID, text: str, image_bytes: Optional[bytes] = None
+        self,
+        user_id: UUID,
+        text: str,
+        image_bytes: Optional[bytes] = None,
+        mime_type: Optional[str] = "image/jpeg",
     ) -> str:
         """Processes natural language input or receipts, executes ledger mutations, and returns telemetry response."""
-        entities = self.extract_entities(text, image_bytes, user_id=user_id)
+        try:
+            entities = self.extract_entities(
+                text=text, image_bytes=image_bytes, user_id=user_id, mime_type=mime_type
+            )
+        except TypeError:
+            entities = self.extract_entities(
+                text=text, image_bytes=image_bytes, user_id=user_id
+            )
         action = entities.get("action")
 
         if action == "expense":

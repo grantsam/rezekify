@@ -464,6 +464,7 @@ def test_ai_receipt_upload_endpoint(sample_user, db_session):
             assert call_kwargs["text"] == "Catat struk ini"
             assert call_kwargs["image_bytes"] == b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb"
             assert call_kwargs["user_id"] == sample_user.id
+            assert call_kwargs["mime_type"] == "image/jpeg"
 
         # 2. Valid PNG with default message fallback
         fake_png = io.BytesIO(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
@@ -477,10 +478,11 @@ def test_ai_receipt_upload_endpoint(sample_user, db_session):
             assert res_png.json() == {"reply": "✅ Tercatat dari Struk"}
             assert mock_handle.called
             assert mock_handle.call_args.kwargs["text"] == "Foto struk kasir"
+            assert mock_handle.call_args.kwargs["mime_type"] == "image/png"
 
 
 def test_ai_receipt_upload_invalid_mime(sample_user, db_session):
-    """Tests that non-image MIME types (e.g. PDF) are rejected with HTTP 400."""
+    """Tests that non-image MIME types and invalid magic bytes are rejected with HTTP 400."""
     from rezekify.core.security import create_access_token
 
     with db_override(db_session):
@@ -491,6 +493,11 @@ def test_ai_receipt_upload_invalid_mime(sample_user, db_session):
         res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files)
         assert res.status_code == 400
         assert res.json()["detail"] == "Format file tidak didukung. Harap unggah file gambar (JPEG, PNG, WebP)."
+
+        bad_magic = {"file": ("corrupt.jpg", io.BytesIO(b"not-real-jpeg-header"), "image/jpeg")}
+        res_bad = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=bad_magic)
+        assert res_bad.status_code == 400
+        assert res_bad.json()["detail"] == "Format file tidak didukung atau header file tidak valid."
 
 
 def test_ai_receipt_upload_size_limit_exceeded(sample_user, db_session):
