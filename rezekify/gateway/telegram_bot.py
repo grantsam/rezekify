@@ -1,4 +1,4 @@
-"""Telegram Gateway Bot Service handling incoming text, commands, and receipt photos."""
+"""Telegram Gateway Bot Service handling incoming text, commands, receipt photos, and voice notes."""
 
 from typing import Any, Callable, Dict, Optional
 from sqlalchemy.orm import Session
@@ -17,11 +17,13 @@ class TelegramGateway:
         auth: Optional[AuthService] = None,
         orchestrator: Optional[AgentOrchestrator] = None,
         photo_downloader: Optional[Callable[[str], bytes]] = None,
+        voice_downloader: Optional[Callable[[str], Optional[bytes]]] = None,
     ):
         self.db = db
         self.auth = auth or AuthService(db)
         self.orchestrator = orchestrator or AgentOrchestrator(db)
         self.photo_downloader = photo_downloader
+        self.voice_downloader = voice_downloader
 
     def process_text_message(self, chat_id: int, text: str) -> str:
         """Handles incoming text messages, pairing commands, and runway inquiries."""
@@ -82,8 +84,33 @@ class TelegramGateway:
             user.id, caption or "struk belanja", image_bytes=image_bytes
         )
 
+    def process_voice_message(
+        self, chat_id: int, audio_bytes: bytes, caption: Optional[str] = None
+    ) -> str:
+        """Handles incoming voice note messages for audio transcription and expense logging."""
+        user = self.db.query(User).filter_by(telegram_chat_id=chat_id).first()
+        if not user:
+            return (
+                "Akun Telegram Anda belum terhubung ke rezekify. "
+                "Silakan login ke Web Dashboard dan hubungkan akun dengan kode `/link KODE`."
+            )
+
+        if not audio_bytes:
+            return "Gagal memproses pesan suara: audio kosong atau tidak dapat diunduh."
+
+        if len(audio_bytes) > 25 * 1024 * 1024:
+            return "❌ Ukuran pesan suara melebihi batas maksimal 25MB."
+
+        result = self.orchestrator.handle_voice(
+            user_id=user.id, audio_bytes=audio_bytes, caption=caption
+        )
+        if not result.get("success") or not result.get("transcription"):
+            return result.get("reply", "Gagal memproses pesan suara.")
+
+        return f'🎙️ Transkripsi: "{result["transcription"]}"\n\n{result["reply"]}'
+
     def handle_update(self, update_dict: Dict[str, Any]) -> str:
-        """Parses a generic Telegram webhook update JSON dictionary (text or photo)."""
+        """Parses a generic Telegram webhook update JSON dictionary (text, photo, or voice)."""
         message = update_dict.get("message") or update_dict.get("edited_message", {})
         chat = message.get("chat", {})
         chat_id = chat.get("id")
@@ -119,4 +146,27 @@ class TelegramGateway:
                 chat_id=chat_id, image_bytes=image_bytes, caption=caption
             )
 
+        voice = message.get("voice") or message.get("audio")
+        if voice and isinstance(voice, dict):
+            audio_bytes = (
+                voice.get("audio_bytes")
+                or voice.get("bytes")
+                or message.get("audio_bytes")
+            )
+            if not audio_bytes and self.voice_downloader:
+                file_id = voice.get("file_id")
+                if file_id:
+                    audio_bytes = self.voice_downloader(file_id)
+
+            if not audio_bytes:
+                return "Gagal memproses pesan suara: data audio tidak ditemukan."
+
+            caption = message.get("caption")
+            return self.process_voice_message(
+                chat_id=chat_id, audio_bytes=audio_bytes, caption=caption
+            )
+
         return "Unsupported message format."
+
+
+TelegramBot = TelegramGateway

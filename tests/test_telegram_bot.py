@@ -239,3 +239,106 @@ def test_telegram_handle_update_unsupported_format(db_session):
     reply = gateway.handle_update(update_payload)
     assert "Unsupported message format" in reply
 
+
+def test_telegram_voice_message_unlinked_user(db_session):
+    gateway = TelegramGateway(db_session)
+    reply = gateway.process_voice_message(chat_id=998877, audio_bytes=b"sample_ogg")
+    assert "belum terhubung" in reply
+
+
+def test_telegram_voice_message_empty_audio(db_session, sample_user):
+    sample_user.telegram_chat_id = 123456
+    db_session.commit()
+
+    gateway = TelegramGateway(db_session)
+    reply = gateway.process_voice_message(chat_id=123456, audio_bytes=b"")
+    assert "audio kosong atau tidak dapat diunduh" in reply
+
+
+def test_telegram_voice_message_oversized_audio(db_session, sample_user):
+    sample_user.telegram_chat_id = 123456
+    db_session.commit()
+
+    gateway = TelegramGateway(db_session)
+    reply = gateway.process_voice_message(
+        chat_id=123456, audio_bytes=b"x" * (25 * 1024 * 1024 + 1)
+    )
+    assert "25MB" in reply
+
+
+def test_telegram_voice_message_success(db_session, sample_user):
+    sample_user.telegram_chat_id = 654321
+    db_session.commit()
+
+    gateway = TelegramGateway(db_session)
+    gateway.orchestrator.handle_voice = MagicMock(
+        return_value={
+            "transcription": "kopi susu 20rb gopay",
+            "reply": "✅ Tercatat: Rp 20,000 via GoPay.",
+            "success": True,
+        }
+    )
+
+    reply = gateway.process_voice_message(chat_id=654321, audio_bytes=b"valid_ogg_bytes")
+    assert '🎙️ Transkripsi: "kopi susu 20rb gopay"' in reply
+    assert "✅ Tercatat: Rp 20,000" in reply
+
+
+def test_telegram_handle_update_voice_with_downloader(db_session, sample_user):
+    sample_user.telegram_chat_id = 998811
+    db_session.commit()
+
+    mock_downloader = MagicMock(return_value=b"downloaded_ogg_audio")
+    gateway = TelegramGateway(db_session, voice_downloader=mock_downloader)
+    gateway.process_voice_message = MagicMock(return_value="Voice processed OK")
+
+    update_payload = {
+        "update_id": 2001,
+        "message": {
+            "chat": {"id": 998811},
+            "caption": "Catatan sore",
+            "voice": {"file_id": "telegram_voice_file_001", "duration": 3},
+        },
+    }
+    reply = gateway.handle_update(update_payload)
+    assert reply == "Voice processed OK"
+    mock_downloader.assert_called_once_with("telegram_voice_file_001")
+    gateway.process_voice_message.assert_called_once_with(
+        chat_id=998811, audio_bytes=b"downloaded_ogg_audio", caption="Catatan sore"
+    )
+
+
+def test_telegram_handle_update_voice_inline_bytes(db_session, sample_user):
+    sample_user.telegram_chat_id = 998822
+    db_session.commit()
+
+    gateway = TelegramGateway(db_session)
+    gateway.process_voice_message = MagicMock(return_value="Voice processed OK")
+
+    update_payload = {
+        "update_id": 2002,
+        "message": {
+            "chat": {"id": 998822},
+            "voice": {"file_id": "file_inline", "audio_bytes": b"inline_ogg_bytes"},
+        },
+    }
+    reply = gateway.handle_update(update_payload)
+    assert reply == "Voice processed OK"
+    gateway.process_voice_message.assert_called_once_with(
+        chat_id=998822, audio_bytes=b"inline_ogg_bytes", caption=None
+    )
+
+
+def test_telegram_handle_update_voice_missing_bytes(db_session):
+    gateway = TelegramGateway(db_session)
+    update_payload = {
+        "update_id": 2003,
+        "message": {
+            "chat": {"id": 12345},
+            "voice": {"file_id": "file_without_downloader"},
+        },
+    }
+    reply = gateway.handle_update(update_payload)
+    assert "data audio tidak ditemukan" in reply
+
+
