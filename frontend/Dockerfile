@@ -4,8 +4,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-RUN npm ci --silent || npm install --silent
+COPY package.json package-lock.json* .npmrc* ./
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
 COPY . ./
 
