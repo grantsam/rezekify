@@ -14,6 +14,8 @@ export interface User {
   telegram_chat_id?: number | null;
 }
 
+export type UserProfile = User;
+
 export interface TokenResponse {
   access_token: string;
   token_type: string;
