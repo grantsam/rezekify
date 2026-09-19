@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 
 interface Props {
   onSubmit:
-    | ((payload: { text: string; file: File | null }) => Promise<void> | void)
-    | ((text: string, file: File | null) => Promise<void> | void);
+    | ((text: string, file: File | null) => Promise<void> | void)
+    | ((payload: { text: string; file: File | null }) => Promise<void> | void);
   isLoading: boolean;
 }
 
@@ -68,10 +68,10 @@ export const OmniInputHero: React.FC<Props> = ({ onSubmit, isLoading }) => {
     e.preventDefault();
     if (!text.trim() && !file) return;
     const trimmed = text.trim();
-    if (onSubmit.length === 2) {
-      (onSubmit as (t: string, f: File | null) => void)(trimmed, file);
-    } else {
+    if (onSubmit.length === 1) {
       (onSubmit as (p: { text: string; file: File | null }) => void)({ text: trimmed, file });
+    } else {
+      (onSubmit as (t: string, f: File | null) => void)(trimmed, file);
     }
     setText('');
     setFile(null);
@@ -145,6 +145,7 @@ export const OmniInputHero: React.FC<Props> = ({ onSubmit, isLoading }) => {
           </button>
           <button
             type="submit"
+            aria-label="Kirim"
             disabled={isLoading || (!text.trim() && !file)}
             className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white px-4 py-2.5 rounded-xl font-medium flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30 active:scale-95"
           >
@@ -180,6 +181,7 @@ export const OmniInputHero: React.FC<Props> = ({ onSubmit, isLoading }) => {
             type="button"
             onClick={removeFile}
             aria-label="Hapus lampiran struk"
+            title="Hapus file"
             className="p-1 rounded-lg hover:bg-indigo-900/80 text-slate-300 hover:text-rose-400 transition-colors ml-2"
           >
             <X className="w-4 h-4" />

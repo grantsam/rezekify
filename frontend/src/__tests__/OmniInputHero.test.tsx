@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { OmniInputHero } from '../components/OmniInputHero';
 
 describe('OmniInputHero Component', () => {
-  it('calls onSubmit with user natural language input when submitted', () => {
+  it('calls onSubmit with text and null file when submitted with text only, and resets text', () => {
     const handleSubmit = vi.fn();
     render(<OmniInputHero onSubmit={handleSubmit} isLoading={false} />);
 
@@ -11,7 +11,8 @@ describe('OmniInputHero Component', () => {
     fireEvent.change(input, { target: { value: 'beli bensin 35rb bca' } });
     fireEvent.submit(input);
 
-    expect(handleSubmit).toHaveBeenCalledWith({ text: 'beli bensin 35rb bca', file: null });
+    expect(handleSubmit).toHaveBeenCalledWith('beli bensin 35rb bca', null);
+    expect(input).toHaveValue('');
   });
 
   it('stages file and renders thumbnail pill on file input selection', () => {
@@ -27,7 +28,7 @@ describe('OmniInputHero Component', () => {
     expect(screen.getByRole('button', { name: /Hapus lampiran struk/i })).toBeInTheDocument();
   });
 
-  it('removes staged file when Hapus button is clicked', () => {
+  it('removes staged file and clears file input value when Hapus button is clicked', () => {
     const handleSubmit = vi.fn();
     render(<OmniInputHero onSubmit={handleSubmit} isLoading={false} />);
 
@@ -41,6 +42,38 @@ describe('OmniInputHero Component', () => {
     fireEvent.click(removeBtn);
 
     expect(screen.queryByText(/struk_kopi.jpg/i)).not.toBeInTheDocument();
+    expect(fileInput.value).toBe('');
+  });
+
+  it('submits with raw File object and text, then clears text and file state', () => {
+    const handleSubmit = vi.fn();
+    render(<OmniInputHero onSubmit={handleSubmit} isLoading={false} />);
+
+    const file = new File(['mock_image_data'], 'struk_kopi.jpg', { type: 'image/jpeg' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    const input = screen.getByPlaceholderText(/Ketik pengeluaran santai/i);
+    fireEvent.change(input, { target: { value: 'kopi kenangan 48rb' } });
+    fireEvent.submit(input);
+
+    expect(handleSubmit).toHaveBeenCalledWith('kopi kenangan 48rb', file);
+    expect(input).toHaveValue('');
+    expect(screen.queryByText(/struk_kopi.jpg/i)).not.toBeInTheDocument();
+  });
+
+  it('disables submit button when both text and file are empty', () => {
+    const handleSubmit = vi.fn();
+    const { container } = render(<OmniInputHero onSubmit={handleSubmit} isLoading={false} />);
+
+    const submitBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(submitBtn).toBeDisabled();
+
+    const input = screen.getByPlaceholderText(/Ketik pengeluaran santai/i);
+    fireEvent.submit(input);
+
+    expect(handleSubmit).not.toHaveBeenCalled();
   });
 
   it('handles drag-over and dropzone file staging', () => {
