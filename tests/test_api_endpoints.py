@@ -440,49 +440,43 @@ def db_override(session):
             app.dependency_overrides.pop(get_db, None)
 
 
-def test_ai_receipt_upload_success(sample_user, db_session):
-    """Tests successful multipart upload with mocked vision OCR returning balanced transaction."""
+def test_ai_receipt_upload_endpoint(sample_user, db_session):
+    """Tests multipart receipt upload with valid JPEG and PNG forwarding to AgentOrchestrator."""
     from rezekify.core.security import create_access_token
 
     with db_override(db_session):
         token = create_access_token({"sub": str(sample_user.id)})
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Add default account
-        acc = Account(
-            user_id=sample_user.id,
-            name="BCA",
-            account_type=AccountType.BANK,
-            current_balance=Decimal("500000.00"),
-        )
-        db_session.add(acc)
-        db_session.commit()
+        # 1. Valid JPEG with custom message
+        fake_jpeg = io.BytesIO(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb")
+        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message", return_value="✅ Tercatat: Rp 50,000 via BCA") as mock_handle:
+            res = client.post(
+                "/api/v1/dashboard/ai-receipt",
+                files={"file": ("receipt.jpg", fake_jpeg, "image/jpeg")},
+                data={"message": "Catat struk ini"},
+                headers=headers,
+            )
+            assert res.status_code == 200
+            assert res.json() == {"reply": "✅ Tercatat: Rp 50,000 via BCA"}
+            assert mock_handle.called
+            call_kwargs = mock_handle.call_args.kwargs
+            assert call_kwargs["text"] == "Catat struk ini"
+            assert call_kwargs["image_bytes"] == b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb"
+            assert call_kwargs["user_id"] == sample_user.id
 
-        mock_entities = {
-            "action": "expense",
-            "amount": 48500,
-            "account_name": "BCA",
-            "category_name": "Makanan & Minuman",
-            "note": "Kopi Kenangan & Roti",
-        }
-
-        # Mock ReActAgent.process_input
-        with patch("rezekify.agent.runtime.ReActAgent.process_input", return_value=mock_entities):
-            file_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF" + b"fake_jpeg_data"
-            files = {"file": ("receipt.jpg", io.BytesIO(file_bytes), "image/jpeg")}
-            data = {"message": "beli kopi pagi"}
-
-            res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files, data=data)
-
-        assert res.status_code == 200
-        res_data = res.json()
-        assert "reply" in res_data
-        assert "Tercatat" in res_data["reply"]
-        assert res_data["transaction_id"] is not None
-        assert res_data["extracted_data"]["action"] == "expense"
-        assert Decimal(str(res_data["extracted_data"]["amount"])) == Decimal("48500.00")
-        assert res_data["extracted_data"]["account_name"] == "BCA"
-        assert res_data["extracted_data"]["category_name"] == "Makanan & Minuman"
+        # 2. Valid PNG with default message fallback
+        fake_png = io.BytesIO(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
+        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message", return_value="✅ Tercatat dari Struk") as mock_handle:
+            res_png = client.post(
+                "/api/v1/dashboard/ai-receipt",
+                files={"file": ("struk.png", fake_png, "image/png")},
+                headers=headers,
+            )
+            assert res_png.status_code == 200
+            assert res_png.json() == {"reply": "✅ Tercatat dari Struk"}
+            assert mock_handle.called
+            assert mock_handle.call_args.kwargs["text"] == "Foto struk kasir"
 
 
 def test_ai_receipt_upload_invalid_mime(sample_user, db_session):
@@ -496,11 +490,11 @@ def test_ai_receipt_upload_invalid_mime(sample_user, db_session):
         files = {"file": ("statement.pdf", io.BytesIO(b"%PDF-1.4..."), "application/pdf")}
         res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files)
         assert res.status_code == 400
-        assert "Format file tidak didukung" in res.json()["detail"]
+        assert res.json()["detail"] == "Format file tidak didukung. Harap unggah file gambar (JPEG, PNG, WebP)."
 
 
 def test_ai_receipt_upload_size_limit_exceeded(sample_user, db_session):
-    """Tests that payloads exceeding 10MB are rejected with HTTP 413."""
+    """Tests that payloads exceeding 10MB are rejected with HTTP 400."""
     from rezekify.core.security import create_access_token
 
     with db_override(db_session):
@@ -511,8 +505,8 @@ def test_ai_receipt_upload_size_limit_exceeded(sample_user, db_session):
         large_bytes = b"0" * (11 * 1024 * 1024)
         files = {"file": ("huge_receipt.png", io.BytesIO(large_bytes), "image/png")}
         res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files)
-        assert res.status_code == 413
-        assert "melebihi batas maksimal 10MB" in res.json()["detail"]
+        assert res.status_code == 400
+        assert res.json()["detail"] == "Ukuran file melebihi batas maksimal 10MB."
 
 
 def test_ai_receipt_upload_empty_file(sample_user, db_session):
@@ -526,7 +520,7 @@ def test_ai_receipt_upload_empty_file(sample_user, db_session):
         files = {"file": ("empty.jpg", io.BytesIO(b""), "image/jpeg")}
         res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files)
         assert res.status_code == 400
-        assert "File yang diunggah kosong" in res.json()["detail"]
+        assert res.json()["detail"] == "File gambar kosong."
 
 
 def test_simulate_purchase_api(sample_user, db_session):
