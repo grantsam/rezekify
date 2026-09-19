@@ -1,5 +1,6 @@
 """Multimodal ReAct Agent Runtime with Rotary Key Pool failover."""
 
+import base64
 import json
 import re
 from typing import Any, Dict, Optional
@@ -89,8 +90,6 @@ class ReActAgent:
         self, text: str, image_bytes: bytes, mime_type: str = "image/jpeg"
     ) -> Dict[str, Any]:
         """Executes fallback entity extraction from receipt image using Groq Vision."""
-        import base64
-
         if not self.groq_pool or not self.groq_pool.keys:
             return {"action": "unknown", "text": text}
 
@@ -152,3 +151,33 @@ class ReActAgent:
                 break
 
         return {"action": "unknown", "text": text}
+
+    def transcribe_audio(self, audio_bytes: bytes, filename: str = "voice.ogg") -> str:
+        """Transcribes audio bytes to text using Groq Whisper with rotary key failover."""
+        if not audio_bytes:
+            return ""
+        if len(audio_bytes) > 25 * 1024 * 1024:
+            raise ValueError("Ukuran file audio melebihi batas maksimal 25MB.")
+        if not self.groq_pool or not self.groq_pool.keys:
+            raise ValueError("Groq pool is required for audio transcription.")
+
+        for _ in range(len(self.groq_pool.keys)):
+            key = self.groq_pool.get_current_key()
+            try:
+                client = self.groq_pool.get_groq_client(api_key=key)
+                transcription = client.audio.transcriptions.create(
+                    file=(filename, audio_bytes, "audio/ogg"),
+                    model="whisper-large-v3",
+                    language="id",
+                    temperature=0.0,
+                )
+                return (transcription.text or "").strip()
+            except Exception as e:
+                err_str = str(e).lower()
+                if "429" in err_str or "rate limit" in err_str:
+                    self.groq_pool.report_rate_limit(key)
+                    continue
+                break
+
+        return ""
+

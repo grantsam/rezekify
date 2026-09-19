@@ -258,3 +258,73 @@ def test_react_agent_graceful_failure():
         assert res["action"] == "unknown"
         assert res["text"] == "halo cek status"
 
+
+def test_react_agent_transcribe_audio_success():
+    groq_pool = RotaryKeyPool(keys=["GROQ_KEY_1"])
+    gemini_pool = RotaryKeyPool(keys=["GEMINI_KEY_1"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
+
+    mock_groq = MagicMock()
+    mock_transcription = MagicMock()
+    mock_transcription.text = "beli soto ayam 25rb gopay"
+    mock_groq.audio.transcriptions.create.return_value = mock_transcription
+
+    with patch.object(groq_pool, "get_groq_client", return_value=mock_groq):
+        text = agent.transcribe_audio(b"fake_ogg_bytes_audio", filename="custom.ogg")
+        assert text == "beli soto ayam 25rb gopay"
+        mock_groq.audio.transcriptions.create.assert_called_once_with(
+            file=("custom.ogg", b"fake_ogg_bytes_audio", "audio/ogg"),
+            model="whisper-large-v3",
+            language="id",
+            temperature=0.0,
+        )
+
+
+def test_react_agent_transcribe_audio_empty_bytes():
+    groq_pool = RotaryKeyPool(keys=["GROQ_KEY_1"])
+    gemini_pool = RotaryKeyPool(keys=["GEMINI_KEY_1"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
+
+    assert agent.transcribe_audio(b"") == ""
+
+
+def test_react_agent_transcribe_audio_oversized():
+    groq_pool = RotaryKeyPool(keys=["GROQ_KEY_1"])
+    gemini_pool = RotaryKeyPool(keys=["GEMINI_KEY_1"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
+
+    oversized = b"x" * (25 * 1024 * 1024 + 1)
+    with pytest.raises(ValueError, match="25MB"):
+        agent.transcribe_audio(oversized)
+
+
+def test_react_agent_transcribe_audio_no_groq_pool():
+    gemini_pool = RotaryKeyPool(keys=["GEMINI_KEY_1"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=None)
+
+    with pytest.raises(ValueError, match="Groq pool is required"):
+        agent.transcribe_audio(b"fake_bytes")
+
+
+def test_react_agent_transcribe_audio_rotates_on_rate_limit():
+    groq_pool = RotaryKeyPool(keys=["GROQ_KEY_1", "GROQ_KEY_2"])
+    gemini_pool = RotaryKeyPool(keys=["GEMINI_KEY_1"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
+
+    mock_client_1 = MagicMock()
+    mock_client_1.audio.transcriptions.create.side_effect = Exception("429 rate limit exceeded")
+
+    mock_client_2 = MagicMock()
+    mock_transcription = MagicMock()
+    mock_transcription.text = "makan bakso 20000 cash"
+    mock_client_2.audio.transcriptions.create.return_value = mock_transcription
+
+    def mock_get_groq_client(api_key=None):
+        return mock_client_1 if api_key == "GROQ_KEY_1" else mock_client_2
+
+    with patch.object(groq_pool, "get_groq_client", side_effect=mock_get_groq_client):
+        text = agent.transcribe_audio(b"audio_bytes")
+        assert text == "makan bakso 20000 cash"
+        assert groq_pool.cooldowns["GROQ_KEY_1"] > 0
+
+
