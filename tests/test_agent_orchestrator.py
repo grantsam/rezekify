@@ -265,3 +265,92 @@ def test_handle_receipt_safe_amount_guard(db_session, sample_user):
     assert res_zero["transaction_id"] is None
     assert "Struk tidak terbaca jelas" in res_zero["reply"]
 
+
+def test_orchestrator_handle_voice_success(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("100000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    mock_agent = MagicMock()
+    mock_agent.transcribe_audio.return_value = "makan bakso 25rb pake gopay"
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "expense",
+            "amount": 25000,
+            "account_name": "GoPay",
+            "category_name": "Makanan",
+            "note": "Bakso",
+        }
+    )
+
+    result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=b"sample_ogg_bytes")
+    assert result["success"] is True
+    assert result["transcription"] == "makan bakso 25rb pake gopay"
+    assert "Rp 25,000" in result["reply"]
+
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("75000.00")
+
+
+def test_orchestrator_handle_voice_silent_audio(db_session, sample_user):
+    mock_agent = MagicMock()
+    mock_agent.transcribe_audio.return_value = ""
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+
+    result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=b"silent_ogg")
+    assert result["success"] is False
+    assert result["transcription"] == ""
+    assert "Suara tidak terdengar jelas" in result["reply"]
+
+
+def test_orchestrator_handle_voice_oversized_audio(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    oversized = b"0" * (25 * 1024 * 1024 + 1)
+    result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=oversized)
+    assert result["success"] is False
+    assert "25MB" in result["reply"]
+
+
+def test_orchestrator_handle_voice_with_caption(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("200000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    mock_agent = MagicMock()
+    mock_agent.transcribe_audio.return_value = "isi bensin 50rb"
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "expense",
+            "amount": 50000,
+            "account_name": "BCA",
+            "category_name": "Transport",
+            "note": "Bensin Motor",
+        }
+    )
+
+    result = orchestrator.handle_voice(
+        user_id=sample_user.id, audio_bytes=b"voice_bytes", caption="bensin motor"
+    )
+    assert result["success"] is True
+    assert result["transcription"] == "isi bensin 50rb"
+    assert "Rp 50,000" in result["reply"]
+
+
+def test_orchestrator_handle_voice_without_agent(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session, agent=None)
+    result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=b"audio_bytes")
+    assert result["success"] is False
+    assert "Layanan AI belum terkonfigurasi" in result["reply"]
+

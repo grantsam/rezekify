@@ -277,3 +277,60 @@ class AgentOrchestrator:
             },
         }
 
+    def handle_voice(
+        self,
+        user_id: UUID,
+        audio_bytes: bytes,
+        caption: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Transcribes voice note audio and processes transaction via handle_message."""
+        if not audio_bytes:
+            return {
+                "transcription": "",
+                "reply": "Gagal memproses pesan suara: audio kosong atau tidak dapat diunduh.",
+                "success": False,
+            }
+
+        if len(audio_bytes) > 25 * 1024 * 1024:
+            return {
+                "transcription": "",
+                "reply": "❌ Ukuran pesan suara melebihi batas maksimal 25MB.",
+                "success": False,
+            }
+
+        if not self.agent:
+            return {
+                "transcription": "",
+                "reply": "❌ Layanan AI belum terkonfigurasi.",
+                "success": False,
+            }
+
+        try:
+            transcription = self.agent.transcribe_audio(audio_bytes)
+        except Exception as e:
+            return {
+                "transcription": "",
+                "reply": f"❌ Gagal memproses audio: {str(e)}",
+                "success": False,
+            }
+
+        if not transcription or not transcription.strip():
+            return {
+                "transcription": "",
+                "reply": "⚠️ Suara tidak terdengar jelas atau audio kosong. Silakan ulangi rekaman suara Anda.",
+                "success": False,
+            }
+
+        # Combine transcription with optional caption
+        effective_text = transcription
+        if caption and caption.strip():
+            effective_text = f"{transcription} ({caption.strip()})"
+
+        # Dispatch to deterministic handler
+        reply = self.handle_message(user_id=user_id, text=effective_text)
+        return {
+            "transcription": transcription,
+            "reply": reply,
+            "success": True,
+        }
+
