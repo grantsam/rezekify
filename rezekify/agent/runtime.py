@@ -74,11 +74,58 @@ class ReActAgent:
                 # For non-429 errors or if retries fail, attempt Groq fallback if text-only
                 break
 
-        # Fallback to Groq if configured and input is text-only
-        if self.groq_pool and self.groq_pool.keys and not image_bytes:
+        # Fallback to Groq if configured
+        if self.groq_pool and self.groq_pool.keys:
+            if image_bytes:
+                return self._fallback_groq_vision(
+                    text=text, image_bytes=image_bytes, mime_type=mime_type
+                )
             return self._fallback_groq(text)
 
         # Final graceful fallback if all attempts fail
+        return {"action": "unknown", "text": text}
+
+    def _fallback_groq_vision(
+        self, text: str, image_bytes: bytes, mime_type: str = "image/jpeg"
+    ) -> Dict[str, Any]:
+        """Executes fallback entity extraction from receipt image using Groq Vision."""
+        import base64
+
+        if not self.groq_pool or not self.groq_pool.keys:
+            return {"action": "unknown", "text": text}
+
+        base64_img = base64.b64encode(image_bytes).decode("utf-8")
+        data_url = f"data:{mime_type};base64,{base64_img}"
+        user_prompt = text or "Ekstrak informasi transaksi dari struk belanja ini."
+
+        for _ in range(len(self.groq_pool.keys)):
+            key = self.groq_pool.get_current_key()
+            try:
+                client = self.groq_pool.get_groq_client(api_key=key)
+                messages = [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": user_prompt},
+                            {"type": "image_url", "image_url": {"url": data_url}},
+                        ],
+                    },
+                ]
+                completion = client.chat.completions.create(
+                    model="meta-llama/llama-4-scout-17b-16e-instruct",
+                    messages=messages,
+                    temperature=0.1,
+                )
+                content = completion.choices[0].message.content or ""
+                return self._clean_json_response(content)
+            except Exception as e:
+                err_str = str(e).lower()
+                if "429" in err_str or "rate limit" in err_str:
+                    self.groq_pool.report_rate_limit(key)
+                    continue
+                break
+
         return {"action": "unknown", "text": text}
 
     def _fallback_groq(self, text: str) -> Dict[str, Any]:

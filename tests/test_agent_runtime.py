@@ -145,23 +145,105 @@ def test_react_agent_handles_multimodal_image():
             mock_part.assert_called_once_with(data=fake_image_bytes, mime_type="image/jpeg")
 
 
-def test_react_agent_image_fails_without_calling_groq():
-    gemini_pool = RotaryKeyPool(keys=["KEY_VISION"])
-    groq_pool = RotaryKeyPool(keys=["GROQ_KEY"])
+def test_react_agent_fallback_groq_vision_success():
+    groq_pool = RotaryKeyPool(keys=["GROQ_VISION_KEY"])
+    gemini_pool = RotaryKeyPool(keys=["GEMINI_KEY"])
     agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
 
     mock_client = MagicMock()
-    mock_client.models.generate_content.side_effect = Exception("429 Resource exhausted")
+    mock_completion = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = '{"action": "expense", "amount": 45000, "account_name": "Cash", "category_name": "Makanan", "note": "Kopi Susu"}'
+    mock_completion.choices = [mock_choice]
+    mock_client.chat.completions.create.return_value = mock_completion
 
-    fake_image_bytes = b"fake_bytes"
+    with patch.object(groq_pool, "get_groq_client", return_value=mock_client):
+        res = agent._fallback_groq_vision(text="struk", image_bytes=b"sample_image_bytes", mime_type="image/png")
+        assert res["action"] == "expense"
+        assert res["amount"] == 45000
+        assert res["note"] == "Kopi Susu"
+
+        mock_client.chat.completions.create.assert_called_once()
+        kwargs = mock_client.chat.completions.create.call_args[1]
+        assert kwargs["model"] == "meta-llama/llama-4-scout-17b-16e-instruct"
+        messages = kwargs["messages"]
+        assert len(messages) == 2
+        assert messages[1]["role"] == "user"
+        content_parts = messages[1]["content"]
+        assert content_parts[0]["type"] == "text"
+        assert content_parts[1]["type"] == "image_url"
+        assert content_parts[1]["image_url"]["url"].startswith("data:image/png;base64,")
+
+
+def test_react_agent_fallback_groq_vision_rate_limit_rotation():
+    groq_pool = RotaryKeyPool(keys=["GROQ_1", "GROQ_2"])
+    gemini_pool = RotaryKeyPool(keys=["GEMINI_1"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
+
+    mock_client_1 = MagicMock()
+    mock_client_1.chat.completions.create.side_effect = Exception("429 rate limit exceeded")
+
+    mock_client_2 = MagicMock()
+    mock_completion = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = '{"action": "expense", "amount": 12000, "note": "Roti"}'
+    mock_completion.choices = [mock_choice]
+    mock_client_2.chat.completions.create.return_value = mock_completion
+
+    def mock_get_groq_client(api_key=None):
+        return mock_client_1 if api_key == "GROQ_1" else mock_client_2
+
+    with patch.object(groq_pool, "get_groq_client", side_effect=mock_get_groq_client):
+        res = agent._fallback_groq_vision(text="struk", image_bytes=b"sample_bytes", mime_type="image/jpeg")
+        assert res["action"] == "expense"
+        assert res["amount"] == 12000
+        assert groq_pool.cooldowns["GROQ_1"] > 0
+
+
+def test_react_agent_process_input_falls_back_to_groq_vision_when_gemini_fails():
+    gemini_pool = RotaryKeyPool(keys=["KEY_GEMINI"])
+    groq_pool = RotaryKeyPool(keys=["KEY_GROQ"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
+
+    mock_gemini = MagicMock()
+    mock_gemini.models.generate_content.side_effect = Exception("429 Resource has been exhausted")
+
+    mock_groq = MagicMock()
+    mock_completion = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = '{"action": "expense", "amount": 85000, "account_name": "Cash", "note": "Struk Supermarket"}'
+    mock_completion.choices = [mock_choice]
+    mock_groq.chat.completions.create.return_value = mock_completion
+
+    fake_image_bytes = b"fake_jpeg_bytes"
 
     with patch("google.genai.types.Part.from_bytes"):
-        with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
-            with patch.object(groq_pool, "get_groq_client") as mock_get_groq:
-                res = agent.process_input(user_id=uuid4(), text="struk", image_bytes=fake_image_bytes)
-                assert res["action"] == "unknown"
-                assert res["text"] == "struk"
-                mock_get_groq.assert_not_called()
+        with patch.object(gemini_pool, "get_gemini_client", return_value=mock_gemini):
+            with patch.object(groq_pool, "get_groq_client", return_value=mock_groq):
+                res = agent.process_input(
+                    user_id=uuid4(), text="struk belanja", image_bytes=fake_image_bytes, mime_type="image/jpeg"
+                )
+                assert res["action"] == "expense"
+                assert res["amount"] == 85000
+                assert res["note"] == "Struk Supermarket"
+
+
+def test_react_agent_process_input_image_fails_when_no_groq_pool():
+    gemini_pool = RotaryKeyPool(keys=["KEY_GEMINI"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=None)
+
+    mock_gemini = MagicMock()
+    mock_gemini.models.generate_content.side_effect = Exception("429 Resource has been exhausted")
+
+    fake_image_bytes = b"fake_jpeg_bytes"
+
+    with patch("google.genai.types.Part.from_bytes"):
+        with patch.object(gemini_pool, "get_gemini_client", return_value=mock_gemini):
+            res = agent.process_input(
+                user_id=uuid4(), text="struk", image_bytes=fake_image_bytes, mime_type="image/jpeg"
+            )
+            assert res["action"] == "unknown"
+            assert res["text"] == "struk"
 
 
 def test_react_agent_graceful_failure():
