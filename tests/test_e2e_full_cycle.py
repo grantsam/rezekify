@@ -11,8 +11,9 @@ from sqlalchemy.pool import StaticPool
 
 from rezekify.api.deps import get_db
 from rezekify.api.main import app
-from rezekify.db.models import Base
+from rezekify.db.models import Account, AccountType, Base
 from rezekify.gateway.telegram_bot import TelegramGateway
+from rezekify.services.auth import AuthService
 
 # Set up isolated in-memory DB for E2E TestClient
 engine = create_engine(
@@ -223,4 +224,73 @@ def test_full_system_e2e():
         assert Decimal(str(final_summary["operational_free_cash"])) == Decimal("1275000.00")
     finally:
         tg_db.close()
+
+
+def test_e2e_voice_note_ingestion_and_runway_update():
+    """Validates Telegram voice note ingestion end-to-end: transcription -> ledger expense -> runway update."""
+    db = TestingSessionLocal()
+    try:
+        auth_service = AuthService(db)
+        user = auth_service.register(
+            email="voice_e2e@rezekify.id",
+            password="SecurePassword123!",
+            full_name="Voice E2E User",
+        )
+        user.telegram_chat_id = 88776655
+        db.commit()
+
+        account = Account(
+            user_id=user.id,
+            name="BCA",
+            account_type=AccountType.BANK,
+            current_balance=Decimal("1000000.00"),
+            is_active=True,
+        )
+        db.add(account)
+        db.commit()
+        db.refresh(account)
+
+        mock_downloader = MagicMock(return_value=b"fake_voice_ogg_bytes")
+        gateway = TelegramGateway(db=db, voice_downloader=mock_downloader)
+
+        # Mock transcription on orchestrator's agent and entity extraction
+        mock_agent = MagicMock()
+        mock_agent.transcribe_audio.return_value = "makan malam 50000 bca"
+        gateway.orchestrator.agent = mock_agent
+
+        gateway.orchestrator.extract_entities = MagicMock(
+            return_value={
+                "action": "expense",
+                "amount": 50000,
+                "account_name": "BCA",
+                "category_name": "Konsumsi",
+                "note": "makan malam",
+            }
+        )
+
+        update_payload = {
+            "update_id": 8801,
+            "message": {
+                "chat": {"id": 88776655},
+                "voice": {"file_id": "telegram_voice_ogg_file_88"},
+            },
+        }
+
+        reply = gateway.handle_update(update_payload)
+
+        # Verify downloader was invoked with file_id
+        mock_downloader.assert_called_once_with("telegram_voice_ogg_file_88")
+        mock_agent.transcribe_audio.assert_called_once_with(b"fake_voice_ogg_bytes")
+
+        # Assert transcription header and recorded expense amount in reply
+        assert '🎙️ Transkripsi: "makan malam 50000 bca"' in reply
+        assert "Tercatat" in reply
+        assert "Rp 50,000" in reply
+
+        # Assert account balance decreased from Rp 1.000.000 to Rp 950.000
+        db.refresh(account)
+        assert account.current_balance == Decimal("950000.00")
+    finally:
+        db.close()
+
 
