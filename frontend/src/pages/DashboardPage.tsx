@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { PlusCircle, RefreshCw, CheckCircle2, AlertCircle, LogIn, LogOut } from 'lucide-react';
-import { apiFetch, getAuthToken, clearAuthToken } from '../services/apiClient';
+import {
+  PlusCircle,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  LogOut,
+  Building2,
+  Receipt,
+  Calculator,
+  Wallet,
+} from 'lucide-react';
+import { apiFetch } from '../services/apiClient';
+import { useAuth } from '../context/AuthContext';
 import {
   DashboardSummaryResponse,
   Transaction,
@@ -14,15 +25,22 @@ import { RunwayMetricCard } from '../components/RunwayMetricCard';
 import { ExpenseCharts } from '../components/ExpenseCharts';
 import { TransactionsTable } from '../components/TransactionsTable';
 import { ManualTransactionModal } from '../components/ManualTransactionModal';
+import { AccountModal } from '../components/AccountModal';
+import { VaultModal } from '../components/VaultModal';
+import { SimulatePurchaseModal } from '../components/SimulatePurchaseModal';
 import { AuthModal } from '../components/AuthModal';
 
 export const DashboardPage: React.FC = () => {
+  const { user, logout } = useAuth();
   const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isManualModalOpen, setIsManualModalOpen] = useState<boolean>(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
+  const [isVaultModalOpen, setIsVaultModalOpen] = useState<boolean>(false);
+  const [isSimulateModalOpen, setIsSimulateModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
@@ -51,15 +69,28 @@ export const DashboardPage: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const handleAiSubmit = async (payload: { text: string; file: File | null }) => {
+  const handleAiSubmit = async (
+    input: string | { text: string; file: File | null },
+    fileArg?: File | null
+  ) => {
+    let text = '';
+    let file: File | null = null;
+    if (typeof input === 'object' && input !== null) {
+      text = input.text || '';
+      file = input.file || null;
+    } else {
+      text = input || '';
+      file = fileArg ?? null;
+    }
+
     setIsAiLoading(true);
     setAiMessage(null);
     try {
-      if (payload.file) {
+      if (file) {
         const formData = new FormData();
-        formData.append('file', payload.file);
-        if (payload.text.trim()) {
-          formData.append('message', payload.text.trim());
+        formData.append('file', file);
+        if (text.trim()) {
+          formData.append('message', text.trim());
         }
         const res = await apiFetch<ReceiptUploadResponse>('/dashboard/ai-receipt', {
           method: 'POST',
@@ -73,7 +104,7 @@ export const DashboardPage: React.FC = () => {
       } else {
         const res = await apiFetch<ChatResponse>('/dashboard/ai-chat', {
           method: 'POST',
-          body: JSON.stringify({ message: payload.text.trim() }),
+          body: JSON.stringify({ message: text.trim() }),
         });
         setAiMessage({ text: res.reply || 'Berhasil dicatat ke dalam ledger!' });
       }
@@ -103,11 +134,20 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const getUserInitials = (name?: string): string => {
+    if (!name) return 'U';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.trim().slice(0, 2).toUpperCase() || 'U';
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-600/30">
               <span className="font-extrabold text-white text-base">R</span>
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-950" />
@@ -120,7 +160,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto py-1">
             <button
               type="button"
               onClick={() => {
@@ -128,50 +168,99 @@ export const DashboardPage: React.FC = () => {
                 setRefreshTrigger((prev) => prev + 1);
               }}
               disabled={isLoading}
-              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/60 transition-colors disabled:opacity-40"
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/60 transition-colors disabled:opacity-40 shrink-0"
               title="Perbarui Data"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
+
             <button
               type="button"
-              onClick={() => setIsModalOpen(true)}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+              onClick={() => setIsAccountModalOpen(true)}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
             >
-              <PlusCircle className="w-4 h-4 text-indigo-400" />
-              <span>Catat Manual</span>
+              <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span>+ Rekening</span>
             </button>
-            {getAuthToken() ? (
-              <button
-                type="button"
-                onClick={() => {
-                  clearAuthToken();
-                  setSummary(null);
-                  setTransactions([]);
-                  setAccounts([]);
-                  setRefreshTrigger((prev) => prev + 1);
-                }}
-                className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5"
-                title="Keluar dari akun"
-              >
-                <LogOut className="w-3.5 h-3.5 text-slate-400" />
-                <span>Keluar</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsAuthModalOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30 active:scale-95"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Masuk / Daftar</span>
-              </button>
+
+            <button
+              type="button"
+              onClick={() => setIsVaultModalOpen(true)}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+            >
+              <Receipt className="w-3.5 h-3.5 text-indigo-400" />
+              <span>+ Tagihan</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSimulateModalOpen(true)}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+            >
+              <Calculator className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Simulasi Belanja</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsManualModalOpen(true)}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+            >
+              <PlusCircle className="w-3.5 h-3.5 text-indigo-400" />
+              <span>+ Transaksi Manual</span>
+            </button>
+
+            {user && (
+              <div className="flex items-center gap-2 pl-1 sm:pl-2 shrink-0 border-l border-slate-800">
+                <div
+                  className="w-7 h-7 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold flex items-center justify-center"
+                  title={user.full_name}
+                >
+                  {getUserInitials(user.full_name)}
+                </div>
+                <span className="text-xs font-medium text-slate-200 hidden lg:inline max-w-[120px] truncate">
+                  {user.full_name}
+                </span>
+              </div>
             )}
+
+            <button
+              type="button"
+              onClick={logout}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
+              title="Keluar (Logout)"
+            >
+              <LogOut className="w-3.5 h-3.5 text-slate-400" />
+              <span>Keluar</span>
+            </button>
           </div>
         </div>
       </header>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {!isLoading && accounts.length === 0 && (
+          <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-950/50 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-indigo-950/40">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 bg-indigo-600/20 border border-indigo-500/30 rounded-xl shrink-0 mt-0.5 sm:mt-0">
+                <Wallet className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
+                  👋 Selamat datang di Rezekify! Anda belum memiliki rekening atau dompet. Tambahkan rekening pertama Anda (Bank / e-Wallet) agar pengeluaran dapat dicatat secara seimbang.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAccountModalOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-all shadow-md shadow-indigo-600/30 active:scale-95 shrink-0 flex items-center gap-1.5"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Tambah Rekening Pertama</span>
+            </button>
+          </div>
+        )}
+
         <OmniInputHero onSubmit={handleAiSubmit} isLoading={isAiLoading} />
 
         {aiMessage && (
@@ -223,9 +312,32 @@ export const DashboardPage: React.FC = () => {
         />
       </main>
 
+      <AccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        onSuccess={() => {
+          loadData();
+          setRefreshTrigger((prev) => prev + 1);
+        }}
+      />
+
+      <VaultModal
+        isOpen={isVaultModalOpen}
+        onClose={() => setIsVaultModalOpen(false)}
+        onSuccess={() => {
+          loadData();
+          setRefreshTrigger((prev) => prev + 1);
+        }}
+      />
+
+      <SimulatePurchaseModal
+        isOpen={isSimulateModalOpen}
+        onClose={() => setIsSimulateModalOpen(false)}
+      />
+
       <ManualTransactionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
         accounts={accounts}
         onSuccess={() => {
           loadData();
