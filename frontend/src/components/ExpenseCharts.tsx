@@ -89,9 +89,16 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           <span className="text-xs">Memuat analitik...</span>
         </div>
       ) : error ? (
-        <div className="h-44 flex items-center justify-center text-rose-400 gap-2 text-xs">
-          <AlertCircle className="w-4 h-4" />
-          <span>{error}</span>
+        <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-800 rounded-xl">
+          <AlertCircle className="w-6 h-6 text-indigo-400 mb-2" />
+          <p className="font-semibold text-xs text-slate-300">
+            {error.toLowerCase().includes('authenticated') ? 'Perlu Autentikasi' : 'Gagal Memuat Analitik'}
+          </p>
+          <p className="text-[11px] text-slate-400 max-w-xs mt-1">
+            {error.toLowerCase().includes('authenticated')
+              ? 'Silakan masuk atau daftarkan akun Anda untuk memuat grafik analitik pengeluaran harian dan bulanan.'
+              : error}
+          </p>
         </div>
       ) : !hasExpenses ? (
         <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-800 rounded-xl">

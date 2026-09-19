@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { PlusCircle, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
-import { apiFetch } from '../services/apiClient';
+import { PlusCircle, RefreshCw, CheckCircle2, AlertCircle, LogIn, LogOut } from 'lucide-react';
+import { apiFetch, getAuthToken, clearAuthToken } from '../services/apiClient';
 import {
   DashboardSummaryResponse,
   Transaction,
@@ -14,6 +14,7 @@ import { RunwayMetricCard } from '../components/RunwayMetricCard';
 import { ExpenseCharts } from '../components/ExpenseCharts';
 import { TransactionsTable } from '../components/TransactionsTable';
 import { ManualTransactionModal } from '../components/ManualTransactionModal';
+import { AuthModal } from '../components/AuthModal';
 
 export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
@@ -22,6 +23,7 @@ export const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [aiMessage, setAiMessage] = useState<{ text: string; isError?: boolean } | null>(null);
@@ -139,6 +141,32 @@ export const DashboardPage: React.FC = () => {
               <PlusCircle className="w-4 h-4 text-indigo-400" />
               <span>Catat Manual</span>
             </button>
+            {getAuthToken() ? (
+              <button
+                type="button"
+                onClick={() => {
+                  clearAuthToken();
+                  setSummary(null);
+                  setTransactions([]);
+                  setAccounts([]);
+                  setRefreshTrigger((prev) => prev + 1);
+                }}
+                className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5"
+                title="Keluar dari akun"
+              >
+                <LogOut className="w-3.5 h-3.5 text-slate-400" />
+                <span>Keluar</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/30 active:scale-95"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Masuk / Daftar</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -181,7 +209,7 @@ export const DashboardPage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5">
-            <RunwayMetricCard summary={summary} />
+            <RunwayMetricCard summary={summary} onOpenAuth={() => setIsAuthModalOpen(true)} />
           </div>
           <div className="lg:col-span-7">
             <ExpenseCharts refreshTrigger={refreshTrigger} />
@@ -199,6 +227,15 @@ export const DashboardPage: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         accounts={accounts}
+        onSuccess={() => {
+          loadData();
+          setRefreshTrigger((prev) => prev + 1);
+        }}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
         onSuccess={() => {
           loadData();
           setRefreshTrigger((prev) => prev + 1);

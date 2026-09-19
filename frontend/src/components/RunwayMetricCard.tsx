@@ -4,12 +4,37 @@ import { DashboardSummaryResponse } from '../types/api';
 
 interface Props {
   summary: DashboardSummaryResponse | null;
+  onOpenAuth?: () => void;
 }
 
-export const RunwayMetricCard: React.FC<Props> = ({ summary }) => {
+export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
   if (!summary) {
     return (
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 text-white animate-pulse h-64" />
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[280px]">
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Gauge className="w-5 h-5 text-indigo-400" />
+            <h3 className="font-semibold text-sm uppercase tracking-wider text-slate-400">
+              Dynamic Daily Safe Runway
+            </h3>
+          </div>
+          <p className="text-2xl font-bold text-white mt-3">
+            Belum Terautentikasi
+          </p>
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+            Silakan masuk atau daftarkan akun Anda untuk mengaktifkan telemetri Dynamic Daily Safe Runway dan kalkulasi belanja harian bebas risiko.
+          </p>
+        </div>
+        {onOpenAuth && (
+          <button
+            type="button"
+            onClick={onOpenAuth}
+            className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/30 w-fit active:scale-95"
+          >
+            Masuk / Buat Akun
+          </button>
+        )}
+      </div>
     );
   }
 
