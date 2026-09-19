@@ -528,3 +528,58 @@ def test_ai_receipt_upload_empty_file(sample_user, db_session):
         assert res.status_code == 400
         assert "File yang diunggah kosong" in res.json()["detail"]
 
+
+def test_simulate_purchase_api(sample_user, db_session):
+    """Tests POST /api/v1/dashboard/simulate-purchase endpoint for valid and invalid amounts."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Seed an account with liquid balance
+        acc = Account(
+            user_id=sample_user.id,
+            name="Bank BCA",
+            account_type=AccountType.BANK,
+            current_balance=Decimal("1500000.00"),
+        )
+        db_session.add(acc)
+        db_session.commit()
+
+        # 1. Successful simulation with safe purchase
+        res = client.post(
+            "/api/v1/dashboard/simulate-purchase",
+            headers=headers,
+            json={"planned_amount": 50000.00},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert "current_daily_runway" in data
+        assert "projected_daily_runway" in data
+        assert "daily_drop_amount" in data
+        assert "is_safe" in data
+        assert "advice" in data
+        assert Decimal(str(data["current_daily_runway"])) > Decimal("0.00")
+        assert Decimal(str(data["projected_daily_runway"])) < Decimal(str(data["current_daily_runway"]))
+        assert Decimal(str(data["daily_drop_amount"])) > Decimal("0.00")
+
+        # 2. Test 0 amount -> 400
+        res_zero = client.post(
+            "/api/v1/dashboard/simulate-purchase",
+            headers=headers,
+            json={"planned_amount": 0.00},
+        )
+        assert res_zero.status_code == 400
+        assert "Nominal belanja harus lebih besar dari 0." in res_zero.json()["detail"]
+
+        # 3. Test negative amount -> 400
+        res_neg = client.post(
+            "/api/v1/dashboard/simulate-purchase",
+            headers=headers,
+            json={"planned_amount": -50000.00},
+        )
+        assert res_neg.status_code == 400
+        assert "Nominal belanja harus lebih besar dari 0." in res_neg.json()["detail"]
+
+

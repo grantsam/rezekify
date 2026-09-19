@@ -62,6 +62,19 @@ class ReceiptUploadResponse(BaseModel):
     extracted_data: ReceiptExtractedData
 
 
+class SimulatePurchaseRequest(BaseModel):
+    planned_amount: Decimal
+
+
+class SimulatePurchaseResponse(BaseModel):
+    current_daily_runway: Decimal
+    projected_daily_runway: Decimal
+    daily_drop_amount: Decimal
+    is_safe: bool
+    advice: str
+
+
+
 
 class DailySpendingItemModel(BaseModel):
     date: date
@@ -183,6 +196,33 @@ async def ai_receipt_upload(
             note=result["extracted_data"]["note"],
         ),
     )
+
+
+@dashboard_router.post("/simulate-purchase", response_model=SimulatePurchaseResponse)
+def simulate_purchase_endpoint(
+    req: SimulatePurchaseRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SimulatePurchaseResponse:
+    if req.planned_amount <= Decimal("0.00"):
+        raise HTTPException(
+            status_code=400,
+            detail="Nominal belanja harus lebih besar dari 0.",
+        )
+
+    sim = RunwayService(db).simulate_purchase(
+        user_id=current_user.id,
+        planned_amount=req.planned_amount,
+    )
+
+    return SimulatePurchaseResponse(
+        current_daily_runway=sim.current_daily_runway,
+        projected_daily_runway=sim.projected_daily_runway,
+        daily_drop_amount=sim.daily_drop_amount,
+        is_safe=sim.is_safe,
+        advice=sim.advice,
+    )
+
 
 
 
