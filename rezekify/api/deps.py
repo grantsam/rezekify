@@ -1,16 +1,37 @@
 """FastAPI dependencies for database session and JWT authentication."""
 
+from typing import Optional
 from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
+from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.core.config import settings
 from rezekify.db.models import User
 from rezekify.db.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+_gemini_key_pool: Optional[RotaryKeyPool] = None
+
+
+def get_gemini_key_pool() -> RotaryKeyPool:
+    """Returns application-level singleton RotaryKeyPool for Gemini API keys.
+
+    Preserves key rotation state and rate-limit cooldown across requests.
+    """
+    global _gemini_key_pool
+    if _gemini_key_pool is None:
+        _gemini_key_pool = RotaryKeyPool.from_env("GEMINI_API_KEYS")
+    return _gemini_key_pool
+
+
+def reset_gemini_key_pool() -> None:
+    """Resets singleton instance for test isolation."""
+    global _gemini_key_pool
+    _gemini_key_pool = None
 
 
 def get_current_user(

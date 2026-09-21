@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from rezekify.agent.key_pool import RotaryKeyPool
+from rezekify.api.deps import get_gemini_key_pool, reset_gemini_key_pool
 
 
 def test_key_pool_rotates_on_rate_limit():
@@ -73,4 +74,43 @@ def test_key_pool_get_groq_client_missing_import():
     with patch.dict(sys.modules, {"groq": None}):
         with pytest.raises(ImportError, match="groq package is required"):
             pool.get_groq_client()
+
+
+def test_get_gemini_key_pool_singleton_identity(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEYS", "KEY_A,KEY_B")
+    reset_gemini_key_pool()
+    try:
+        pool_1 = get_gemini_key_pool()
+        pool_2 = get_gemini_key_pool()
+        assert pool_1 is pool_2
+    finally:
+        reset_gemini_key_pool()
+
+
+def test_get_gemini_key_pool_preserves_cooldown_state(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEYS", "KEY_A,KEY_B")
+    reset_gemini_key_pool()
+    try:
+        pool = get_gemini_key_pool()
+        k1 = pool.get_current_key()
+        pool.report_rate_limit(k1, custom_cooldown=60)
+
+        pool_subsequent = get_gemini_key_pool()
+        assert pool_subsequent is pool
+        assert pool_subsequent.get_current_key() == "KEY_B"
+        assert pool_subsequent.cooldowns[k1] > 0
+    finally:
+        reset_gemini_key_pool()
+
+
+def test_reset_gemini_key_pool(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEYS", "KEY_A,KEY_B")
+    reset_gemini_key_pool()
+    try:
+        pool_1 = get_gemini_key_pool()
+        reset_gemini_key_pool()
+        pool_2 = get_gemini_key_pool()
+        assert pool_1 is not pool_2
+    finally:
+        reset_gemini_key_pool()
 

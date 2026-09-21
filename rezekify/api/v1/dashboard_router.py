@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.orchestrator import AgentOrchestrator
-from rezekify.api.deps import get_current_user, get_db
+from rezekify.api.deps import get_current_user, get_db, get_gemini_key_pool
 from rezekify.db.models import User
 from rezekify.services.runway import RunwayService
 
@@ -128,9 +128,10 @@ def ai_chat_omni_input(
     req: ChatRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    key_pool: RotaryKeyPool = Depends(get_gemini_key_pool),
 ):
     """Processes natural language omni-input into ledger mutations."""
-    orchestrator = AgentOrchestrator(db=db, key_pool=RotaryKeyPool.from_env("GEMINI_API_KEYS"))
+    orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
     reply = orchestrator.handle_message(user_id=current_user.id, text=req.message)
     return ChatResponse(reply=reply)
 
@@ -141,6 +142,7 @@ async def ai_receipt_upload(
     message: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    key_pool: RotaryKeyPool = Depends(get_gemini_key_pool),
 ) -> ChatResponse:
     """Processes multimodal receipt image uploads via Gemini Vision OCR."""
     if file.content_type not in ALLOWED_RECEIPT_MIMES:
@@ -161,7 +163,7 @@ async def ai_receipt_upload(
     if not (is_jpeg or is_png or is_webp):
         raise HTTPException(status_code=400, detail="Format file tidak didukung atau header file tidak valid.")
 
-    orchestrator = AgentOrchestrator(db=db, key_pool=RotaryKeyPool.from_env("GEMINI_API_KEYS"))
+    orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
     prompt_text = (message or "").strip() or "Foto struk kasir"
     reply = orchestrator.handle_message(
         user_id=current_user.id,
