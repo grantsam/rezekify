@@ -2,8 +2,10 @@
 
 import json
 from typing import List, Optional, Union
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_DEV_SECRET = "rezekify-secure-random-jwt-key-development"
 
 
 class Settings(BaseSettings):
@@ -47,6 +49,16 @@ class Settings(BaseSettings):
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        # ponytail: validates against development default; upgrade to entropy/min-length checks if needed.
+        if self.ENVIRONMENT.lower() == "production":
+            if not self.SECRET_KEY or self.SECRET_KEY == DEFAULT_DEV_SECRET:
+                raise ValueError(
+                    "SECRET_KEY must be securely set in production and cannot use the development default."
+                )
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",
