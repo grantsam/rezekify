@@ -1,4 +1,5 @@
 import React from 'react';
+import { HeroUIProvider } from '@heroui/react';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthPage } from './pages/AuthPage';
@@ -32,9 +33,11 @@ export const AuthenticatedApp: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AuthenticatedApp />
-    </AuthProvider>
+    <HeroUIProvider>
+      <AuthProvider>
+        <AuthenticatedApp />
+      </AuthProvider>
+    </HeroUIProvider>
   );
 };
 

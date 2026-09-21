@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Trash2, ArrowUpRight, ArrowDownLeft, Clock, Pencil } from 'lucide-react';
+import { Chip, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
 import { Transaction } from '../types/api';
 
 interface Props {
@@ -10,12 +11,14 @@ interface Props {
 }
 
 export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, onEdit, isLoading }) => {
+  const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
+
   if (transactions.length === 0) {
     return (
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
         <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm font-medium">Belum ada transaksi.</p>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-slate-400 mt-1">
           Gunakan Omni-Input bar di atas atau catat manual untuk memulai mutasi ledger.
         </p>
       </div>
@@ -51,12 +54,6 @@ export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, onE
                 minute: '2-digit',
               });
 
-              const channelBadge = {
-                TELEGRAM: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-                AI_OMNI_INPUT: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-                WEB_MANUAL: 'bg-slate-700/50 text-slate-300 border-slate-600/30',
-              }[tx.source_channel] || 'bg-slate-800 text-slate-400 border-slate-700/40';
-
               // Derive amount from ledger entries
               const amount = tx.ledger_entries?.[0]?.amount ?? 0;
               const formattedAmount = Number(amount).toLocaleString('id-ID');
@@ -68,6 +65,13 @@ export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, onE
                 /gaji|income|pemasukan|terima|bonus|investasi|topup|salary/i.test(tx.description || '') ||
                 /income/i.test(tx.source_channel || '');
               const isIncome = (isAccountDebit && !isTransfer) || isSourceIncome;
+
+              // Channel badge mapping with HeroUI Chip
+              const channelChipProps = {
+                TELEGRAM: { color: 'primary' as const, label: 'Telegram' },
+                AI_OMNI_INPUT: { color: 'secondary' as const, label: 'AI Omni-Input' },
+                WEB_MANUAL: { color: 'default' as const, label: 'Manual' },
+              }[tx.source_channel] || { color: 'default' as const, label: tx.source_channel };
 
               return (
                 <tr key={tx.id} className="hover:bg-slate-800/30 transition-colors">
@@ -90,9 +94,17 @@ export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, onE
                         <p className="font-medium text-sm text-white">{tx.description}</p>
                         <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
                           <span>{dateStr}</span>
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] border ${channelBadge}`}>
-                            {tx.source_channel}
-                          </span>
+                          <Chip size="sm" variant="flat" color={channelChipProps.color} className="text-[10px] h-5 px-1">
+                            {channelChipProps.label}
+                          </Chip>
+                          <Chip
+                            size="sm"
+                            variant="flat"
+                            color={isIncome ? 'success' : 'default'}
+                            className="text-[10px] h-5 px-1"
+                          >
+                            {isIncome ? 'Pemasukan' : 'Pengeluaran'}
+                          </Chip>
                         </div>
                       </div>
                     </div>
@@ -109,27 +121,31 @@ export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, onE
                   <td className="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">
                     <div className="inline-flex items-center justify-end gap-1.5 sm:gap-2">
                       {onEdit && (
-                        <button
-                          type="button"
-                          onClick={() => onEdit(tx)}
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => onEdit(tx)}
                           disabled={isLoading}
-                          className="min-w-[36px] min-h-[36px] p-2 inline-flex items-center justify-center text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40"
+                          className="min-w-[40px] min-h-[40px] p-2 inline-flex items-center justify-center text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40"
                           aria-label="Edit transaksi"
                           title="Edit transaksi"
                         >
                           <Pencil className="w-4 h-4" />
-                        </button>
+                        </Button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => onDelete(tx.id)}
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => setTxToDelete(tx)}
                         disabled={isLoading}
-                        className="min-w-[36px] min-h-[36px] p-2 inline-flex items-center justify-center text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40"
+                        className="min-w-[40px] min-h-[40px] p-2 inline-flex items-center justify-center text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40"
                         aria-label="Hapus transaksi"
                         title="Hapus transaksi (otomatis kembalikan saldo)"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -138,6 +154,58 @@ export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, onE
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Safety Modal */}
+      <Modal
+        isOpen={Boolean(txToDelete)}
+        onClose={() => setTxToDelete(null)}
+        backdrop="blur"
+        classNames={{
+          base: 'bg-slate-900 border border-slate-800 text-white',
+          backdrop: 'bg-black/75',
+          closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+        }}
+      >
+        <ModalContent>
+          {() => (
+            <>
+              <ModalHeader>
+                <h3 className="font-semibold text-lg text-slate-100">Konfirmasi Hapus Transaksi</h3>
+              </ModalHeader>
+              <ModalBody>
+                <p className="text-sm text-slate-300">
+                  Apakah Anda yakin ingin menghapus transaksi <strong className="text-white">"{txToDelete?.description}"</strong>?
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Saldo rekening akan otomatis dikembalikan (reversal deterministik).
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="light"
+                  onPress={() => setTxToDelete(null)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  Batal
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={async () => {
+                    if (txToDelete) {
+                      const id = txToDelete.id;
+                      setTxToDelete(null);
+                      await onDelete(id);
+                    }
+                  }}
+                  className="bg-rose-600 hover:bg-rose-500 font-medium text-white"
+                >
+                  Ya, Hapus
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Chip, Button } from '@heroui/react';
 import {
   PlusCircle,
   RefreshCw,
@@ -185,41 +186,45 @@ export const DashboardPage: React.FC = () => {
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
 
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="flat"
               onClick={() => setIsAccountModalOpen(true)}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-2 min-h-[38px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+              startContent={<Building2 className="w-3.5 h-3.5 text-indigo-400" />}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
             >
-              <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-              <span>+ Rekening</span>
-            </button>
+              + Rekening
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="flat"
               onClick={() => setIsVaultModalOpen(true)}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-2 min-h-[38px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+              startContent={<Receipt className="w-3.5 h-3.5 text-indigo-400" />}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
             >
-              <Receipt className="w-3.5 h-3.5 text-indigo-400" />
-              <span>+ Tagihan</span>
-            </button>
+              + Tagihan
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="flat"
               onClick={() => setIsSimulateModalOpen(true)}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-2 min-h-[38px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+              startContent={<Calculator className="w-3.5 h-3.5 text-indigo-400" />}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
             >
-              <Calculator className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Simulasi Belanja</span>
-            </button>
+              Simulasi Belanja
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="flat"
               onClick={() => setIsManualModalOpen(true)}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-2 min-h-[38px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+              startContent={<PlusCircle className="w-3.5 h-3.5 text-indigo-400" />}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
             >
-              <PlusCircle className="w-3.5 h-3.5 text-indigo-400" />
-              <span>+ Transaksi Manual</span>
-            </button>
+              + Transaksi Manual
+            </Button>
 
             {user && (
               <div className="flex items-center gap-2 pl-1 sm:pl-2 shrink-0 border-l border-slate-800">
@@ -235,20 +240,22 @@ export const DashboardPage: React.FC = () => {
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={logout}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 px-3 py-2 min-h-[38px] rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
+            <Button
+              size="sm"
+              variant="flat"
+              onPress={logout}
               title="Keluar (Logout)"
+              startContent={<LogOut className="w-3.5 h-3.5 text-slate-400" />}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 min-h-[38px] rounded-xl text-xs font-medium shrink-0"
             >
-              <LogOut className="w-3.5 h-3.5 text-slate-400" />
-              <span>Keluar</span>
-            </button>
+              Keluar
+            </Button>
           </div>
         </div>
       </header>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <h1 className="sr-only">Dashboard Keuangan Rezekify</h1>
         {!isLoading && accounts.length === 0 && (
           <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-950/50 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-indigo-950/40">
             <div className="flex items-start gap-3.5">
@@ -282,15 +289,18 @@ export const DashboardPage: React.FC = () => {
             {accounts
               .filter((acc) => acc.is_active !== false)
               .map((acc) => (
-                <div
+                <Chip
                   key={acc.id}
-                  className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0 transition-colors shadow-sm"
+                  variant="flat"
+                  color="primary"
+                  size="sm"
+                  className="shrink-0"
                 >
-                  <span className="text-slate-300 font-medium">{acc.name}:</span>
-                  <span className="text-slate-100 font-semibold tabular-nums font-mono">
+                  <span className="text-slate-300 font-medium">{acc.name}:</span>{' '}
+                  <span className="text-white font-semibold tabular-nums font-mono">
                     Rp {acc.current_balance.toLocaleString('id-ID')}
                   </span>
-                </div>
+                </Chip>
               ))}
           </div>
         )}

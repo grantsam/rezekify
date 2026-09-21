@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Loader2, X, AlertCircle } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, Button } from '@heroui/react';
 import { apiFetch, setAuthToken } from '../services/apiClient';
 
 interface Props {
@@ -15,6 +16,17 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const dialogRef = React.useCallback((node: HTMLElement | null) => {
+    if (!node) return;
+    node.setAttribute('aria-labelledby', 'auth-modal-title');
+    const observer = new MutationObserver(() => {
+      if (node.getAttribute('aria-labelledby') !== 'auth-modal-title') {
+        node.setAttribute('aria-labelledby', 'auth-modal-title');
+      }
+    });
+    observer.observe(node, { attributes: true, attributeFilter: ['aria-labelledby'] });
+  }, []);
 
   if (!isOpen) return null;
 
@@ -61,148 +73,168 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="auth-modal-title"
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
-      tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+    <Modal
+      ref={dialogRef}
+      isOpen={isOpen}
+      onClose={onClose}
+      backdrop="blur"
+      classNames={{
+        base: 'bg-slate-900 border border-slate-800 text-white max-w-md',
+        backdrop: 'bg-black/75',
+        closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+      }}
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden">
-        {/* Glow accent */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-600/30">
-              R
-            </div>
-            <div>
-              <h3 id="auth-modal-title" className="font-bold text-base text-white">
-                {mode === 'login' ? 'Masuk ke Rezekify' : 'Daftar Akun Baru'}
-              </h3>
-              <p className="text-xs text-slate-400">Autonomous Financial Runway Engine</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Tutup modal autentikasi"
-            className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex bg-slate-950/70 p-1 rounded-xl mb-6 border border-slate-800/80">
-          <button
-            type="button"
-            onClick={() => {
-              setMode('login');
-              setError(null);
+      <ModalContent>
+        {() => (
+          <div
+            ref={(el) => {
+              el?.closest('[role="dialog"]')?.setAttribute('aria-labelledby', 'auth-modal-title');
             }}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-              mode === 'login'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            className="p-6 sm:p-8 relative overflow-hidden"
           >
-            <LogIn className="w-4 h-4" />
-            <span>Masuk</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode('register');
-              setError(null);
-            }}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-              mode === 'register'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Daftar Akun</span>
-          </button>
-        </div>
+            {/* Glow accent */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-            <span>{error}</span>
+            <ModalHeader id="auth-modal-title" className="p-0 mb-6">
+              <div className="flex items-center justify-between w-full pr-6">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-600/30">
+                    R
+                  </div>
+                  <div>
+                    <h3 id="auth-modal-title" className="font-bold text-base text-white">
+                      {mode === 'login' ? 'Masuk ke Rezekify' : 'Daftar Akun Baru'}
+                    </h3>
+                    <p className="text-xs text-slate-400">Autonomous Financial Runway Engine</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Tutup modal autentikasi"
+                  className="sr-only"
+                >
+                  Tutup modal autentikasi
+                </button>
+              </div>
+            </ModalHeader>
+
+            <ModalBody className="p-0">
+              {/* Tabs */}
+              <div className="flex bg-slate-950/70 p-1 rounded-xl mb-6 border border-slate-800/80">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                    mode === 'login'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Masuk</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                    mode === 'register'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Daftar Akun</span>
+                </button>
+              </div>
+
+              {/* Error Alert */}
+              {error && (
+                <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === 'register' && (
+                  <div>
+                    <label htmlFor="auth-fullname" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Nama Lengkap
+                    </label>
+                    <div className="relative flex items-center">
+                      <UserIcon className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
+                      <input
+                        id="auth-fullname"
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Contoh: Budi Santoso"
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 transition-all text-white"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="auth-email" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Alamat Email
+                  </label>
+                  <div className="relative flex items-center">
+                    <Mail className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
+                    <input
+                      id="auth-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="nama@email.com"
+                      className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 transition-all text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="auth-password" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Kata Sandi (Password)
+                  </label>
+                  <div className="relative flex items-center">
+                    <Lock className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
+                    <input
+                      id="auth-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 transition-all text-white"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  color="primary"
+                  isLoading={isLoading}
+                  disabled={isLoading}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold py-3 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 mt-6 active:scale-[0.99]"
+                >
+                  {isLoading ? (
+                    <span>Memproses...</span>
+                  ) : (
+                    <span>{mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}</span>
+                  )}
+                </Button>
+              </form>
+            </ModalBody>
           </div>
         )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === 'register' && (
-            <div>
-              <label htmlFor="auth-fullname" className="block text-xs font-semibold text-slate-300 mb-1.5">Nama Lengkap</label>
-              <div className="relative flex items-center">
-                <UserIcon className="w-4 h-4 absolute left-3.5 text-slate-500 pointer-events-none" />
-                <input
-                  id="auth-fullname"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Contoh: Budi Santoso"
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 transition-all text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="auth-email" className="block text-xs font-semibold text-slate-300 mb-1.5">Alamat Email</label>
-            <div className="relative flex items-center">
-              <Mail className="w-4 h-4 absolute left-3.5 text-slate-500 pointer-events-none" />
-              <input
-                id="auth-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="nama@email.com"
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 transition-all text-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="auth-password" className="block text-xs font-semibold text-slate-300 mb-1.5">Kata Sandi (Password)</label>
-            <div className="relative flex items-center">
-              <Lock className="w-4 h-4 absolute left-3.5 text-slate-500 pointer-events-none" />
-              <input
-                id="auth-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 transition-all text-white"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold py-3 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 mt-6 active:scale-[0.99]"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Memproses...</span>
-              </>
-            ) : (
-              <span>{mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}</span>
-            )}
-          </button>
-        </form>
-      </div>
-    </div>
+      </ModalContent>
+    </Modal>
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Chip, Progress } from '@heroui/react';
 import { Gauge, ShieldCheck, AlertCircle, AlertTriangle, Lock, Wallet } from 'lucide-react';
 import { DashboardSummaryResponse } from '../types/api';
 
@@ -15,9 +16,7 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Gauge className="w-5 h-5 text-indigo-400" />
-              <h3 className="font-semibold text-sm text-slate-300">
-                Batas Belanja Harian (Runway)
-              </h3>
+              <h2 className="font-semibold text-sm text-slate-300">Batas Belanja Harian (Runway)</h2>
             </div>
             <p className="text-xl sm:text-2xl font-bold text-white mt-3">
               Akses Telemetri Keuangan
@@ -73,17 +72,17 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
 
   const statusConfig = {
     HEALTHY: {
-      badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      color: 'success' as const,
       label: 'Aman Terkendali',
       icon: ShieldCheck,
     },
     WARNING: {
-      badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+      color: 'warning' as const,
       label: 'Mode Waspada',
       icon: AlertTriangle,
     },
     CRITICAL: {
-      badge: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+      color: 'danger' as const,
       label: 'Mode Hemat Ketat',
       icon: AlertCircle,
     },
@@ -97,16 +96,17 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Gauge className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-semibold text-sm text-slate-300">
-              Batas Belanja Harian (Runway)
-            </h3>
+            <h2 className="font-semibold text-sm text-slate-300">Batas Belanja Harian (Runway)</h2>
           </div>
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 ${statusConfig.badge}`}
+          <Chip
+            color={statusConfig.color}
+            variant="flat"
+            size="sm"
+            startContent={<StatusIcon className="w-3.5 h-3.5" />}
+            className="font-semibold text-xs"
           >
-            <StatusIcon className="w-3.5 h-3.5" />
             {statusConfig.label}
-          </span>
+          </Chip>
         </div>
 
         {/* Big Safe Runway Metric */}
@@ -118,6 +118,14 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
           <p className="text-xs text-slate-400 mt-2">
             Jatah belanja bebas risiko untuk <strong className="font-semibold text-slate-200">{summary.days_remaining} hari ke depan</strong> hingga siklus inflow berikutnya.
           </p>
+          <Progress
+            size="sm"
+            radius="full"
+            value={summary.days_remaining ? Math.min(100, Math.max(0, (summary.days_remaining / 30) * 100)) : 0}
+            color={statusConfig.color}
+            aria-label="Progres Hari Runway"
+            className="mt-3 opacity-80"
+          />
         </div>
       </div>
 

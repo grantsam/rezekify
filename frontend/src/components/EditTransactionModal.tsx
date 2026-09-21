@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Save, Calendar, Tag, CreditCard, FileText } from 'lucide-react';
+import { Loader2, Save, Calendar, Tag, CreditCard, FileText } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
 import { Account, Category, Transaction, TransactionUpdateRequest } from '../types/api';
 import { apiClient } from '../services/apiClient';
 
@@ -30,6 +31,17 @@ export const EditTransactionModal: React.FC<Props> = ({
   const [transactionDate, setTransactionDate] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const dialogRef = React.useCallback((node: HTMLElement | null) => {
+    if (!node) return;
+    node.setAttribute('aria-labelledby', 'edit-modal-title');
+    const observer = new MutationObserver(() => {
+      if (node.getAttribute('aria-labelledby') !== 'edit-modal-title') {
+        node.setAttribute('aria-labelledby', 'edit-modal-title');
+      }
+    });
+    observer.observe(node, { attributes: true, attributeFilter: ['aria-labelledby'] });
+  }, []);
 
   useEffect(() => {
     if (!transaction) return;
@@ -127,225 +139,246 @@ export const EditTransactionModal: React.FC<Props> = ({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="edit-modal-title"
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
-      tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+    <Modal
+      ref={dialogRef}
+      isOpen={isOpen}
+      onClose={onClose}
+      backdrop="blur"
+      disableAnimation
+      classNames={{
+        base: 'bg-slate-900 border border-slate-800 text-white max-w-lg',
+        backdrop: 'bg-black/75',
+        closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+      }}
     >
-      <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 text-white shadow-2xl relative my-8">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div>
-            <h3 id="edit-modal-title" className="font-semibold text-lg flex items-center gap-2 text-white">
-              <span>Edit Transaksi</span>
-              <span className="text-[10px] font-mono uppercase bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">
-                Reconciliation
-              </span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Perubahan nominal atau rekening akan merekonsiliasi saldo secara otomatis.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
-            aria-label="Tutup modal"
+      <ModalContent>
+        {() => (
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            ref={(el) => {
+              el?.closest('[role="dialog"]')?.setAttribute('aria-labelledby', 'edit-modal-title');
+            }}
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {errorMsg && (
-          <div className="mt-3 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-medium">
-            {errorMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} noValidate className="space-y-4 mt-4">
-          <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs">
-            {(['EXPENSE', 'INCOME', 'TRANSFER'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setType(t)}
-                className={`py-2 rounded-lg font-medium transition-all ${
-                  type === t
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {t === 'EXPENSE' ? 'Pengeluaran' : t === 'INCOME' ? 'Pemasukan' : 'Transfer'}
-              </button>
-            ))}
-          </div>
-
-          <div>
-            <label htmlFor="edit-amount-input" className="block text-xs font-medium text-slate-400 mb-1">
-              Nominal Transaksi (Rp) *
-            </label>
-            <input
-              id="edit-amount-input"
-              aria-label="Nominal Transaksi"
-              type="number"
-              min="1"
-              step="any"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Contoh: 75000"
-              required
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 tabular-nums"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="edit-desc-input" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-slate-500" />
-              <span>Keterangan Transaksi *</span>
-            </label>
-            <input
-              id="edit-desc-input"
-              aria-label="Keterangan Transaksi"
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Contoh: Belanja Bulanan di Supermarket"
-              required
-              maxLength={500}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-
-          {type !== 'TRANSFER' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="edit-account-select" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Rekening / Akun *</span>
-                </label>
-                <select
-                  id="edit-account-select"
-                  aria-label="Rekening / Akun"
-                  value={accountId}
-                  onChange={(e) => setAccountId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+            <ModalHeader id="edit-modal-title">
+              <div className="flex items-center justify-between w-full pr-6">
+                <div>
+                  <h3 id="edit-modal-title" className="font-semibold text-lg flex items-center gap-2 text-white">
+                    <span>Edit Transaksi</span>
+                    <span className="text-[10px] font-mono uppercase bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">
+                      Reconciliation
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Perubahan nominal atau rekening akan merekonsiliasi saldo secara otomatis.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Tutup modal"
+                  className="sr-only"
                 >
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
-                    </option>
-                  ))}
-                </select>
+                  Tutup modal
+                </button>
               </div>
+            </ModalHeader>
 
-              <div>
-                <label htmlFor="edit-category-select" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Kategori (Opsional)</span>
-                </label>
-                <select
-                  id="edit-category-select"
-                  aria-label="Kategori (Opsional)"
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="">-- Tanpa Kategori --</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="edit-from-account" className="block text-xs font-medium text-slate-400 mb-1">
-                  Dari Rekening Asal *
-                </label>
-                <select
-                  id="edit-from-account"
-                  aria-label="Dari Rekening Asal"
-                  value={fromAccountId}
-                  onChange={(e) => setFromAccountId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
-                >
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="edit-to-account" className="block text-xs font-medium text-slate-400 mb-1">
-                  Ke Rekening Tujuan *
-                </label>
-                <select
-                  id="edit-to-account"
-                  aria-label="Ke Rekening Tujuan"
-                  value={toAccountId}
-                  onChange={(e) => setToAccountId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
-                >
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="edit-datetime-input" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-500" />
-              <span>Waktu Transaksi</span>
-            </label>
-            <input
-              id="edit-datetime-input"
-              aria-label="Waktu Transaksi"
-              type="datetime-local"
-              value={transactionDate}
-              onChange={(e) => setTransactionDate(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-
-          <div className="pt-2 flex justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-xl transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Menyimpan...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  <span>Simpan Perubahan</span>
-                </>
+            <ModalBody>
+              {errorMsg && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-medium">
+                  {errorMsg}
+                </div>
               )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs">
+                  {(['EXPENSE', 'INCOME', 'TRANSFER'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setType(t)}
+                      className={`py-2 rounded-lg font-medium transition-all ${
+                        type === t
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {t === 'EXPENSE' ? 'Pengeluaran' : t === 'INCOME' ? 'Pemasukan' : 'Transfer'}
+                    </button>
+                  ))}
+                </div>
+
+                <div>
+                  <label htmlFor="edit-amount-input" className="block text-xs font-medium text-slate-400 mb-1">
+                    Nominal Transaksi (Rp) *
+                  </label>
+                  <input
+                    id="edit-amount-input"
+                    aria-label="Nominal Transaksi"
+                    type="number"
+                    min="1"
+                    step="any"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Contoh: 75000"
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 tabular-nums placeholder-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit-desc-input" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Keterangan Transaksi *</span>
+                  </label>
+                  <input
+                    id="edit-desc-input"
+                    aria-label="Keterangan Transaksi"
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Contoh: Belanja Bulanan di Supermarket"
+                    required
+                    maxLength={500}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 placeholder-slate-400"
+                  />
+                </div>
+
+                {type !== 'TRANSFER' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="edit-account-select" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Rekening / Akun *</span>
+                      </label>
+                      <select
+                        id="edit-account-select"
+                        aria-label="Rekening / Akun"
+                        value={accountId}
+                        onChange={(e) => setAccountId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      >
+                        {accounts.map((acc) => (
+                          <option key={acc.id} value={acc.id}>
+                            {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-category-select" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Kategori (Opsional)</span>
+                      </label>
+                      <select
+                        id="edit-category-select"
+                        aria-label="Kategori (Opsional)"
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="">-- Tanpa Kategori --</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="edit-from-account" className="block text-xs font-medium text-slate-400 mb-1">
+                        Dari Rekening Asal *
+                      </label>
+                      <select
+                        id="edit-from-account"
+                        aria-label="Dari Rekening Asal"
+                        value={fromAccountId}
+                        onChange={(e) => setFromAccountId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      >
+                        {accounts.map((acc) => (
+                          <option key={acc.id} value={acc.id}>
+                            {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="edit-to-account" className="block text-xs font-medium text-slate-400 mb-1">
+                        Ke Rekening Tujuan *
+                      </label>
+                      <select
+                        id="edit-to-account"
+                        aria-label="Ke Rekening Tujuan"
+                        value={toAccountId}
+                        onChange={(e) => setToAccountId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      >
+                        {accounts.map((acc) => (
+                          <option key={acc.id} value={acc.id}>
+                            {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="edit-datetime-input" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Waktu Transaksi</span>
+                  </label>
+                  <input
+                    id="edit-datetime-input"
+                    aria-label="Waktu Transaksi"
+                    type="datetime-local"
+                    value={transactionDate}
+                    onChange={(e) => setTransactionDate(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+            </ModalBody>
+
+            <ModalFooter>
+              <Button
+                type="button"
+                variant="light"
+                onPress={onClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-xl transition-colors"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                color="primary"
+                isLoading={isSubmitting}
+                disabled={isSubmitting}
+                className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:scale-95 rounded-xl shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Perubahan</span>
+                  </>
+                )}
+              </Button>
+            </ModalFooter>
+          </form>
+        )}
+      </ModalContent>
+    </Modal>
   );
 };

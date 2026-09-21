@@ -48,6 +48,10 @@ describe('TransactionsTable Component', () => {
     const deleteButtons = screen.getAllByRole('button', { name: /Hapus transaksi/i });
     fireEvent.click(deleteButtons[0]);
 
+    // Confirm deletion in safety modal
+    const confirmButton = screen.getByRole('button', { name: /Ya, Hapus/i });
+    fireEvent.click(confirmButton);
+
     expect(handleDelete).toHaveBeenCalledWith('tx-1');
   });
 

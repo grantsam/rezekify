@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Loader2, Building2, Wallet, Coins } from 'lucide-react';
+import { Loader2, Building2, Wallet, Coins } from 'lucide-react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
 import { AccountType } from '../types/api';
 import { apiFetch } from '../services/apiClient';
 
@@ -25,6 +26,17 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const [initialBalance, setInitialBalance] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const dialogRef = React.useCallback((node: HTMLElement | null) => {
+    if (!node) return;
+    node.setAttribute('aria-labelledby', 'account-modal-title');
+    const observer = new MutationObserver(() => {
+      if (node.getAttribute('aria-labelledby') !== 'account-modal-title') {
+        node.setAttribute('aria-labelledby', 'account-modal-title');
+      }
+    });
+    observer.observe(node, { attributes: true, attributeFilter: ['aria-labelledby'] });
+  }, []);
 
   if (!isOpen) return null;
 
@@ -77,111 +89,128 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="account-modal-title"
-      onKeyDown={(e) => e.key === 'Escape' && handleClose()}
-      tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+    <Modal
+      ref={dialogRef}
+      isOpen={isOpen}
+      onClose={handleClose}
+      backdrop="blur"
+      classNames={{
+        base: 'bg-slate-900 border border-slate-800 text-white',
+        backdrop: 'bg-black/75',
+        closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+      }}
     >
-      <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 text-white shadow-2xl relative">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <h3 id="account-modal-title" className="font-semibold text-lg text-slate-100">Tambah Akun Baru</h3>
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="Tutup modal"
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+      <ModalContent>
+        {(_modalClose) => (
+          <form
+            onSubmit={handleSubmit}
+            ref={(el) => {
+              el?.closest('[role="dialog"]')?.setAttribute('aria-labelledby', 'account-modal-title');
+            }}
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {errorMsg && (
-          <div className="mt-3 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">
-            {errorMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div>
-            <label htmlFor="account-name" className="block text-xs font-medium text-slate-400 mb-1.5">
-              Nama Rekening / Akun
-            </label>
-            <input
-              id="account-name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: BCA Utama, GoPay, Dompet Tunai"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-            />
-          </div>
-
-          <div>
-            <span className="block text-xs font-medium text-slate-400 mb-1.5">Tipe Akun</span>
-            <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-              {ACCOUNT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
+            <ModalHeader id="account-modal-title">
+              <div className="flex items-center justify-between w-full pr-6">
+                <h3 id="account-modal-title" className="font-semibold text-lg text-slate-100">Tambah Akun Baru</h3>
                 <button
-                  key={type}
                   type="button"
-                  onClick={() => setAccountType(type)}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium transition-all ${
-                    accountType === type
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                      : 'text-slate-400 hover:text-white border border-transparent'
-                  }`}
+                  onClick={handleClose}
+                  aria-label="Tutup modal"
+                  className="sr-only"
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{label}</span>
+                  Tutup modal
                 </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="initial-balance" className="block text-xs font-medium text-slate-400 mb-1.5">
-              Saldo Awal (Rp)
-            </label>
-            <input
-              id="initial-balance"
-              type="number"
-              min="0"
-              step="any"
-              value={initialBalance}
-              onChange={(e) => setInitialBalance(e.target.value)}
-              placeholder="0"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-            />
-          </div>
-
-          <div className="pt-2 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-xl text-xs text-white transition-colors flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" data-testid="submit-loading-spinner" />
-                  <span>Menyimpan...</span>
-                </>
-              ) : (
-                <span>Simpan Akun</span>
+              </div>
+            </ModalHeader>
+            <ModalBody>
+              {errorMsg && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">
+                  {errorMsg}
+                </div>
               )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="account-name" className="block text-xs font-medium text-slate-400 mb-1.5">
+                    Nama Rekening / Akun
+                  </label>
+                  <input
+                    id="account-name"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Contoh: BCA Utama, GoPay, Dompet Tunai"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <span className="block text-xs font-medium text-slate-400 mb-1.5">Tipe Akun</span>
+                  <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                    {ACCOUNT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setAccountType(type)}
+                        className={`flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium transition-all ${
+                          accountType === type
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
+                            : 'text-slate-400 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="initial-balance" className="block text-xs font-medium text-slate-400 mb-1.5">
+                    Saldo Awal (Rp)
+                  </label>
+                  <input
+                    id="initial-balance"
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={initialBalance}
+                    onChange={(e) => setInitialBalance(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                type="button"
+                variant="light"
+                onPress={handleClose}
+                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                color="primary"
+                isLoading={isSubmitting}
+                disabled={isSubmitting}
+                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 font-medium rounded-xl text-xs text-white transition-colors"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" data-testid="submit-loading-spinner" />
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <span>Simpan Akun</span>
+                )}
+              </Button>
+            </ModalFooter>
+          </form>
+        )}
+      </ModalContent>
+    </Modal>
   );
 };

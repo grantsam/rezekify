@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Tooltip, Progress } from '@heroui/react';
 import { BarChart3, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { apiFetch } from '../services/apiClient';
@@ -115,7 +116,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
         <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-800 rounded-xl">
           <BarChart3 className="w-8 h-8 text-slate-600 mb-2" />
           <p className="font-semibold text-xs text-slate-300">Belum Ada Pengeluaran Tercatat</p>
-          <p className="text-[11px] text-slate-500 max-w-xs mt-0.5">
+          <p className="text-[11px] text-slate-400 max-w-xs mt-0.5">
             Unggah struk atau ketik transaksi pada Omni-Input di atas untuk melihat analitik langsung.
           </p>
         </div>
@@ -141,45 +142,60 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               const isOver = item.amount > item.safe_runway_threshold;
               const diffOver = item.amount - item.safe_runway_threshold;
               return (
-                <div
+                <Tooltip
                   key={item.date}
-                  tabIndex={0}
-                  aria-label={`${item.day_label}, ${item.date}: Rp ${item.amount.toLocaleString('id-ID')} (${isOver ? 'Melebihi Jatah' : 'Sesuai Jatah'})`}
-                  className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 rounded-t-lg"
+                  placement="top"
+                  delay={0}
+                  closeDelay={0}
+                  content={
+                    <div className="p-1.5 flex flex-col items-center">
+                      <p className="text-[11px] font-medium text-slate-400">
+                        {item.day_label} · {item.date}
+                      </p>
+                      <p className="text-xs font-bold text-white tabular-nums my-0.5">
+                        Rp {item.amount.toLocaleString('id-ID')}
+                      </p>
+                      <span
+                        className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full mt-1 ${
+                          isOver
+                            ? 'text-rose-400 bg-rose-950/70 border border-rose-800/60'
+                            : 'text-emerald-400 bg-emerald-950/70 border border-emerald-800/60'
+                        }`}
+                      >
+                        {isOver
+                          ? `Melebihi Jatah (+Rp ${diffOver.toLocaleString('id-ID')})`
+                          : 'Sesuai Jatah'}
+                      </span>
+                    </div>
+                  }
+                  className="bg-slate-950/95 border border-slate-700/80 rounded-xl shadow-2xl"
                 >
-                  {/* Interactive Tooltip Card */}
-                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 pointer-events-none z-30 whitespace-nowrap bg-slate-950/95 border border-slate-700/80 p-2.5 rounded-xl shadow-2xl flex flex-col items-center">
-                    <p className="text-[11px] font-medium text-slate-400">
-                      {item.day_label} · {item.date}
-                    </p>
-                    <p className="text-xs font-bold text-white tabular-nums my-0.5">
-                      Rp {item.amount.toLocaleString('id-ID')}
-                    </p>
-                    <span
-                      className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full mt-1 ${
-                        isOver
-                          ? 'text-rose-400 bg-rose-950/70 border border-rose-800/60'
-                          : 'text-emerald-400 bg-emerald-950/70 border border-emerald-800/60'
-                      }`}
-                    >
+                  <div
+                    tabIndex={0}
+                    aria-label={`${item.day_label}, ${item.date}: Rp ${item.amount.toLocaleString('id-ID')} (${isOver ? 'Melebihi Jatah' : 'Sesuai Jatah'})`}
+                    className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 rounded-t-lg"
+                  >
+                    {/* Screen-reader and testing fallback for status badge */}
+                    <span className="sr-only">
                       {isOver
                         ? `Melebihi Jatah (+Rp ${diffOver.toLocaleString('id-ID')})`
                         : 'Sesuai Jatah'}
                     </span>
-                  </div>
 
-                  {/* Bar track */}
-                  <div className="w-full bg-slate-800/70 rounded-t-lg h-full relative flex items-end overflow-hidden">
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: `${heightPct}%` }}
-                      transition={{ type: 'spring', stiffness: 220, damping: 20, delay: idx * 0.04 }}
-                      className={`w-full rounded-t-md transition-colors ${
-                        isOver ? 'bg-rose-500' : 'bg-emerald-500'
-                      }`}
-                    />
+                    {/* Bar track */}
+                    <div className="w-full bg-slate-800/70 rounded-t-lg h-full relative flex items-end overflow-hidden">
+                      <motion.div
+                        style={{ originY: 1, height: '100%' }}
+                        initial={{ scaleY: 0 }}
+                        animate={{ scaleY: heightPct / 100 }}
+                        transition={{ type: 'spring', stiffness: 220, damping: 20, delay: idx * 0.04 }}
+                        className={`w-full rounded-t-md transition-colors ${
+                          isOver ? 'bg-rose-500' : 'bg-emerald-500'
+                        }`}
+                      />
+                    </div>
                   </div>
-                </div>
+                </Tooltip>
               );
             })}
           </div>
@@ -204,7 +220,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
         </div>
       ) : period === 'monthly' && monthlyData ? (
         <div className="space-y-3 py-2">
-          {monthlyData.items.map((item, idx) => (
+          {monthlyData.items.map((item) => (
             <div key={item.category_id || item.category_name} className="space-y-1">
               <div className="flex justify-between text-xs">
                 <span className="text-slate-300 font-medium">{item.category_name}</span>
@@ -212,22 +228,14 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   Rp {item.amount.toLocaleString('id-ID')} ({item.percentage}%)
                 </span>
               </div>
-              <div
-                role="progressbar"
-                aria-valuenow={item.percentage}
-                aria-valuemin={0}
-                aria-valuemax={100}
+              <Progress
+                value={item.percentage}
+                color="primary"
+                size="sm"
+                radius="full"
                 aria-label={`${item.category_name}: ${item.percentage}%`}
-                className="h-2 w-full bg-slate-800 rounded-full overflow-hidden"
-              >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${item.percentage}%` }}
-                  transition={{ type: 'spring', stiffness: 180, damping: 22, delay: idx * 0.05 }}
-                  style={{ backgroundColor: item.color || '#6366f1' }}
-                  className="h-full rounded-full"
-                />
-              </div>
+                className="w-full"
+              />
             </div>
           ))}
         </div>
