@@ -94,7 +94,7 @@ def list_transactions(
     return (
         db.query(Transaction)
         .filter(Transaction.user_id == current_user.id)
-        .order_by(Transaction.transaction_date.desc())
+        .order_by(Transaction.transaction_date.desc(), Transaction.id.desc())
         .offset(offset)
         .limit(limit)
         .all()
