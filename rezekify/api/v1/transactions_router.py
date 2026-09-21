@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
@@ -85,7 +85,8 @@ class ManualTransferRequest(BaseModel):
 @transactions_router.get("", response_model=List[TransactionItemResponse])
 @transactions_router.get("/", response_model=List[TransactionItemResponse])
 def list_transactions(
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=100, description="Max number of transactions to return (1-100)."),
+    offset: int = Query(default=0, ge=0, description="Number of transactions to skip for pagination."),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -94,6 +95,7 @@ def list_transactions(
         db.query(Transaction)
         .filter(Transaction.user_id == current_user.id)
         .order_by(Transaction.transaction_date.desc())
+        .offset(offset)
         .limit(limit)
         .all()
     )

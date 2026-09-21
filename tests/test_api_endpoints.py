@@ -609,6 +609,78 @@ def test_simulate_purchase_api(sample_user, db_session):
         assert "Nominal belanja harus lebih besar dari 0." in res_neg.json()["detail"]
 
 
+def test_list_transactions_pagination_and_bounds(sample_user, db_session):
+    """Tests pagination offset, limit capping, and boundary validation on list_transactions."""
+    import time
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Create an account
+        acc_res = client.post(
+            "/api/v1/accounts",
+            json={"name": "Dompet Utama", "account_type": "CASH", "initial_balance": 1000000.00},
+            headers=headers,
+        )
+        assert acc_res.status_code == 200
+        account_id = acc_res.json()["id"]
+
+        # Create 5 transactions with distinct amounts or descriptions
+        for i in range(1, 6):
+            res = client.post(
+                "/api/v1/transactions",
+                json={
+                    "transaction_type": "EXPENSE",
+                    "account_id": account_id,
+                    "amount": 10000.0 * i,
+                    "description": f"Transaksi Ke-{i}",
+                },
+                headers=headers,
+            )
+            assert res.status_code == 200
+            time.sleep(0.01)
+
+        # Query with default params: assert returns all 5 transactions
+        res_default = client.get("/api/v1/transactions", headers=headers)
+        assert res_default.status_code == 200
+        txs_default = res_default.json()
+        assert len(txs_default) == 5
+
+        # Query with limit=2&offset=0: assert returns 2 transactions
+        res_p1 = client.get("/api/v1/transactions?limit=2&offset=0", headers=headers)
+        assert res_p1.status_code == 200
+        txs_p1 = res_p1.json()
+        assert len(txs_p1) == 2
+
+        # Query with limit=2&offset=2: assert returns the next 2 transactions (verify they are different from page 1)
+        res_p2 = client.get("/api/v1/transactions?limit=2&offset=2", headers=headers)
+        assert res_p2.status_code == 200
+        txs_p2 = res_p2.json()
+        assert len(txs_p2) == 2
+        p1_ids = {tx["id"] for tx in txs_p1}
+        p2_ids = {tx["id"] for tx in txs_p2}
+        assert p1_ids.isdisjoint(p2_ids)
+
+        # Query with limit=2&offset=4: assert returns 1 transaction
+        res_p3 = client.get("/api/v1/transactions?limit=2&offset=4", headers=headers)
+        assert res_p3.status_code == 200
+        txs_p3 = res_p3.json()
+        assert len(txs_p3) == 1
+        assert txs_p3[0]["id"] not in p1_ids
+        assert txs_p3[0]["id"] not in p2_ids
+
+        # Query with limit=0: assert status_code == 422
+        assert client.get("/api/v1/transactions?limit=0", headers=headers).status_code == 422
+
+        # Query with limit=101: assert status_code == 422
+        assert client.get("/api/v1/transactions?limit=101", headers=headers).status_code == 422
+
+        # Query with offset=-1: assert status_code == 422
+        assert client.get("/api/v1/transactions?offset=-1", headers=headers).status_code == 422
+
+
 @pytest.fixture(name="client")
 def client_fixture():
     return client
