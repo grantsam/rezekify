@@ -1,5 +1,3 @@
-import pytest
-from uuid import uuid4
 from decimal import Decimal
 from rezekify.db.models import (
     User, Account, Vault, Category, Transaction, LedgerEntry,

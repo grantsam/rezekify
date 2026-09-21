@@ -22,6 +22,14 @@ export interface TokenResponse {
   user?: User;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  category_type?: string;
+  icon?: string;
+  color?: string;
+}
+
 export interface Account {
   id: string;
   name: string;
@@ -127,4 +135,16 @@ export interface MonthlySpendingResponse {
 }
 
 export type SpendingBreakdownResponse = DailySpendingResponse | MonthlySpendingResponse;
+
+export interface TransactionUpdateRequest {
+  transaction_type?: 'EXPENSE' | 'INCOME' | 'TRANSFER';
+  amount: number;
+  description: string;
+  account_id?: string;
+  category_id?: string;
+  from_account_id?: string;
+  to_account_id?: string;
+  transaction_date?: string;
+}
+
 

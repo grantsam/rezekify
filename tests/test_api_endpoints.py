@@ -689,6 +689,86 @@ def test_delete_transaction_nonexistent_returns_404(client, auth_headers):
     assert res.json()["detail"] == "Transaction not found"
 
 
+def test_update_transaction_endpoint_success():
+    import uuid
+
+    email = f"update_succ_{uuid.uuid4().hex[:6]}@rezekify.id"
+    reg_res = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Password123!",
+            "full_name": "Update Success Tester",
+        },
+    )
+    token = reg_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    acc_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "BCA Update", "account_type": "BANK", "initial_balance": 1000000.00},
+        headers=headers,
+    )
+    acc_id = acc_res.json()["id"]
+
+    exp_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc_id,
+            "amount": 50000.00,
+            "description": "Original Expense",
+        },
+        headers=headers,
+    )
+    assert exp_res.status_code == 200
+    tx_id = exp_res.json()["id"]
+
+    update_res = client.put(
+        f"/api/v1/transactions/{tx_id}",
+        json={
+            "amount": 120000.00,
+            "description": "Updated Expense Note",
+        },
+        headers=headers,
+    )
+    assert update_res.status_code == 200
+    data = update_res.json()
+    assert data["id"] == tx_id
+    assert data["description"] == "Updated Expense Note"
+    assert len(data["ledger_entries"]) == 2
+    for entry in data["ledger_entries"]:
+        assert Decimal(str(entry["amount"])) == Decimal("120000.00")
+
+
+def test_update_transaction_endpoint_not_found():
+    import uuid
+
+    email = f"update_404_{uuid.uuid4().hex[:6]}@rezekify.id"
+    reg_res = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Password123!",
+            "full_name": "Update 404 Tester",
+        },
+    )
+    token = reg_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    random_id = str(uuid.uuid4())
+    res = client.put(
+        f"/api/v1/transactions/{random_id}",
+        json={
+            "amount": 50000.00,
+            "description": "Non-existent Tx",
+        },
+        headers=headers,
+    )
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Transaction not found"
+
+
 def test_delete_transaction_database_error_raises_500(client, auth_headers):
     with patch("rezekify.services.ledger.LedgerService.delete_transaction", side_effect=RuntimeError("DB dead")):
         fake_id = str(uuid.uuid4())
@@ -735,4 +815,111 @@ def test_register_whitespace_only_full_name_fails(client):
         json={"email": "valid@example.com", "password": "validpassword123", "full_name": "     "},
     )
     assert res.status_code == 422
+
+
+def test_update_transaction_endpoint_invalid_amount():
+    import uuid
+
+    email = f"update_inv_{uuid.uuid4().hex[:6]}@rezekify.id"
+    reg_res = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Password123!",
+            "full_name": "Update Invalid Tester",
+        },
+    )
+    token = reg_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    acc_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "BCA Invalid", "account_type": "BANK", "initial_balance": 500000.00},
+        headers=headers,
+    )
+    acc_id = acc_res.json()["id"]
+
+    exp_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc_id,
+            "amount": 30000.00,
+            "description": "Valid Expense",
+        },
+        headers=headers,
+    )
+    tx_id = exp_res.json()["id"]
+
+    # Negative amount -> 400
+    res = client.put(
+        f"/api/v1/transactions/{tx_id}",
+        json={
+            "amount": -50000.00,
+            "description": "Negative Amount Update",
+        },
+        headers=headers,
+    )
+    assert res.status_code == 400
+    assert "Amount must be positive" in res.json()["detail"]
+
+
+def test_update_transaction_endpoint_tenant_isolation():
+    import uuid
+
+    # User A
+    email_a = f"user_a_{uuid.uuid4().hex[:6]}@rezekify.id"
+    reg_a = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email_a,
+            "password": "Password123!",
+            "full_name": "User A",
+        },
+    )
+    token_a = reg_a.json()["access_token"]
+    headers_a = {"Authorization": f"Bearer {token_a}"}
+
+    acc_a = client.post(
+        "/api/v1/accounts",
+        json={"name": "Acc A", "account_type": "BANK", "initial_balance": 500000.00},
+        headers=headers_a,
+    ).json()
+
+    exp_a = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc_a["id"],
+            "amount": 40000.00,
+            "description": "User A Expense",
+        },
+        headers=headers_a,
+    ).json()
+    tx_a_id = exp_a["id"]
+
+    # User B
+    email_b = f"user_b_{uuid.uuid4().hex[:6]}@rezekify.id"
+    reg_b = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email_b,
+            "password": "Password123!",
+            "full_name": "User B",
+        },
+    )
+    token_b = reg_b.json()["access_token"]
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    # User B attempts to update User A's transaction
+    res = client.put(
+        f"/api/v1/transactions/{tx_a_id}",
+        json={
+            "amount": 60000.00,
+            "description": "User B Hijack Attempt",
+        },
+        headers=headers_b,
+    )
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Transaction not found"
 

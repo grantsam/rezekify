@@ -3,9 +3,8 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock
-import pytest
 
-from rezekify.db.models import Account, AccountType, User
+from rezekify.db.models import Account, AccountType
 from rezekify.gateway.telegram_bot import TelegramGateway
 
 

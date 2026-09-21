@@ -291,6 +291,332 @@ def test_cross_tenant_isolation_enforced(db_session, sample_user):
         service.delete_transaction(user_id=sample_user.id, transaction_id=other_tx.id)
 
 
+def test_update_expense_amount_adjusts_balance(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    cat = Category(
+        user_id=sample_user.id,
+        name="Makanan",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([acc, cat])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat.id,
+        amount=Decimal("100000.00"),
+        description="Makan Siang",
+    )
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("900000.00")
+
+    # Increase expense from 100,000 to 150,000
+    updated_tx = service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("150000.00"),
+        description="Makan Siang Mewah",
+        account_id=acc.id,
+        category_id=cat.id,
+    )
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("850000.00")
+    assert updated_tx.description == "Makan Siang Mewah"
+    assert len(updated_tx.ledger_entries) == 2
+    debits = sum(e.amount for e in updated_tx.ledger_entries if e.entry_type == EntryType.DEBIT)
+    credits = sum(e.amount for e in updated_tx.ledger_entries if e.entry_type == EntryType.CREDIT)
+    assert debits == credits == Decimal("150000.00")
+
+    # Decrease expense from 150,000 to 60,000
+    service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("60000.00"),
+        description="Makan Siang Hemat",
+        account_id=acc.id,
+        category_id=cat.id,
+    )
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("940000.00")
+
+
+def test_update_expense_switch_account(db_session, sample_user):
+    acc_bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    acc_gopay = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add_all([acc_bca, acc_gopay])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_expense(
+        user_id=sample_user.id,
+        account_id=acc_bca.id,
+        category_id=None,
+        amount=Decimal("100000.00"),
+        description="Beli Kopi",
+    )
+    db_session.refresh(acc_bca)
+    db_session.refresh(acc_gopay)
+    assert acc_bca.current_balance == Decimal("900000.00")
+    assert acc_gopay.current_balance == Decimal("500000.00")
+
+    # Switch account from BCA to GoPay and change amount to 120,000
+    updated_tx = service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("120000.00"),
+        description="Beli Kopi Specialty",
+        account_id=acc_gopay.id,
+        category_id=None,
+    )
+    db_session.refresh(acc_bca)
+    db_session.refresh(acc_gopay)
+    # BCA is refunded original 100,000
+    assert acc_bca.current_balance == Decimal("1000000.00")
+    # GoPay is charged new 120,000
+    assert acc_gopay.current_balance == Decimal("380000.00")
+    credit_entry = next(e for e in updated_tx.ledger_entries if e.entry_type == EntryType.CREDIT)
+    assert credit_entry.account_id == acc_gopay.id
+
+
+def test_update_income_amount_adjusts_balance(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_income(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("1000000.00"),
+        description="Freelance",
+    )
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("1500000.00")
+
+    # Increase income to 1,200,000
+    updated_tx = service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("1200000.00"),
+        description="Freelance Bonus",
+        account_id=acc.id,
+    )
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("1700000.00")
+    debits = sum(e.amount for e in updated_tx.ledger_entries if e.entry_type == EntryType.DEBIT)
+    credits = sum(e.amount for e in updated_tx.ledger_entries if e.entry_type == EntryType.CREDIT)
+    assert debits == credits == Decimal("1200000.00")
+
+    # Decrease income to 800,000
+    service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("800000.00"),
+        description="Freelance Partial",
+        account_id=acc.id,
+    )
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("1300000.00")
+
+
+def test_update_transfer_amount_and_accounts(db_session, sample_user):
+    acc_bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    acc_gopay = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("500000.00"),
+    )
+    acc_mandiri = Account(
+        user_id=sample_user.id,
+        name="Mandiri",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("2000000.00"),
+    )
+    db_session.add_all([acc_bca, acc_gopay, acc_mandiri])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_transfer(
+        user_id=sample_user.id,
+        from_account_id=acc_bca.id,
+        to_account_id=acc_gopay.id,
+        amount=Decimal("200000.00"),
+        description="Topup",
+    )
+    db_session.refresh(acc_bca)
+    db_session.refresh(acc_gopay)
+    db_session.refresh(acc_mandiri)
+    assert acc_bca.current_balance == Decimal("800000.00")
+    assert acc_gopay.current_balance == Decimal("700000.00")
+    assert acc_mandiri.current_balance == Decimal("2000000.00")
+
+    # Update transfer: change source from BCA to Mandiri, change amount from 200,000 to 300,000
+    updated_tx = service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("300000.00"),
+        description="Topup Mandiri ke GoPay",
+        account_id=acc_mandiri.id,
+        to_account_id=acc_gopay.id,
+    )
+    db_session.refresh(acc_bca)
+    db_session.refresh(acc_gopay)
+    db_session.refresh(acc_mandiri)
+
+    # BCA restored: 800,000 + 200,000 = 1,000,000
+    assert acc_bca.current_balance == Decimal("1000000.00")
+    # GoPay: 700,000 - 200,000 (reversal) + 300,000 (new) = 800,000
+    assert acc_gopay.current_balance == Decimal("800000.00")
+    # Mandiri: 2,000,000 - 300,000 = 1,700,000
+    assert acc_mandiri.current_balance == Decimal("1700000.00")
+
+    credit_entry = next(e for e in updated_tx.ledger_entries if e.entry_type == EntryType.CREDIT)
+    debit_entry = next(e for e in updated_tx.ledger_entries if e.entry_type == EntryType.DEBIT)
+    assert credit_entry.account_id == acc_mandiri.id
+    assert debit_entry.account_id == acc_gopay.id
+    assert credit_entry.amount == debit_entry.amount == Decimal("300000.00")
+
+
+def test_update_transaction_tenant_isolation(db_session, sample_user):
+    from sqlalchemy.orm.exc import NoResultFound
+    from rezekify.db.models import User
+
+    other_user = User(
+        email="other_user_update@rezekify.local",
+        password_hash="hash_other",
+        full_name="Other User",
+    )
+    db_session.add(other_user)
+    db_session.commit()
+
+    user_a_acc = Account(
+        user_id=sample_user.id,
+        name="User A Acc",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    user_b_acc = Account(
+        user_id=other_user.id,
+        name="User B Acc",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    user_b_cat = Category(
+        user_id=other_user.id,
+        name="User B Category",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([user_a_acc, user_b_acc, user_b_cat])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx_a = service.record_expense(
+        user_id=sample_user.id,
+        account_id=user_a_acc.id,
+        category_id=None,
+        amount=Decimal("50000.00"),
+        description="User A Item",
+    )
+
+    # 1. User B cannot update User A's transaction
+    with pytest.raises(NoResultFound):
+        service.update_transaction(
+            user_id=other_user.id,
+            transaction_id=tx_a.id,
+            amount=Decimal("60000.00"),
+            description="Unauthorized Update",
+            account_id=user_b_acc.id,
+        )
+
+    # 2. User A cannot use User B's account
+    with pytest.raises(ValueError, match="Account not found or access denied"):
+        service.update_transaction(
+            user_id=sample_user.id,
+            transaction_id=tx_a.id,
+            amount=Decimal("60000.00"),
+            description="Account Theft",
+            account_id=user_b_acc.id,
+        )
+
+    # 3. User A cannot use User B's category
+    with pytest.raises(ValueError, match="Category not found or access denied"):
+        service.update_transaction(
+            user_id=sample_user.id,
+            transaction_id=tx_a.id,
+            amount=Decimal("60000.00"),
+            description="Category Theft",
+            account_id=user_a_acc.id,
+            category_id=user_b_cat.id,
+        )
+
+
+def test_update_transaction_negative_amount_rejected(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="Cash",
+        account_type=AccountType.CASH,
+        current_balance=Decimal("100000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("50000.00"),
+        description="Belanja",
+    )
+
+    with pytest.raises(ValueError, match="Amount must be positive"):
+        service.update_transaction(
+            user_id=sample_user.id,
+            transaction_id=tx.id,
+            amount=Decimal("0.00"),
+            description="Zero amount",
+            account_id=acc.id,
+        )
+
+    with pytest.raises(ValueError, match="Amount must be positive"):
+        service.update_transaction(
+            user_id=sample_user.id,
+            transaction_id=tx.id,
+            amount=Decimal("-10000.00"),
+            description="Negative amount",
+            account_id=acc.id,
+        )
+
+
 def test_ledger_mutations_use_row_locking(db_session, sample_user):
     acc1 = Account(
         user_id=sample_user.id,

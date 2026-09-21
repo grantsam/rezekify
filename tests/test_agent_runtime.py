@@ -1,12 +1,11 @@
 """Tests for ReActAgent runtime and failover logic."""
 
-import sys
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 import pytest
 
 try:
-    import google.genai.types  # Pre-import to resolve namespace package
+    import google.genai.types  # noqa: F401  # Pre-import to resolve namespace package
 except ImportError:
     pass
 

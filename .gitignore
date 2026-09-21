@@ -55,5 +55,12 @@ Thumbs.db
 .vscode/
 *.swp
 
-# Superpowers SDD workspace
+# Superpowers SDD workspace & Claude Code
 .superpowers/
+.claude/
+
+# Databases & caches
+*.db
+*.sqlite3
+.ruff_cache/
+.mypy_cache/

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getAuthHeader, setAuthToken, clearAuthToken, getAuthToken, apiFetch } from '../services/apiClient';
+import { getAuthHeader, setAuthToken, clearAuthToken, getAuthToken, apiFetch, updateTransaction } from '../services/apiClient';
+import { Transaction, TransactionUpdateRequest } from '../types/api';
 
 describe('apiClient authentication headers and utilities', () => {
   beforeEach(() => {
@@ -95,5 +96,42 @@ describe('apiClient authentication headers and utilities', () => {
 
     await apiFetch('no-leading-slash');
     expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/v1/no-leading-slash', expect.anything());
+  });
+
+  it('updateTransaction sends PUT request with correct URL, auth headers, and body', async () => {
+    setAuthToken('auth-token-123');
+    const mockTx: Transaction = {
+      id: 'tx-123',
+      description: 'Updated lunch',
+      source_channel: 'WEB_MANUAL',
+      transaction_date: '2026-09-22T12:00:00Z',
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockTx,
+    });
+
+    const payload: TransactionUpdateRequest = {
+      amount: 75000,
+      description: 'Updated lunch',
+      account_id: 'acc-1',
+      category_id: 'cat-1',
+      transaction_date: '2026-09-22T12:00:00Z',
+    };
+
+    const res = await updateTransaction('tx-123', payload);
+    expect(res).toEqual(mockTx);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/transactions/tx-123',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify(payload),
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer auth-token-123',
+        }),
+      })
+    );
   });
 });

@@ -16,6 +16,7 @@ import {
   DashboardSummaryResponse,
   Transaction,
   Account,
+  Category,
   ChatResponse,
   ReceiptUploadResponse,
 } from '../types/api';
@@ -28,6 +29,7 @@ import { ManualTransactionModal } from '../components/ManualTransactionModal';
 import { AccountModal } from '../components/AccountModal';
 import { VaultModal } from '../components/VaultModal';
 import { SimulatePurchaseModal } from '../components/SimulatePurchaseModal';
+import { EditTransactionModal } from '../components/EditTransactionModal';
 
 export const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -40,6 +42,9 @@ export const DashboardPage: React.FC = () => {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState<boolean>(false);
   const [isSimulateModalOpen, setIsSimulateModalOpen] = useState<boolean>(false);
+  const [selectedTxForEdit, setSelectedTxForEdit] = useState<Transaction | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [aiMessage, setAiMessage] = useState<{ text: string; isError?: boolean } | null>(null);
@@ -47,21 +52,28 @@ export const DashboardPage: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [sumData, txData, accData] = await Promise.all([
+      const [sumData, txData, accData, catData] = await Promise.all([
         apiFetch<DashboardSummaryResponse>('/dashboard/summary').catch(() => null),
         apiFetch<Transaction[]>('/transactions').catch(() => []),
         apiFetch<Account[]>('/accounts').catch(() => []),
+        apiFetch<Category[]>('/categories').catch(() => []),
       ]);
 
       if (sumData) setSummary(sumData);
       setTransactions(txData || []);
       setAccounts(accData || []);
+      setCategories(catData || []);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  const triggerRefresh = useCallback(() => {
+    loadData();
+    setRefreshTrigger((prev) => prev + 1);
+  }, [loadData]);
 
   useEffect(() => {
     loadData();
@@ -306,9 +318,29 @@ export const DashboardPage: React.FC = () => {
         <TransactionsTable
           transactions={transactions}
           onDelete={handleDeleteTransaction}
+          onEdit={(tx) => {
+            setSelectedTxForEdit(tx);
+            setIsEditModalOpen(true);
+          }}
           isLoading={isDeleting}
         />
       </main>
+
+      <EditTransactionModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedTxForEdit(null);
+        }}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          setSelectedTxForEdit(null);
+          triggerRefresh();
+        }}
+        transaction={selectedTxForEdit}
+        accounts={accounts}
+        categories={categories}
+      />
 
       <AccountModal
         isOpen={isAccountModalOpen}

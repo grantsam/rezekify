@@ -59,7 +59,7 @@ def test_full_system_e2e():
         headers=headers,
     )
     assert acc1_res.status_code == 200
-    gopay_id = acc1_res.json()["id"]
+    assert "id" in acc1_res.json()
 
     acc2_res = client.post(
         "/api/v1/accounts",
