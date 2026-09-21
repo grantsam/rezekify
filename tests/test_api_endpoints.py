@@ -584,3 +584,48 @@ def test_simulate_purchase_api(sample_user, db_session):
         assert "Nominal belanja harus lebih besar dari 0." in res_neg.json()["detail"]
 
 
+@pytest.fixture(name="client")
+def client_fixture():
+    return client
+
+
+def test_cors_origin_restriction(client):
+    # Allowed origin gets Access-Control-Allow-Origin header
+    res_allowed = client.options(
+        "/api/v1/auth/login",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert res_allowed.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+    # Disallowed origin does not get Access-Control-Allow-Origin header
+    res_disallowed = client.options(
+        "/api/v1/auth/login",
+        headers={
+            "Origin": "http://evil-attacker-site.com",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert res_disallowed.headers.get("access-control-allow-origin") != "http://evil-attacker-site.com"
+
+
+def test_settings_allowed_origins_parsing():
+    from rezekify.core.config import Settings
+
+    # Comma-separated string
+    cfg_csv = Settings(ALLOWED_ORIGINS="http://foo.com, https://bar.com")
+    assert cfg_csv.ALLOWED_ORIGINS == ["http://foo.com", "https://bar.com"]
+
+    # JSON list string
+    cfg_json = Settings(ALLOWED_ORIGINS='["http://foo.com", "https://bar.com"]')
+    assert cfg_json.ALLOWED_ORIGINS == ["http://foo.com", "https://bar.com"]
+
+    # Direct list
+    cfg_list = Settings(ALLOWED_ORIGINS=["http://foo.com"])
+    assert cfg_list.ALLOWED_ORIGINS == ["http://foo.com"]
+
+
+
+

@@ -13,6 +13,7 @@ from rezekify.api.v1.dashboard_router import analytics_router, dashboard_router
 from rezekify.api.v1.gateway_router import gateway_router
 from rezekify.api.v1.transactions_router import transactions_router
 from rezekify.api.v1.vaults_router import vaults_router
+from rezekify.core.config import settings
 
 app = FastAPI(
     title="rezekify Core API",
@@ -22,7 +23,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

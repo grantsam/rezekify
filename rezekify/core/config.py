@@ -1,6 +1,8 @@
 """Application configuration settings using pydantic-settings."""
 
-from typing import Optional
+import json
+from typing import List, Optional, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +19,26 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "rezekify-secure-random-jwt-key-development"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_allowed_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        # ponytail: parses comma-separated or JSON list strings; upgrade to pydantic AnyHttpUrl if scheme validation needed.
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if v_stripped.startswith("[") and v_stripped.endswith("]"):
+                try:
+                    parsed = json.loads(v_stripped)
+                    if isinstance(parsed, list):
+                        return [str(o).strip() for o in parsed if str(o).strip()]
+                except Exception:
+                    pass
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     # LLM Key Pools (comma-separated strings)
     GEMINI_API_KEYS: str = ""
