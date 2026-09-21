@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Chip, Button } from '@heroui/react';
+import { Chip, Button, Card, CardBody } from '@heroui/react';
 import {
   PlusCircle,
   RefreshCw,
@@ -257,26 +257,31 @@ export const DashboardPage: React.FC = () => {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <h1 className="sr-only">Dashboard Keuangan Rezekify</h1>
         {!isLoading && accounts.length === 0 && (
-          <div className="p-4 sm:p-5 bg-gradient-to-r from-indigo-950/50 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-indigo-950/40">
-            <div className="flex items-start gap-3.5">
-              <div className="p-2.5 bg-indigo-600/20 border border-indigo-500/30 rounded-xl shrink-0 mt-0.5 sm:mt-0">
-                <Wallet className="w-5 h-5 text-indigo-400" />
+          <Card className="bg-gradient-to-r from-indigo-950/50 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl shadow-lg shadow-indigo-950/40">
+            <CardBody className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-visible">
+              <div className="flex items-start gap-3.5">
+                <div className="p-2.5 bg-indigo-600/20 border border-indigo-500/30 rounded-xl shrink-0 mt-0.5 sm:mt-0">
+                  <Wallet className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-semibold text-white">
+                    Mulai Hitung Batas Belanja Harian
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal mt-1">
+                    Selamat datang di Rezekify. Tambahkan rekening atau dompet pertama Anda (BCA, GoPay, atau Tunai) untuk mengaktifkan telemetri runway otomatis dan kalkulasi belanja harian bebas risiko.
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
-                  👋 Selamat datang di Rezekify! Anda belum memiliki rekening atau dompet. Tambahkan rekening pertama Anda (Bank / e-Wallet) agar pengeluaran dapat dicatat secara seimbang.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsAccountModalOpen(true)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 px-4 min-h-[40px] rounded-xl transition-all shadow-md shadow-indigo-600/30 active:scale-95 shrink-0 flex items-center gap-1.5"
-            >
-              <Building2 className="w-4 h-4" />
-              <span>Tambah Rekening Pertama</span>
-            </button>
-          </div>
+              <Button
+                color="primary"
+                onPress={() => setIsAccountModalOpen(true)}
+                startContent={<Building2 className="w-4 h-4" />}
+                className="font-semibold text-xs py-2.5 px-4 min-h-[40px] rounded-xl shrink-0"
+              >
+                Tambah Rekening Pertama
+              </Button>
+            </CardBody>
+          </Card>
         )}
 
         {/* Active Account Strip */}

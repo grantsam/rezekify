@@ -198,9 +198,7 @@ describe('DashboardPage Component', () => {
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/👋 Selamat datang di Rezekify! Anda belum memiliki rekening atau dompet/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Selamat datang di Rezekify/i)).toBeInTheDocument();
     });
 
     const ctaBtn = screen.getByRole('button', { name: /Tambah Rekening Pertama/i });
