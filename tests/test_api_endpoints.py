@@ -43,7 +43,7 @@ def test_api_register_and_login_flow():
     reg_res = client.post(
         "/api/v1/auth/register",
         json={
-            "email": "auth_flow@rezekify.local",
+            "email": "auth_flow@rezekify.id",
             "password": "SecurePassword123!",
             "full_name": "Auth Flow User",
         },
@@ -53,14 +53,14 @@ def test_api_register_and_login_flow():
     assert "access_token" in reg_data
     assert reg_data["token_type"] == "bearer"
     assert "user" in reg_data
-    assert reg_data["user"]["email"] == "auth_flow@rezekify.local"
+    assert reg_data["user"]["email"] == "auth_flow@rezekify.id"
     assert reg_data["user"]["full_name"] == "Auth Flow User"
 
     # Duplicate registration should fail
     dup_res = client.post(
         "/api/v1/auth/register",
         json={
-            "email": "auth_flow@rezekify.local",
+            "email": "auth_flow@rezekify.id",
             "password": "SecurePassword123!",
             "full_name": "Auth Flow User",
         },
@@ -71,7 +71,7 @@ def test_api_register_and_login_flow():
     login_res = client.post(
         "/api/v1/auth/login",
         json={
-            "email": "auth_flow@rezekify.local",
+            "email": "auth_flow@rezekify.id",
             "password": "SecurePassword123!",
         },
     )
@@ -83,7 +83,7 @@ def test_api_register_and_login_flow():
     bad_login = client.post(
         "/api/v1/auth/login",
         json={
-            "email": "auth_flow@rezekify.local",
+            "email": "auth_flow@rezekify.id",
             "password": "WrongPassword!",
         },
     )
@@ -92,7 +92,7 @@ def test_api_register_and_login_flow():
     # 4. /me endpoint
     me_res = client.get("/api/v1/auth/me", headers=headers)
     assert me_res.status_code == 200
-    assert me_res.json()["email"] == "auth_flow@rezekify.local"
+    assert me_res.json()["email"] == "auth_flow@rezekify.id"
 
     # 5. /me without token -> 401
     unauth_res = client.get("/api/v1/auth/me")
@@ -110,7 +110,7 @@ def test_api_accounts_and_vaults_crud():
     res = client.post(
         "/api/v1/auth/register",
         json={
-            "email": "crud_accounts@rezekify.local",
+            "email": "crud_accounts@rezekify.id",
             "password": "Password123!",
             "full_name": "Account Tester",
         },
@@ -166,7 +166,7 @@ def test_api_dashboard_and_analytics():
     res = client.post(
         "/api/v1/auth/register",
         json={
-            "email": "dash_user@rezekify.local",
+            "email": "dash_user@rezekify.id",
             "password": "Password123!",
             "full_name": "Dashboard Tester",
         },
@@ -227,7 +227,7 @@ def test_api_transactions_crud_and_balance_reversal():
     res = client.post(
         "/api/v1/auth/register",
         json={
-            "email": "tx_tester@rezekify.local",
+            "email": "tx_tester@rezekify.id",
             "password": "Password123!",
             "full_name": "Tx Tester",
         },
@@ -317,7 +317,7 @@ def test_api_ai_chat():
     res = client.post(
         "/api/v1/auth/register",
         json={
-            "email": "chat_user@rezekify.local",
+            "email": "chat_user@rezekify.id",
             "password": "Password123!",
             "full_name": "Chat Tester",
         },
@@ -633,7 +633,7 @@ def auth_headers(client):
     reg_res = client.post(
         "/api/v1/auth/register",
         json={
-            "email": f"auth_{uuid.uuid4().hex[:8]}@rezekify.local",
+            "email": f"auth_{uuid.uuid4().hex[:8]}@rezekify.id",
             "password": "SecurePassword123!",
             "full_name": "Auth User",
         },
@@ -654,3 +654,28 @@ def test_delete_transaction_database_error_raises_500(client, auth_headers):
         fake_id = str(uuid.uuid4())
         res = client.delete(f"/api/v1/transactions/{fake_id}", headers=auth_headers)
         assert res.status_code == 500
+
+
+def test_register_invalid_email_format_fails(client):
+    res = client.post(
+        "/api/v1/auth/register",
+        json={"email": "not-an-email", "password": "password123", "full_name": "Test User"},
+    )
+    assert res.status_code == 422
+
+
+def test_register_short_password_fails(client):
+    res = client.post(
+        "/api/v1/auth/register",
+        json={"email": "valid@example.com", "password": "short", "full_name": "Test User"},
+    )
+    assert res.status_code == 422
+
+
+def test_register_short_name_fails(client):
+    res = client.post(
+        "/api/v1/auth/register",
+        json={"email": "valid@example.com", "password": "validpassword123", "full_name": "a"},
+    )
+    assert res.status_code == 422
+

@@ -67,7 +67,7 @@ def test_full_stack_user_lifecycle_e2e(client: TestClient):
 
     # 1. Registration
     reg_payload = {
-        "email": "fullstack_tester@rezekify.local",
+        "email": "fullstack_tester@rezekify.id",
         "password": "SecurePassword123!",
         "full_name": "Fullstack Integrator",
     }
@@ -76,12 +76,12 @@ def test_full_stack_user_lifecycle_e2e(client: TestClient):
     reg_data = reg_res.json()
     assert "access_token" in reg_data
     assert reg_data["token_type"] == "bearer"
-    assert reg_data["user"]["email"] == "fullstack_tester@rezekify.local"
+    assert reg_data["user"]["email"] == "fullstack_tester@rezekify.id"
     assert reg_data["user"]["full_name"] == "Fullstack Integrator"
 
     # 2. Login
     login_payload = {
-        "email": "fullstack_tester@rezekify.local",
+        "email": "fullstack_tester@rezekify.id",
         "password": "SecurePassword123!",
     }
     login_res = client.post("/api/v1/auth/login", json=login_payload)
@@ -92,7 +92,7 @@ def test_full_stack_user_lifecycle_e2e(client: TestClient):
     # 3. Authenticated /me
     me_res = client.get("/api/v1/auth/me", headers=headers)
     assert me_res.status_code == 200
-    assert me_res.json()["email"] == "fullstack_tester@rezekify.local"
+    assert me_res.json()["email"] == "fullstack_tester@rezekify.id"
     assert me_res.json()["full_name"] == "Fullstack Integrator"
 
     # 4. Create Holding Accounts (Bank & e-Wallet)
@@ -226,7 +226,7 @@ def test_auth_and_boundary_validations(client: TestClient):
     # 2. Register user for boundary testing
     reg_res = client.post(
         "/api/v1/auth/register",
-        json={"email": "boundary_user@rezekify.local", "password": "Password123!", "full_name": "Boundary Tester"},
+        json={"email": "boundary_user@rezekify.id", "password": "Password123!", "full_name": "Boundary Tester"},
     )
     assert reg_res.status_code == 200
     token = reg_res.json()["access_token"]
@@ -235,14 +235,14 @@ def test_auth_and_boundary_validations(client: TestClient):
     # 3. Duplicate email registration rejected with 400
     dup_res = client.post(
         "/api/v1/auth/register",
-        json={"email": "boundary_user@rezekify.local", "password": "Password123!", "full_name": "Boundary Tester"},
+        json={"email": "boundary_user@rezekify.id", "password": "Password123!", "full_name": "Boundary Tester"},
     )
     assert dup_res.status_code == 400
 
     # 4. Bad password login rejected with 401
     bad_login = client.post(
         "/api/v1/auth/login",
-        json={"email": "boundary_user@rezekify.local", "password": "WrongPassword!"},
+        json={"email": "boundary_user@rezekify.id", "password": "WrongPassword!"},
     )
     assert bad_login.status_code == 401
 

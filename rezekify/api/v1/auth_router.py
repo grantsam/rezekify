@@ -3,7 +3,7 @@
 from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from rezekify.api.deps import get_current_user, get_db
@@ -14,9 +14,9 @@ auth_router = APIRouter()
 
 
 class RegisterRequest(BaseModel):
-    email: str
-    password: str
-    full_name: str
+    email: EmailStr
+    password: str = Field(min_length=8, description="Password must be at least 8 characters.")
+    full_name: str = Field(min_length=2, max_length=100, description="Full name between 2 and 100 characters.")
 
 
 class LoginRequest(BaseModel):
