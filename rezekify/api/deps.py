@@ -1,6 +1,5 @@
 """FastAPI dependencies for database session and JWT authentication."""
 
-from typing import Generator
 from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -9,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from rezekify.core.config import settings
 from rezekify.db.models import User
-from rezekify.db.session import SessionLocal, get_db
+from rezekify.db.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 

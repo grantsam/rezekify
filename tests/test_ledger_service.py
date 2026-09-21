@@ -248,7 +248,6 @@ def test_transfer_same_account_rejected(db_session, sample_user):
 def test_cross_tenant_isolation_enforced(db_session, sample_user):
     from sqlalchemy.orm.exc import NoResultFound
     from rezekify.db.models import User
-    import uuid
 
     other_user = User(
         email="other_user@rezekify.local",

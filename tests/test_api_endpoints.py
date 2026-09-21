@@ -5,7 +5,6 @@ from decimal import Decimal
 import io
 from contextlib import contextmanager
 from unittest.mock import patch
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

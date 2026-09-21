@@ -2,7 +2,6 @@
 
 from decimal import Decimal
 from unittest.mock import MagicMock
-import pytest
 
 from rezekify.agent.orchestrator import AgentOrchestrator
 from rezekify.db.models import Account, AccountType
