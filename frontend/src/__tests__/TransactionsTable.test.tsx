@@ -46,6 +46,17 @@ describe('TransactionsTable Component', () => {
     expect(handleDelete).toHaveBeenCalledWith('tx-1');
   });
 
+  it('calls onEdit when edit pencil button is clicked', () => {
+    const handleEdit = vi.fn();
+    render(<TransactionsTable transactions={mockTransactions} onDelete={vi.fn()} onEdit={handleEdit} />);
+
+    const editButtons = screen.getAllByRole('button', { name: /Edit transaksi/i });
+    expect(editButtons.length).toBe(mockTransactions.length);
+
+    fireEvent.click(editButtons[0]);
+    expect(handleEdit).toHaveBeenCalledWith(mockTransactions[0]);
+  });
+
   it('renders empty state when there are no transactions', () => {
     render(<TransactionsTable transactions={[]} onDelete={vi.fn()} />);
     expect(screen.getByText(/Belum ada transaksi/i)).toBeInTheDocument();

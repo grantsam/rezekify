@@ -323,6 +323,36 @@ describe('DashboardPage Component', () => {
 
     expect(mockLogout).toHaveBeenCalledTimes(1);
   });
+
+  it('opens EditTransactionModal when clicking edit on a transaction and closes cleanly', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint === '/dashboard/summary') return mockSummary;
+      if (endpoint === '/transactions') return mockTransactions;
+      if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint === '/categories') return [];
+      if (endpoint.includes('/analytics/spending-breakdown')) {
+        return { period: 'daily', daily_safe_runway: 100000, total_spent_in_period: 0, items: [] };
+      }
+      return null;
+    });
+
+    render(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Makan Siang Soto Ayam/i)).toBeInTheDocument();
+    });
+
+    const editBtn = screen.getByRole('button', { name: /Edit transaksi/i });
+    fireEvent.click(editBtn);
+
+    expect(screen.getByText('Edit Transaksi')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Makan Siang Soto Ayam')).toBeInTheDocument();
+
+    const closeBtn = screen.getByRole('button', { name: /Tutup modal/i });
+    fireEvent.click(closeBtn);
+
+    expect(screen.queryByText('Edit Transaksi')).not.toBeInTheDocument();
+  });
 });
 
 describe('App Component Auth Gating', () => {

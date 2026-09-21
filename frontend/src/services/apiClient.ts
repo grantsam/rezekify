@@ -2,7 +2,11 @@
  * Authenticated API Client for rezekify backend services.
  */
 
+import { Transaction, TransactionUpdateRequest } from '../types/api';
+
 const TOKEN_KEY = 'rezekify_auth_token';
+
+export const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 export function setAuthToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
@@ -22,7 +26,7 @@ export function getAuthHeader(): Record<string, string> {
 }
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const baseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
+  const baseUrl = API_BASE_URL;
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
 
@@ -47,3 +51,24 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
   return response.json();
 }
+
+export async function updateTransaction(
+  id: string,
+  data: TransactionUpdateRequest
+): Promise<Transaction> {
+  return apiFetch<Transaction>(`/transactions/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export const apiClient = {
+  updateTransaction,
+  apiFetch,
+  setAuthToken,
+  getAuthToken,
+  clearAuthToken,
+  getAuthHeader,
+};
+
+export default apiClient;

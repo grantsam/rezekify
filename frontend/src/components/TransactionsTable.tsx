@@ -1,14 +1,15 @@
 import React from 'react';
-import { Trash2, ArrowUpRight, Clock } from 'lucide-react';
+import { Trash2, ArrowUpRight, Clock, Pencil } from 'lucide-react';
 import { Transaction } from '../types/api';
 
 interface Props {
   transactions: Transaction[];
   onDelete: (id: string) => Promise<void> | void;
+  onEdit?: (tx: Transaction) => void;
   isLoading?: boolean;
 }
 
-export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, isLoading }) => {
+export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, onEdit, isLoading }) => {
   if (transactions.length === 0) {
     return (
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
@@ -66,10 +67,22 @@ export const TransactionsTable: React.FC<Props> = ({ transactions, onDelete, isL
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold tabular-nums text-slate-100">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-sm font-bold tabular-nums text-slate-100 mr-1">
                   Rp {Number(amount).toLocaleString('id-ID')}
                 </span>
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(tx)}
+                    disabled={isLoading}
+                    className="text-slate-500 hover:text-indigo-400 p-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-40"
+                    aria-label="Edit transaksi"
+                    title="Edit transaksi"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onDelete(tx.id)}

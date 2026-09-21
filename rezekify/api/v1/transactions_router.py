@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import NoResultFound
 
 from rezekify.api.deps import get_current_user, get_db
 from rezekify.db.models import EntryType, Transaction, User
@@ -47,6 +48,17 @@ class TransactionCreateRequest(BaseModel):
     from_account_id: Optional[UUID] = None
     to_account_id: Optional[UUID] = None
     source_channel: str = "WEB_MANUAL"
+
+
+class TransactionUpdateRequest(BaseModel):
+    amount: Decimal
+    description: str
+    account_id: Optional[UUID] = None
+    category_id: Optional[UUID] = None
+    to_account_id: Optional[UUID] = None
+    transaction_date: Optional[datetime] = None
+    from_account_id: Optional[UUID] = None
+    transaction_type: Optional[str] = None
 
 
 class ManualExpenseRequest(BaseModel):
@@ -176,6 +188,35 @@ def create_manual_transfer(
             description=req.description or "Transfer Antar Akun",
         )
         return tx
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@transactions_router.put("/{transaction_id}", response_model=TransactionItemResponse)
+def update_transaction(
+    transaction_id: UUID,
+    req: TransactionUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Updates an existing transaction, deterministically reconciling account balances."""
+    ledger = LedgerService(db)
+    try:
+        tx = ledger.update_transaction(
+            user_id=current_user.id,
+            transaction_id=transaction_id,
+            amount=req.amount,
+            description=req.description,
+            account_id=req.account_id,
+            category_id=req.category_id,
+            to_account_id=req.to_account_id,
+            transaction_date=req.transaction_date,
+            from_account_id=req.from_account_id,
+            transaction_type=req.transaction_type,
+        )
+        return tx
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
