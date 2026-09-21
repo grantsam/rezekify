@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.orchestrator import AgentOrchestrator
@@ -165,7 +166,8 @@ async def ai_receipt_upload(
 
     orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
     prompt_text = (message or "").strip() or "Foto struk kasir"
-    reply = orchestrator.handle_message(
+    reply = await run_in_threadpool(
+        orchestrator.handle_message,
         user_id=current_user.id,
         text=prompt_text,
         image_bytes=content,

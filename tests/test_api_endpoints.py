@@ -482,6 +482,30 @@ def test_ai_receipt_upload_endpoint(sample_user, db_session):
             assert mock_handle.call_args.kwargs["mime_type"] == "image/png"
 
 
+def test_ai_receipt_upload_runs_in_threadpool(sample_user, db_session):
+    """Verifies that receipt processing is offloaded to run_in_threadpool."""
+    from starlette.concurrency import run_in_threadpool
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+        fake_jpeg = io.BytesIO(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb")
+
+        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message", return_value="✅ Sukses Struk") as mock_handle, \
+             patch("rezekify.api.v1.dashboard_router.run_in_threadpool", wraps=run_in_threadpool) as spy_pool:
+            res = client.post(
+                "/api/v1/dashboard/ai-receipt",
+                files={"file": ("receipt.jpg", fake_jpeg, "image/jpeg")},
+                data={"message": "Struk makan siang"},
+                headers=headers,
+            )
+            assert res.status_code == 200
+            assert res.json() == {"reply": "✅ Sukses Struk"}
+            assert spy_pool.called
+            assert mock_handle.called
+
+
 def test_ai_receipt_upload_invalid_mime(sample_user, db_session):
     """Tests that non-image MIME types and invalid magic bytes are rejected with HTTP 400."""
     from rezekify.core.security import create_access_token
