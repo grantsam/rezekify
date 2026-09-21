@@ -1,7 +1,9 @@
 """Tests for LedgerService deterministic double-entry accounting."""
 
 from decimal import Decimal
+from unittest.mock import patch
 import pytest
+from sqlalchemy.orm import Query
 
 from rezekify.db.models import Account, AccountType, Category, CategoryType, EntryType
 from rezekify.services.ledger import LedgerService
@@ -288,4 +290,62 @@ def test_cross_tenant_isolation_enforced(db_session, sample_user):
     )
     with pytest.raises(NoResultFound):
         service.delete_transaction(user_id=sample_user.id, transaction_id=other_tx.id)
+
+
+def test_ledger_mutations_use_row_locking(db_session, sample_user):
+    acc1 = Account(
+        user_id=sample_user.id,
+        name="Cash",
+        account_type=AccountType.CASH,
+        current_balance=Decimal("100000.00"),
+    )
+    acc2 = Account(
+        user_id=sample_user.id,
+        name="Bank",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("50000.00"),
+    )
+    db_session.add_all([acc1, acc2])
+    db_session.commit()
+
+    ledger = LedgerService(db_session)
+
+    # 1. record_expense uses with_for_update
+    with patch.object(Query, "with_for_update", autospec=True, side_effect=Query.with_for_update) as spy_lock:
+        tx_expense = ledger.record_expense(
+            user_id=sample_user.id,
+            account_id=acc1.id,
+            category_id=None,
+            amount=Decimal("10000.00"),
+            description="Expense lock check",
+        )
+        assert spy_lock.call_count == 1
+
+    # 2. record_income uses with_for_update
+    with patch.object(Query, "with_for_update", autospec=True, side_effect=Query.with_for_update) as spy_lock:
+        ledger.record_income(
+            user_id=sample_user.id,
+            account_id=acc1.id,
+            category_id=None,
+            amount=Decimal("20000.00"),
+            description="Income lock check",
+        )
+        assert spy_lock.call_count == 1
+
+    # 3. record_transfer locks both accounts with with_for_update
+    with patch.object(Query, "with_for_update", autospec=True, side_effect=Query.with_for_update) as spy_lock:
+        ledger.record_transfer(
+            user_id=sample_user.id,
+            from_account_id=acc1.id,
+            to_account_id=acc2.id,
+            amount=Decimal("15000.00"),
+            description="Transfer lock check",
+        )
+        assert spy_lock.call_count == 2
+
+    # 4. delete_transaction locks account rows with with_for_update
+    with patch.object(Query, "with_for_update", autospec=True, side_effect=Query.with_for_update) as spy_lock:
+        ledger.delete_transaction(user_id=sample_user.id, transaction_id=tx_expense.id)
+        assert spy_lock.call_count >= 1
+
 

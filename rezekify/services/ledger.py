@@ -36,6 +36,7 @@ class LedgerService:
         account = (
             self.db.query(Account)
             .filter_by(id=account_id, user_id=user_id)
+            .with_for_update()
             .one()
         )
         account.current_balance -= amount
@@ -85,6 +86,7 @@ class LedgerService:
         account = (
             self.db.query(Account)
             .filter_by(id=account_id, user_id=user_id)
+            .with_for_update()
             .one()
         )
         account.current_balance += amount
@@ -133,11 +135,13 @@ class LedgerService:
         from_acc = (
             self.db.query(Account)
             .filter_by(id=from_account_id, user_id=user_id)
+            .with_for_update()
             .one()
         )
         to_acc = (
             self.db.query(Account)
             .filter_by(id=to_account_id, user_id=user_id)
+            .with_for_update()
             .one()
         )
 
@@ -184,6 +188,7 @@ class LedgerService:
                 acc = (
                     self.db.query(Account)
                     .filter_by(id=entry.account_id, user_id=user_id)
+                    .with_for_update()
                     .one()
                 )
                 if entry.entry_type == EntryType.CREDIT:
