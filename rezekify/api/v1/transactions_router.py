@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import NoResultFound
 
 from rezekify.api.deps import get_current_user, get_db
 from rezekify.db.models import EntryType, Transaction, User
@@ -181,7 +182,7 @@ def create_manual_transfer(
 
 
 @transactions_router.delete("/{transaction_id}")
-def delete_transaction(
+def delete_transaction_endpoint(
     transaction_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -191,5 +192,5 @@ def delete_transaction(
     try:
         ledger.delete_transaction(user_id=current_user.id, transaction_id=transaction_id)
         return {"detail": "Transaction deleted and balance reversed."}
-    except Exception:
+    except NoResultFound:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")

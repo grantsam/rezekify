@@ -3,6 +3,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 import io
+import uuid
 from contextlib import contextmanager
 from unittest.mock import patch
 import pytest
@@ -34,7 +35,7 @@ def override_get_db():
 
 
 app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
+client = TestClient(app, raise_server_exceptions=False)
 
 
 def test_api_register_and_login_flow():
@@ -627,5 +628,29 @@ def test_settings_allowed_origins_parsing():
     assert cfg_list.ALLOWED_ORIGINS == ["http://foo.com"]
 
 
+@pytest.fixture
+def auth_headers(client):
+    reg_res = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": f"auth_{uuid.uuid4().hex[:8]}@rezekify.local",
+            "password": "SecurePassword123!",
+            "full_name": "Auth User",
+        },
+    )
+    token = reg_res.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
+def test_delete_transaction_nonexistent_returns_404(client, auth_headers):
+    fake_id = str(uuid.uuid4())
+    res = client.delete(f"/api/v1/transactions/{fake_id}", headers=auth_headers)
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Transaction not found"
+
+
+def test_delete_transaction_database_error_raises_500(client, auth_headers):
+    with patch("rezekify.services.ledger.LedgerService.delete_transaction", side_effect=RuntimeError("DB dead")):
+        fake_id = str(uuid.uuid4())
+        res = client.delete(f"/api/v1/transactions/{fake_id}", headers=auth_headers)
+        assert res.status_code == 500
