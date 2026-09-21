@@ -75,10 +75,17 @@ export const ManualTransactionModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="manual-modal-title"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+    >
       <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 text-white shadow-2xl relative">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <h3 className="font-semibold text-lg">Catat Transaksi Manual</h3>
+          <h3 id="manual-modal-title" className="font-semibold text-lg">Catat Transaksi Manual</h3>
           <button
             type="button"
             onClick={onClose}
@@ -203,17 +210,17 @@ export const ManualTransactionModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
+              className="px-4 py-2.5 min-h-[40px] rounded-xl text-xs text-slate-400 hover:text-white transition-colors flex items-center justify-center"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !amount}
-              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 min-h-[40px] rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95"
             >
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
-              Simpan Transaksi
+              <span>Simpan Transaksi</span>
             </button>
           </div>
         </form>

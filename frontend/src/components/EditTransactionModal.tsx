@@ -127,11 +127,18 @@ export const EditTransactionModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-modal-title"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+    >
       <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 text-white shadow-2xl relative my-8">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div>
-            <h3 className="font-semibold text-lg flex items-center gap-2 text-white">
+            <h3 id="edit-modal-title" className="font-semibold text-lg flex items-center gap-2 text-white">
               <span>Edit Transaksi</span>
               <span className="text-[10px] font-mono uppercase bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">
                 Reconciliation

@@ -32,8 +32,13 @@ describe('TransactionsTable Component', () => {
 
     expect(screen.getByText(/Makan Siang Nasi Padang/i)).toBeInTheDocument();
     expect(screen.getByText(/Gaji Freelance Web/i)).toBeInTheDocument();
-    expect(screen.getByText(/Rp 35.000/i)).toBeInTheDocument();
-    expect(screen.getByText(/Rp 1.500.000/i)).toBeInTheDocument();
+    expect(screen.getByText(/- Rp 35.000/i)).toBeInTheDocument();
+    expect(screen.getByText(/\+ Rp 1.500.000/i)).toBeInTheDocument();
+
+    // Verify semantic table structure
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getAllByRole('columnheader').length).toBe(3);
+    expect(screen.getAllByRole('row').length).toBe(3); // 1 header row + 2 data rows
   });
 
   it('calls onDelete when delete button is clicked', () => {

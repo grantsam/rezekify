@@ -46,6 +46,19 @@ describe('ExpenseCharts Component', () => {
     });
   });
 
+  it('renders Safe Runway Threshold Baseline and interactive tooltip data correctly', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
+
+    render(<ExpenseCharts />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Batas Aman: Rp 70\.000/i)).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: /Grafik pengeluaran 7 hari terakhir vs ambang batas aman runway/i })).toBeInTheDocument();
+      expect(screen.getByText(/Melebihi Jatah \(\+Rp 15\.000\)/i)).toBeInTheDocument();
+      expect(screen.getAllByText('Sesuai Jatah').length).toBeGreaterThan(0);
+    });
+  });
+
   it('switches to monthly breakdown when period button is clicked', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
       if (endpoint.includes('period=monthly')) return mockMonthlyData;
@@ -54,7 +67,7 @@ describe('ExpenseCharts Component', () => {
 
     render(<ExpenseCharts />);
 
-    const monthlyBtn = screen.getByRole('button', { name: /Bulanan \(Monthly\)/i });
+    const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
     fireEvent.click(monthlyBtn);
 
     await waitFor(() => {
@@ -62,6 +75,7 @@ describe('ExpenseCharts Component', () => {
       expect(screen.getByText(/Rp 300\.000/i)).toBeInTheDocument();
       expect(screen.getByText(/75%/i)).toBeInTheDocument();
       expect(screen.getByText('Transportasi')).toBeInTheDocument();
+      expect(screen.getByRole('progressbar', { name: /Makanan & Minuman: 75%/i })).toBeInTheDocument();
     });
   });
 
@@ -75,7 +89,7 @@ describe('ExpenseCharts Component', () => {
     });
 
     render(<ExpenseCharts />);
-    const monthlyBtn = screen.getByRole('button', { name: /Bulanan \(Monthly\)/i });
+    const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
     fireEvent.click(monthlyBtn);
 
     await waitFor(() => {
@@ -87,9 +101,13 @@ describe('ExpenseCharts Component', () => {
     const fetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
     const { rerender } = render(<ExpenseCharts refreshTrigger={0} />);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
 
     rerender(<ExpenseCharts refreshTrigger={1} />);
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
   });
 });

@@ -112,4 +112,16 @@ describe('AccountModal Component', () => {
       expect(submitBtn).not.toBeDisabled();
     });
   });
+
+  it('renders accessible dialog and closes on Escape key', () => {
+    const handleClose = vi.fn();
+    render(<AccountModal isOpen={true} onClose={handleClose} onSuccess={vi.fn()} />);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'account-modal-title');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
 });

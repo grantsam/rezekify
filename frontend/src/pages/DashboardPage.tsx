@@ -178,7 +178,8 @@ export const DashboardPage: React.FC = () => {
                 setRefreshTrigger((prev) => prev + 1);
               }}
               disabled={isLoading}
-              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/60 transition-colors disabled:opacity-40 shrink-0"
+              aria-label="Perbarui data"
+              className="p-2.5 min-w-[38px] min-h-[38px] flex items-center justify-center text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/60 transition-colors disabled:opacity-40 shrink-0"
               title="Perbarui Data"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -187,7 +188,7 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAccountModalOpen(true)}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-2 min-h-[38px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
             >
               <Building2 className="w-3.5 h-3.5 text-indigo-400" />
               <span>+ Rekening</span>
@@ -196,7 +197,7 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsVaultModalOpen(true)}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-2 min-h-[38px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
             >
               <Receipt className="w-3.5 h-3.5 text-indigo-400" />
               <span>+ Tagihan</span>
@@ -205,7 +206,7 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsSimulateModalOpen(true)}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-2 min-h-[38px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
             >
               <Calculator className="w-3.5 h-3.5 text-indigo-400" />
               <span>Simulasi Belanja</span>
@@ -214,7 +215,7 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsManualModalOpen(true)}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 px-3 py-2 min-h-[38px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm shrink-0"
             >
               <PlusCircle className="w-3.5 h-3.5 text-indigo-400" />
               <span>+ Transaksi Manual</span>
@@ -223,7 +224,7 @@ export const DashboardPage: React.FC = () => {
             {user && (
               <div className="flex items-center gap-2 pl-1 sm:pl-2 shrink-0 border-l border-slate-800">
                 <div
-                  className="w-7 h-7 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold flex items-center justify-center"
+                  className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold flex items-center justify-center"
                   title={user.full_name}
                 >
                   {getUserInitials(user.full_name)}
@@ -237,7 +238,7 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={logout}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 px-3 py-2 min-h-[38px] rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
               title="Keluar (Logout)"
             >
               <LogOut className="w-3.5 h-3.5 text-slate-400" />
@@ -263,7 +264,7 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAccountModalOpen(true)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 px-4 rounded-xl transition-all shadow-md shadow-indigo-600/30 active:scale-95 shrink-0 flex items-center gap-1.5"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 px-4 min-h-[40px] rounded-xl transition-all shadow-md shadow-indigo-600/30 active:scale-95 shrink-0 flex items-center gap-1.5"
             >
               <Building2 className="w-4 h-4" />
               <span>Tambah Rekening Pertama</span>
@@ -271,6 +272,35 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
 
+        {/* Active Account Strip */}
+        {accounts.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-none">
+            <span className="text-slate-400 font-medium shrink-0 flex items-center gap-1.5 mr-1">
+              <Wallet className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Saldo Akun:</span>
+            </span>
+            {accounts
+              .filter((acc) => acc.is_active !== false)
+              .map((acc) => (
+                <div
+                  key={acc.id}
+                  className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0 transition-colors shadow-sm"
+                >
+                  <span className="text-slate-300 font-medium">{acc.name}:</span>
+                  <span className="text-slate-100 font-semibold tabular-nums font-mono">
+                    Rp {acc.current_balance.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              ))}
+          </div>
+        )}
+
+        {/* Situational Awareness & Health Command Center */}
+        {summary?.upcoming_bills && <UpcomingBillsCard bills={summary.upcoming_bills} />}
+
+        <RunwayMetricCard summary={summary} />
+
+        {/* Quick Action Data Entry */}
         <OmniInputHero onSubmit={handleAiSubmit} isLoading={isAiLoading} />
 
         {aiMessage && (
@@ -297,24 +327,17 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setAiMessage(null)}
-              className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded-lg hover:bg-slate-800/40"
+              className="text-slate-400 hover:text-white text-xs px-2.5 py-1.5 min-h-[36px] rounded-lg hover:bg-slate-800/40 flex items-center"
             >
               Tutup
             </button>
           </div>
         )}
 
-        {summary?.upcoming_bills && <UpcomingBillsCard bills={summary.upcoming_bills} />}
+        {/* Analytics & Deep Insights */}
+        <ExpenseCharts refreshTrigger={refreshTrigger} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5">
-            <RunwayMetricCard summary={summary} />
-          </div>
-          <div className="lg:col-span-7">
-            <ExpenseCharts refreshTrigger={refreshTrigger} />
-          </div>
-        </div>
-
+        {/* Audit & Transaction History */}
         <TransactionsTable
           transactions={transactions}
           onDelete={handleDeleteTransaction}

@@ -35,9 +35,12 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
   const monthlyData = data?.period === 'monthly' ? (data as MonthlySpendingResponse) : null;
 
   const maxDailyAmount = dailyData?.items.reduce(
-    (max, item) => Math.max(max, item.amount, item.safe_runway_threshold),
+    (max, item) => Math.max(max, item.amount, item.safe_runway_threshold, dailyData.daily_safe_runway || 0),
     1
   ) || 1;
+
+  const threshold = dailyData?.daily_safe_runway || 0;
+  const thresholdPct = Math.min(100, Math.max(0, (threshold / maxDailyAmount) * 100));
 
   const hasExpenses = period === 'daily'
     ? dailyData?.items.some((i) => i.amount > 0)
@@ -57,11 +60,17 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               : 'Distribusi pengeluaran per kategori pada siklus berjalan'}
           </p>
         </div>
-        <div className="flex bg-slate-800/90 p-1 rounded-xl text-xs self-start sm:self-auto border border-slate-700/60">
+        <div
+          role="tablist"
+          aria-label="Pilih rentang waktu analitik"
+          className="flex bg-slate-800/90 p-1 rounded-xl text-xs self-start sm:self-auto border border-slate-700/60"
+        >
           <button
             type="button"
+            role="tab"
+            aria-selected={period === 'daily'}
             onClick={() => setPeriod('daily')}
-            className={`px-3.5 py-1.5 rounded-lg transition-all ${
+            className={`min-h-[36px] px-3.5 py-1.5 rounded-lg transition-all ${
               period === 'daily'
                 ? 'bg-indigo-600 text-white font-medium shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
@@ -71,8 +80,10 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={period === 'monthly'}
             onClick={() => setPeriod('monthly')}
-            className={`px-3.5 py-1.5 rounded-lg transition-all ${
+            className={`min-h-[36px] px-3.5 py-1.5 rounded-lg transition-all ${
               period === 'monthly'
                 ? 'bg-indigo-600 text-white font-medium shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
@@ -109,30 +120,82 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           </p>
         </div>
       ) : period === 'daily' && dailyData ? (
-        <div className="space-y-4">
-          <div className="h-44 flex items-end justify-between gap-2 pt-6 px-2 border-b border-slate-800 pb-2 relative">
+        <div
+          role="region"
+          aria-label="Grafik pengeluaran 7 hari terakhir vs ambang batas aman runway"
+          className="space-y-4"
+        >
+          <div className="h-36 relative flex items-end justify-between gap-2 sm:gap-3">
+            {/* Safe Runway Threshold Baseline */}
+            <div
+              className="absolute inset-x-0 pointer-events-none z-10 border-t border-dashed border-amber-400/70 flex items-center justify-end"
+              style={{ bottom: `${thresholdPct}%` }}
+            >
+              <span className="text-[10px] font-medium tracking-tight text-amber-300 bg-slate-900/90 px-1.5 py-0.5 rounded border border-amber-400/40 shadow-sm -translate-y-1/2 select-none">
+                Batas Aman: Rp {threshold.toLocaleString('id-ID')}
+              </span>
+            </div>
+
             {dailyData.items.map((item, idx) => {
-              const heightPct = item.amount > 0 ? Math.max(8, (item.amount / maxDailyAmount) * 100) : 0;
+              const heightPct = item.amount > 0 ? Math.min(100, Math.max(6, (item.amount / maxDailyAmount) * 100)) : 0;
+              const isOver = item.amount > item.safe_runway_threshold;
+              const diffOver = item.amount - item.safe_runway_threshold;
               return (
-                <div key={item.date} className="flex-1 flex flex-col items-center gap-1.5 group relative">
-                  <div className="w-full bg-slate-800/80 rounded-t-lg h-32 relative flex items-end overflow-hidden">
+                <div
+                  key={item.date}
+                  tabIndex={0}
+                  aria-label={`${item.day_label}, ${item.date}: Rp ${item.amount.toLocaleString('id-ID')} (${isOver ? 'Melebihi Jatah' : 'Sesuai Jatah'})`}
+                  className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400 rounded-t-lg"
+                >
+                  {/* Interactive Tooltip Card */}
+                  <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 pointer-events-none z-30 whitespace-nowrap bg-slate-950/95 border border-slate-700/80 p-2.5 rounded-xl shadow-2xl flex flex-col items-center">
+                    <p className="text-[11px] font-medium text-slate-400">
+                      {item.day_label} · {item.date}
+                    </p>
+                    <p className="text-xs font-bold text-white tabular-nums my-0.5">
+                      Rp {item.amount.toLocaleString('id-ID')}
+                    </p>
+                    <span
+                      className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full mt-1 ${
+                        isOver
+                          ? 'text-rose-400 bg-rose-950/70 border border-rose-800/60'
+                          : 'text-emerald-400 bg-emerald-950/70 border border-emerald-800/60'
+                      }`}
+                    >
+                      {isOver
+                        ? `Melebihi Jatah (+Rp ${diffOver.toLocaleString('id-ID')})`
+                        : 'Sesuai Jatah'}
+                    </span>
+                  </div>
+
+                  {/* Bar track */}
+                  <div className="w-full bg-slate-800/70 rounded-t-lg h-full relative flex items-end overflow-hidden">
                     <motion.div
                       initial={{ height: 0 }}
                       animate={{ height: `${heightPct}%` }}
                       transition={{ type: 'spring', stiffness: 220, damping: 20, delay: idx * 0.04 }}
                       className={`w-full rounded-t-md transition-colors ${
-                        item.is_over_budget ? 'bg-rose-500' : 'bg-indigo-500'
+                        isOver ? 'bg-rose-500' : 'bg-emerald-500'
                       }`}
                     />
                   </div>
-                  <span className="text-[11px] text-slate-400">{item.day_label}</span>
                 </div>
               );
             })}
           </div>
+
+          {/* Day Labels Row */}
+          <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-slate-800 pb-2">
+            {dailyData.items.map((item) => (
+              <div key={item.date} className="flex-1 text-center text-[11px] text-slate-400">
+                {item.day_label}
+              </div>
+            ))}
+          </div>
+
           <div className="flex items-center justify-between text-xs text-slate-400 px-2">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Sesuai Jatah
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Sesuai Jatah
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Melebihi Jatah
@@ -149,7 +212,14 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   Rp {item.amount.toLocaleString('id-ID')} ({item.percentage}%)
                 </span>
               </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+              <div
+                role="progressbar"
+                aria-valuenow={item.percentage}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${item.category_name}: ${item.percentage}%`}
+                className="h-2 w-full bg-slate-800 rounded-full overflow-hidden"
+              >
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${item.percentage}%` }}

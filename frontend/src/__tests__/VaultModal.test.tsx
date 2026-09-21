@@ -227,4 +227,16 @@ describe('VaultModal Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Batal/i }));
     expect(handleClose).toHaveBeenCalledTimes(2);
   });
+
+  it('renders accessible dialog and closes on Escape key', () => {
+    const handleClose = vi.fn();
+    render(<VaultModal isOpen={true} onClose={handleClose} onSuccess={vi.fn()} />);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'vault-modal-title');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
 });

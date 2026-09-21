@@ -64,7 +64,14 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="simulate-modal-title"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+    >
       <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 text-white shadow-2xl relative max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -73,7 +80,7 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
               <Calculator className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg text-slate-100">Simulasi Rencana Belanja</h3>
+              <h3 id="simulate-modal-title" className="font-semibold text-lg text-slate-100">Simulasi Rencana Belanja</h3>
               <p className="text-xs text-slate-400">What-If Purchase & Runway Impact Simulator</p>
             </div>
           </div>

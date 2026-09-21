@@ -96,14 +96,21 @@ export const VaultModal: React.FC<VaultModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="vault-modal-title"
+      onKeyDown={(e) => e.key === 'Escape' && handleClose()}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+    >
       <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 text-white shadow-2xl relative">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Lock className="w-4 h-4" />
             </div>
-            <h3 className="font-semibold text-lg text-slate-100">Tambah Komitmen & Vault</h3>
+            <h3 id="vault-modal-title" className="font-semibold text-lg text-slate-100">Tambah Komitmen & Vault</h3>
           </div>
           <button
             type="button"

@@ -9,57 +9,87 @@ interface Props {
 
 export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
   if (!summary) {
-    return (
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[280px]">
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Gauge className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-semibold text-sm uppercase tracking-wider text-slate-400">
-              Dynamic Daily Safe Runway
-            </h3>
+    if (onOpenAuth) {
+      return (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[260px]">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Gauge className="w-5 h-5 text-indigo-400" />
+              <h3 className="font-semibold text-sm text-slate-300">
+                Batas Belanja Harian (Runway)
+              </h3>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-white mt-3">
+              Akses Telemetri Keuangan
+            </p>
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed max-w-md">
+              Masuk atau daftarkan akun Anda untuk mengaktifkan telemetri batas belanja harian bebas risiko dan pemantauan kas.
+            </p>
           </div>
-          <p className="text-2xl font-bold text-white mt-3">
-            Belum Terautentikasi
-          </p>
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-            Silakan masuk atau daftarkan akun Anda untuk mengaktifkan telemetri Dynamic Daily Safe Runway dan kalkulasi belanja harian bebas risiko.
-          </p>
-        </div>
-        {onOpenAuth && (
           <button
             type="button"
             onClick={onOpenAuth}
-            className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/30 w-fit active:scale-95"
+            className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/30 w-fit active:scale-95 min-h-[40px]"
           >
             Masuk / Buat Akun
           </button>
-        )}
+        </div>
+      );
+    }
+
+    return (
+      <div
+        data-testid="runway-skeleton"
+        className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[260px] animate-pulse"
+      >
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-slate-800 rounded-md" />
+              <div className="h-4 w-48 bg-slate-800 rounded" />
+            </div>
+            <div className="h-6 w-32 bg-slate-800 rounded-full" />
+          </div>
+
+          <div className="my-4 space-y-2">
+            <div className="h-10 sm:h-12 w-64 bg-slate-800 rounded" />
+            <div className="h-3 w-80 bg-slate-800/80 rounded" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6 pt-5 border-t border-slate-800 mt-4">
+          <div className="space-y-1.5">
+            <div className="h-3 w-28 bg-slate-800 rounded" />
+            <div className="h-6 w-36 bg-slate-800 rounded" />
+          </div>
+          <div className="space-y-1.5 border-l border-slate-800 pl-6">
+            <div className="h-3 w-32 bg-slate-800 rounded" />
+            <div className="h-6 w-36 bg-slate-800 rounded" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  const statusColor = {
+  const statusConfig = {
     HEALTHY: {
       badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-      glow: 'shadow-glow-emerald',
-      label: 'Keuangan Sehat (Safe)',
+      label: 'Aman Terkendali',
       icon: ShieldCheck,
     },
     WARNING: {
       badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-      glow: 'shadow-glow-amber',
-      label: 'Waspada (Menipis)',
+      label: 'Mode Waspada',
       icon: AlertTriangle,
     },
     CRITICAL: {
       badge: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-      glow: 'shadow-glow-rose',
-      label: 'Kritis (Insolvent)',
+      label: 'Mode Hemat Ketat',
       icon: AlertCircle,
     },
   }[summary.health_status];
 
-  const StatusIcon = statusColor.icon;
+  const StatusIcon = statusConfig.icon;
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden flex flex-col justify-between">
@@ -67,45 +97,45 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Gauge className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-semibold text-sm uppercase tracking-wider text-slate-400">
-              Dynamic Daily Safe Runway
+            <h3 className="font-semibold text-sm text-slate-300">
+              Batas Belanja Harian (Runway)
             </h3>
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 ${statusColor.badge}`}
+            className={`px-3 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 ${statusConfig.badge}`}
           >
             <StatusIcon className="w-3.5 h-3.5" />
-            {statusColor.label}
+            {statusConfig.label}
           </span>
         </div>
 
         {/* Big Safe Runway Metric */}
         <div className="my-3">
-          <p className="text-4xl md:text-5xl font-extrabold tracking-tight tabular-nums text-white">
+          <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight tabular-nums font-mono text-white">
             Rp {summary.daily_safe_runway.toLocaleString('id-ID')}
-            <span className="text-lg md:text-xl font-normal text-slate-400 ml-1.5">/ hari</span>
+            <span className="text-base sm:text-lg md:text-xl font-normal text-slate-400 ml-1.5 font-sans">/ hari</span>
           </p>
           <p className="text-xs text-slate-400 mt-2">
-            Jatah belanja bebas risiko untuk <strong>{summary.days_remaining} hari ke depan</strong> hingga siklus inflow berikutnya.
+            Jatah belanja bebas risiko untuk <strong className="font-semibold text-slate-200">{summary.days_remaining} hari ke depan</strong> hingga siklus inflow berikutnya.
           </p>
         </div>
       </div>
 
-      {/* Bottom telemetry grid */}
-      <div className="grid grid-cols-2 gap-3 pt-6 border-t border-slate-800/80 mt-4">
-        <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/50">
-          <span className="text-[11px] text-slate-400 flex items-center gap-1 mb-1">
-            <Wallet className="w-3.5 h-3.5 text-slate-400" /> Kas Operasional Bebas
+      {/* Clean typographic stat columns with subtle dividers */}
+      <div className="grid grid-cols-2 gap-6 pt-5 border-t border-slate-800 mt-4">
+        <div>
+          <span className="text-xs text-slate-400 flex items-center gap-1.5 mb-1 font-medium">
+            <Wallet className="w-3.5 h-3.5 text-indigo-400" /> Kas Bebas Pakai
           </span>
-          <p className="text-base font-bold tabular-nums text-indigo-200">
+          <p className="text-base sm:text-lg font-bold tabular-nums font-mono text-indigo-200">
             Rp {summary.operational_free_cash.toLocaleString('id-ID')}
           </p>
         </div>
-        <div className="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/50">
-          <span className="text-[11px] text-slate-400 flex items-center gap-1 mb-1">
-            <Lock className="w-3.5 h-3.5 text-amber-400" /> Brankas Terkunci
+        <div className="border-l border-slate-800 pl-6">
+          <span className="text-xs text-slate-400 flex items-center gap-1.5 mb-1 font-medium">
+            <Lock className="w-3.5 h-3.5 text-amber-400" /> Cadangan Terkunci
           </span>
-          <p className="text-base font-bold tabular-nums text-amber-300">
+          <p className="text-base sm:text-lg font-bold tabular-nums font-mono text-amber-300">
             Rp {summary.vault_locked_cash.toLocaleString('id-ID')}
           </p>
         </div>

@@ -92,4 +92,23 @@ describe('OmniInputHero Component', () => {
 
     expect(screen.getByText(/struk_makan.png/i)).toBeInTheDocument();
   });
+
+  it('shows inline error message for unsupported file types and avoids native alert', () => {
+    const handleSubmit = vi.fn();
+    render(<OmniInputHero onSubmit={handleSubmit} isLoading={false} />);
+
+    const invalidFile = new File(['pdf_content'], 'invoice.pdf', { type: 'application/pdf' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+
+    fireEvent.change(fileInput, { target: { files: [invalidFile] } });
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText(/Format file tidak didukung/i)).toBeInTheDocument();
+    expect(screen.queryByText('invoice.pdf')).not.toBeInTheDocument();
+
+    const dismissBtn = screen.getByRole('button', { name: /Tutup pesan kesalahan/i });
+    fireEvent.click(dismissBtn);
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 });

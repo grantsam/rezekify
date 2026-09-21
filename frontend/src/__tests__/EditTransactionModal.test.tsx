@@ -132,4 +132,25 @@ describe('EditTransactionModal Component', () => {
     expect(await screen.findByText(/Saldo rekening tidak mencukupi untuk update./i)).toBeInTheDocument();
     expect(handleSuccess).not.toHaveBeenCalled();
   });
+
+  it('renders accessible dialog and invokes onClose on Escape key', () => {
+    const handleClose = vi.fn();
+    render(
+      <EditTransactionModal
+        isOpen={true}
+        onClose={handleClose}
+        transaction={mockTx}
+        accounts={mockAccounts}
+        categories={mockCategories}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'edit-modal-title');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
 });

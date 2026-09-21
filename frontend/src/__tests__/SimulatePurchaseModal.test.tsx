@@ -128,4 +128,16 @@ describe('SimulatePurchaseModal Component', () => {
     fireEvent.click(screen.getByLabelText(/Tutup modal/i));
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('renders accessible dialog and closes on Escape key', () => {
+    const handleClose = vi.fn();
+    render(<SimulatePurchaseModal isOpen={true} onClose={handleClose} />);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'simulate-modal-title');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
 });

@@ -61,7 +61,14 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-modal-title"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+    >
       <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden">
         {/* Glow accent */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -73,7 +80,7 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
               R
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">
+              <h3 id="auth-modal-title" className="font-bold text-base text-white">
                 {mode === 'login' ? 'Masuk ke Rezekify' : 'Daftar Akun Baru'}
               </h3>
               <p className="text-xs text-slate-400">Autonomous Financial Runway Engine</p>
@@ -135,10 +142,11 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Nama Lengkap</label>
+              <label htmlFor="auth-fullname" className="block text-xs font-semibold text-slate-300 mb-1.5">Nama Lengkap</label>
               <div className="relative flex items-center">
                 <UserIcon className="w-4 h-4 absolute left-3.5 text-slate-500 pointer-events-none" />
                 <input
+                  id="auth-fullname"
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -150,10 +158,11 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Alamat Email</label>
+            <label htmlFor="auth-email" className="block text-xs font-semibold text-slate-300 mb-1.5">Alamat Email</label>
             <div className="relative flex items-center">
               <Mail className="w-4 h-4 absolute left-3.5 text-slate-500 pointer-events-none" />
               <input
+                id="auth-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -164,10 +173,11 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Kata Sandi (Password)</label>
+            <label htmlFor="auth-password" className="block text-xs font-semibold text-slate-300 mb-1.5">Kata Sandi (Password)</label>
             <div className="relative flex items-center">
               <Lock className="w-4 h-4 absolute left-3.5 text-slate-500 pointer-events-none" />
               <input
+                id="auth-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

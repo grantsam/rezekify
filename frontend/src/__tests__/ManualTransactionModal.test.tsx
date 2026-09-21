@@ -65,4 +65,18 @@ describe('ManualTransactionModal Component', () => {
       expect(handleClose).toHaveBeenCalled();
     });
   });
+
+  it('renders accessible dialog and closes on Escape key', () => {
+    const handleClose = vi.fn();
+    render(
+      <ManualTransactionModal isOpen={true} onClose={handleClose} onSuccess={vi.fn()} accounts={mockAccounts} />
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'manual-modal-title');
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
 });

@@ -77,10 +77,17 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="account-modal-title"
+      onKeyDown={(e) => e.key === 'Escape' && handleClose()}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+    >
       <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 text-white shadow-2xl relative">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <h3 className="font-semibold text-lg text-slate-100">Tambah Akun Baru</h3>
+          <h3 id="account-modal-title" className="font-semibold text-lg text-slate-100">Tambah Akun Baru</h3>
           <button
             type="button"
             onClick={handleClose}
