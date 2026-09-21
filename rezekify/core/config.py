@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     TEST_DATABASE_URL: str = "sqlite:///:memory:"
 
     # Security
-    SECRET_KEY: str = "rezekify-secure-random-jwt-key-development"
+    SECRET_KEY: str = DEFAULT_DEV_SECRET
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     ALLOWED_ORIGINS: List[str] = [
@@ -36,10 +36,12 @@ class Settings(BaseSettings):
                 try:
                     parsed = json.loads(v_stripped)
                     if isinstance(parsed, list):
-                        return [str(o).strip() for o in parsed if str(o).strip()]
-                except Exception:
+                        return [str(o).strip().rstrip("/") for o in parsed if str(o).strip()]
+                except (json.JSONDecodeError, ValueError):
                     pass
-            return [o.strip() for o in v.split(",") if o.strip()]
+            return [o.strip().rstrip("/") for o in v.split(",") if o.strip()]
+        if isinstance(v, list):
+            return [str(o).strip().rstrip("/") for o in v if str(o).strip()]
         return v
 
     # LLM Key Pools (comma-separated strings)
@@ -54,7 +56,8 @@ class Settings(BaseSettings):
     def validate_production_secrets(self) -> "Settings":
         # ponytail: validates against development default; upgrade to entropy/min-length checks if needed.
         if self.ENVIRONMENT.lower() == "production":
-            if not self.SECRET_KEY or self.SECRET_KEY == DEFAULT_DEV_SECRET:
+            secret = self.SECRET_KEY.strip() if self.SECRET_KEY else ""
+            if not secret or secret == DEFAULT_DEV_SECRET:
                 raise ValueError(
                     "SECRET_KEY must be securely set in production and cannot use the development default."
                 )

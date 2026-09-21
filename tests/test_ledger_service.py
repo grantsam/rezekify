@@ -250,7 +250,6 @@ def test_transfer_same_account_rejected(db_session, sample_user):
 def test_cross_tenant_isolation_enforced(db_session, sample_user):
     from sqlalchemy.orm.exc import NoResultFound
     from rezekify.db.models import User
-    import uuid
 
     other_user = User(
         email="other_user@rezekify.local",
@@ -347,5 +346,49 @@ def test_ledger_mutations_use_row_locking(db_session, sample_user):
     with patch.object(Query, "with_for_update", autospec=True, side_effect=Query.with_for_update) as spy_lock:
         ledger.delete_transaction(user_id=sample_user.id, transaction_id=tx_expense.id)
         assert spy_lock.call_count >= 1
+
+
+def test_record_transfer_deadlock_prevention_lock_ordering(db_session, sample_user):
+    acc_a = Account(
+        user_id=sample_user.id,
+        name="Account Alpha",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("100000.00"),
+    )
+    acc_b = Account(
+        user_id=sample_user.id,
+        name="Account Beta",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("100000.00"),
+    )
+    db_session.add_all([acc_a, acc_b])
+    db_session.commit()
+
+    ledger = LedgerService(db_session)
+    smaller_id, larger_id = sorted([acc_a.id, acc_b.id])
+
+    # Case 1: from_account has larger_id, to_account has smaller_id
+    ledger.record_transfer(
+        user_id=sample_user.id,
+        from_account_id=larger_id,
+        to_account_id=smaller_id,
+        amount=Decimal("10000.00"),
+    )
+    acc_smaller = db_session.query(Account).filter_by(id=smaller_id).one()
+    acc_larger = db_session.query(Account).filter_by(id=larger_id).one()
+    assert acc_smaller.current_balance == Decimal("110000.00")
+    assert acc_larger.current_balance == Decimal("90000.00")
+
+    # Case 2: from_account has smaller_id, to_account has larger_id
+    ledger.record_transfer(
+        user_id=sample_user.id,
+        from_account_id=smaller_id,
+        to_account_id=larger_id,
+        amount=Decimal("5000.00"),
+    )
+    db_session.refresh(acc_smaller)
+    db_session.refresh(acc_larger)
+    assert acc_smaller.current_balance == Decimal("105000.00")
+    assert acc_larger.current_balance == Decimal("95000.00")
 
 

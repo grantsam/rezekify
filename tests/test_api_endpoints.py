@@ -619,13 +619,53 @@ def test_settings_allowed_origins_parsing():
     cfg_csv = Settings(ALLOWED_ORIGINS="http://foo.com, https://bar.com")
     assert cfg_csv.ALLOWED_ORIGINS == ["http://foo.com", "https://bar.com"]
 
+    # Comma-separated with trailing slashes normalized
+    cfg_csv_slash = Settings(ALLOWED_ORIGINS="http://foo.com/, https://bar.com/")
+    assert cfg_csv_slash.ALLOWED_ORIGINS == ["http://foo.com", "https://bar.com"]
+
     # JSON list string
     cfg_json = Settings(ALLOWED_ORIGINS='["http://foo.com", "https://bar.com"]')
     assert cfg_json.ALLOWED_ORIGINS == ["http://foo.com", "https://bar.com"]
 
-    # Direct list
-    cfg_list = Settings(ALLOWED_ORIGINS=["http://foo.com"])
+    # JSON list string with trailing slashes normalized
+    cfg_json_slash = Settings(ALLOWED_ORIGINS='["http://foo.com/", "https://bar.com/"]')
+    assert cfg_json_slash.ALLOWED_ORIGINS == ["http://foo.com", "https://bar.com"]
+
+    # Direct list with trailing slash
+    cfg_list = Settings(ALLOWED_ORIGINS=["http://foo.com/"])
     assert cfg_list.ALLOWED_ORIGINS == ["http://foo.com"]
+
+
+def test_cors_origin_matching_with_trailing_slash_normalized():
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    from rezekify.core.config import Settings
+
+    custom_settings = Settings(ALLOWED_ORIGINS="http://frontend.example.com/")
+    assert custom_settings.ALLOWED_ORIGINS == ["http://frontend.example.com"]
+
+    test_app = FastAPI()
+    test_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=custom_settings.ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @test_app.get("/ping")
+    def ping():
+        return {"ping": "pong"}
+
+    cors_client = TestClient(test_app)
+    res = cors_client.options(
+        "/ping",
+        headers={
+            "Origin": "http://frontend.example.com",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert res.headers.get("access-control-allow-origin") == "http://frontend.example.com"
 
 
 @pytest.fixture
@@ -676,6 +716,23 @@ def test_register_short_name_fails(client):
     res = client.post(
         "/api/v1/auth/register",
         json={"email": "valid@example.com", "password": "validpassword123", "full_name": "a"},
+    )
+    assert res.status_code == 422
+
+
+def test_register_long_password_fails(client):
+    long_pw = "P" * 73
+    res = client.post(
+        "/api/v1/auth/register",
+        json={"email": "valid@example.com", "password": long_pw, "full_name": "Test User"},
+    )
+    assert res.status_code == 422
+
+
+def test_register_whitespace_only_full_name_fails(client):
+    res = client.post(
+        "/api/v1/auth/register",
+        json={"email": "valid@example.com", "password": "validpassword123", "full_name": "     "},
     )
     assert res.status_code == 422
 

@@ -26,6 +26,15 @@ def test_production_rejects_empty_secret_key():
     assert "SECRET_KEY must be securely set in production" in str(exc.value)
 
 
+def test_production_rejects_whitespace_secret_key():
+    with pytest.raises(ValidationError) as exc:
+        Settings(
+            ENVIRONMENT="production",
+            SECRET_KEY="   ",
+        )
+    assert "SECRET_KEY must be securely set in production" in str(exc.value)
+
+
 def test_production_accepts_secure_secret_key():
     s = Settings(
         ENVIRONMENT="production",

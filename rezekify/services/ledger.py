@@ -10,10 +10,7 @@ from rezekify.db.models import Account, EntryType, LedgerEntry, Transaction
 
 
 class LedgerService:
-    """Provides deterministic financial ledger transaction operations.
-
-    ponytail: synchronous session with filter_by user_id isolation; add with_for_update row locking when concurrent multi-channel writes demand it.
-    """
+    """Provides deterministic financial ledger transaction operations."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -132,18 +129,25 @@ class LedgerService:
         if from_account_id == to_account_id:
             raise ValueError("Source and destination accounts must be distinct.")
 
-        from_acc = (
+        first_id, second_id = (
+            (from_account_id, to_account_id)
+            if from_account_id < to_account_id
+            else (to_account_id, from_account_id)
+        )
+        acc1 = (
             self.db.query(Account)
-            .filter_by(id=from_account_id, user_id=user_id)
+            .filter_by(id=first_id, user_id=user_id)
             .with_for_update()
             .one()
         )
-        to_acc = (
+        acc2 = (
             self.db.query(Account)
-            .filter_by(id=to_account_id, user_id=user_id)
+            .filter_by(id=second_id, user_id=user_id)
             .with_for_update()
             .one()
         )
+        from_acc = acc1 if acc1.id == from_account_id else acc2
+        to_acc = acc2 if acc2.id == to_account_id else acc1
 
         from_acc.current_balance -= amount
         to_acc.current_balance += amount
