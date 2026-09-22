@@ -81,11 +81,13 @@ class ReActAgent:
                 except Exception as e:
                     err_str = str(e).lower()
                     if "401" in err_str or "unauthenticated" in err_str or "api_key_invalid" in err_str:
-                        return {"action": "byok_error", "status_code": 401}
+                        if self.is_byok:
+                            return {"action": "byok_error", "status_code": 401}
+                        break
                     if "429" in err_str or "resource_exhausted" in err_str or "rate limit" in err_str:
                         if self.gemini_pool:
                             self.gemini_pool.report_rate_limit(key)
-                        if self.is_byok or (len(self.gemini_pool.keys) == 1 and not self.groq_pool and self.is_byok):
+                        if self.is_byok:
                             return {"action": "byok_error", "status_code": 429}
                         continue
                     # For non-429 errors or if retries fail, attempt Groq fallback if text-only
@@ -128,7 +130,7 @@ class ReActAgent:
                     },
                 ]
                 completion = client.chat.completions.create(
-                    model=self.groq_model,
+                    model="meta-llama/llama-4-scout-17b-16e-instruct",
                     messages=messages,
                     temperature=0.1,
                 )
@@ -137,11 +139,13 @@ class ReActAgent:
             except Exception as e:
                 err_str = str(e).lower()
                 if "401" in err_str or "invalid api key" in err_str:
-                    return {"action": "byok_error", "status_code": 401}
+                    if self.is_byok:
+                        return {"action": "byok_error", "status_code": 401}
+                    break
                 if "429" in err_str or "rate limit" in err_str:
                     if self.groq_pool:
                         self.groq_pool.report_rate_limit(key)
-                    if self.is_byok or (len(self.groq_pool.keys) == 1 and not self.gemini_pool):
+                    if self.is_byok:
                         return {"action": "byok_error", "status_code": 429}
                     continue
                 break
@@ -170,11 +174,13 @@ class ReActAgent:
             except Exception as e:
                 err_str = str(e).lower()
                 if "401" in err_str or "invalid api key" in err_str:
-                    return {"action": "byok_error", "status_code": 401}
+                    if self.is_byok:
+                        return {"action": "byok_error", "status_code": 401}
+                    break
                 if "429" in err_str or "rate limit" in err_str:
                     if self.groq_pool:
                         self.groq_pool.report_rate_limit(key)
-                    if self.is_byok or (len(self.groq_pool.keys) == 1 and not self.gemini_pool):
+                    if self.is_byok:
                         return {"action": "byok_error", "status_code": 429}
                     continue
                 break

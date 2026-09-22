@@ -100,7 +100,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleCopyCode = () => {
     if (!pairingCode) return;
-    navigator.clipboard.writeText(pairingCode);
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(pairingCode).catch(() => {});
+    }
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
@@ -163,7 +165,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const availableModelsList = settings?.ai?.available_models?.[provider] || (
-    provider === 'GEMINI' ? ['gemini-2.5-flash', 'gemini-2.5-pro'] : ['llama-4-scout-17b', 'llama-3.3-70b']
+    provider === 'GEMINI'
+      ? ['gemini-2.5-flash', 'gemini-2.5-pro']
+      : ['meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.3-70b-versatile']
   );
 
   return (
@@ -379,7 +383,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               type="button"
                               onClick={() => {
                                 setProvider(p);
-                                setModel(p === 'GEMINI' ? 'gemini-2.5-flash' : 'llama-3.3-70b');
+                                setModel(p === 'GEMINI' ? 'gemini-2.5-flash' : 'llama-3.3-70b-versatile');
                                 setValidationResult(null);
                               }}
                               className={`py-2 rounded-xl text-xs font-semibold border transition-all ${

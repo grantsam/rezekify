@@ -161,7 +161,7 @@ describe('Settings and BYOK API Client functions', () => {
         provider: 'SYSTEM',
         model: 'gemini-2.5-flash',
         has_api_key: false,
-        available_models: { GEMINI: ['gemini-2.5-flash'], GROQ: ['llama-3.3-70b'] },
+        available_models: { GEMINI: ['gemini-2.5-flash'], GROQ: ['llama-3.3-70b-versatile'] },
       },
     };
     global.fetch = vi.fn().mockResolvedValue({
@@ -206,7 +206,7 @@ describe('Settings and BYOK API Client functions', () => {
     const mockUpdated = {
       is_custom_ai_enabled: true,
       provider: 'GROQ',
-      model: 'llama-3.3-70b',
+      model: 'llama-3.3-70b-versatile',
       has_api_key: true,
       key_hint: '...70b',
       available_models: { GEMINI: [], GROQ: [] },
@@ -219,7 +219,7 @@ describe('Settings and BYOK API Client functions', () => {
     const res = await updateAISettings({
       is_custom_ai_enabled: true,
       provider: 'GROQ',
-      model: 'llama-3.3-70b',
+      model: 'llama-3.3-70b-versatile',
       api_key: 'groq-key-99',
     });
     expect(res).toEqual(mockUpdated);
@@ -230,7 +230,7 @@ describe('Settings and BYOK API Client functions', () => {
         body: JSON.stringify({
           is_custom_ai_enabled: true,
           provider: 'GROQ',
-          model: 'llama-3.3-70b',
+          model: 'llama-3.3-70b-versatile',
           api_key: 'groq-key-99',
         }),
       })

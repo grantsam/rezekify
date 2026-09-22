@@ -91,7 +91,7 @@ def test_validate_ai_credentials_groq_success():
         valid, msg = validate_ai_credentials(
             provider=AIProvider.GROQ,
             api_key="valid-groq-key-123",
-            model="llama-3.3-70b",
+            model="llama-3.3-70b-versatile",
         )
         assert valid is True
         assert "berhasil" in msg.lower()
@@ -107,7 +107,7 @@ def test_validate_ai_credentials_groq_failure():
         valid, msg = validate_ai_credentials(
             provider=AIProvider.GROQ,
             api_key="invalid-groq-key",
-            model="llama-3.3-70b",
+            model="llama-3.3-70b-versatile",
         )
         assert valid is False
         assert "Invalid API Key" in msg
@@ -284,6 +284,52 @@ def test_put_ai_settings_preserves_existing_key_when_omitted(api_test_client):
     db_rec = db.query(UserSettings).filter_by(user_id=user.id).first()
     assert decrypt_key(db_rec.encrypted_api_key) == "existing-secret-key-1234"
     db.close()
+
+
+def test_put_ai_settings_requires_new_key_when_switching_provider(api_test_client):
+    client, user, SessionMaker = api_test_client
+    # Pre-populate DB with existing GEMINI key
+    db = SessionMaker()
+    rec = UserSettings(
+        user_id=user.id,
+        ai_provider=AIProvider.GEMINI,
+        ai_model="gemini-2.5-flash",
+        encrypted_api_key=encrypt_key("existing-gemini-key"),
+        key_hint="...1234",
+        is_custom_ai_enabled=True,
+    )
+    db.merge(rec)
+    db.commit()
+    db.close()
+
+    # Attempt to switch to GROQ without new api_key
+    res = client.put(
+        "/api/v1/settings/ai",
+        json={
+            "is_custom_ai_enabled": True,
+            "provider": "GROQ",
+            "model": "llama-3.3-70b-versatile",
+            "api_key": None,
+        },
+    )
+    assert res.status_code == 400
+    assert "Kunci API baru wajib diisi saat mengganti provider AI." in res.json()["detail"]
+
+    # Now provide new key for GROQ - should succeed
+    res_ok = client.put(
+        "/api/v1/settings/ai",
+        json={
+            "is_custom_ai_enabled": True,
+            "provider": "GROQ",
+            "model": "llama-3.3-70b-versatile",
+            "api_key": "gsk_newgroqkey9999",
+        },
+    )
+    assert res_ok.status_code == 200
+    data = res_ok.json()
+    assert data["provider"] == "GROQ"
+    assert data["model"] == "llama-3.3-70b-versatile"
+    assert data["key_hint"] == "...9999"
 
 
 def test_unlink_telegram_endpoint(api_test_client):

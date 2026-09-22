@@ -100,7 +100,7 @@ def update_ai_settings(
             detail=f"Model '{payload.model}' tidak valid untuk provider {payload.provider.value}.",
         )
 
-    # Check key requirement when enabling BYOK
+    # Check key requirement when enabling BYOK or switching provider
     has_existing_key = bool(settings_rec.encrypted_api_key)
     has_new_key = bool(payload.api_key and payload.api_key.strip())
 
@@ -108,6 +108,17 @@ def update_ai_settings(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Kunci API wajib diisi untuk mengaktifkan AI kustom (BYOK).",
+        )
+
+    if (
+        payload.is_custom_ai_enabled
+        and settings_rec.ai_provider != AIProvider.SYSTEM
+        and payload.provider != settings_rec.ai_provider
+        and not has_new_key
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kunci API baru wajib diisi saat mengganti provider AI.",
         )
 
     # Encrypt and store key if new one provided

@@ -10,8 +10,8 @@ AVAILABLE_MODELS: Dict[str, List[str]] = {
         "gemini-2.5-pro",
     ],
     "GROQ": [
-        "llama-4-scout-17b",
-        "llama-3.3-70b",
+        "meta-llama/llama-4-scout-17b-16e-instruct",
+        "llama-3.3-70b-versatile",
     ],
 }
 

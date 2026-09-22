@@ -377,4 +377,12 @@ def test_start_with_invalid_code_shows_error(db_session):
     assert "Gagal" in reply or "tidak valid" in reply
 
 
+def test_telegram_command_token_boundary(db_session):
+    gateway = TelegramGateway(db_session)
+    # Unlinked user sending text that starts with '/starting' shouldn't trigger /start command logic
+    reply = gateway.process_text_message(chat_id=990011, text="/starting tomorrow 50rb")
+    assert "belum terhubung" in reply
+    assert "Selamat datang di Bot Keuangan Rezekify" not in reply
+
+
 

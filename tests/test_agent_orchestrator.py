@@ -379,13 +379,14 @@ def test_resolve_agent_instantiates_byok_gemini_agent(db_session, sample_user):
     assert agent is not None
     assert agent.gemini_model == "gemini-2.5-pro"
     assert agent.gemini_pool.keys == ["custom-gemini-key"]
+    assert agent.is_byok is True
 
 
 def test_resolve_agent_instantiates_byok_groq_agent(db_session, sample_user):
     settings = UserSettings(
         user_id=sample_user.id,
         ai_provider=AIProvider.GROQ,
-        ai_model="llama-3.3-70b",
+        ai_model="llama-3.3-70b-versatile",
         encrypted_api_key=encrypt_key("custom-groq-key"),
         is_custom_ai_enabled=True,
     )
@@ -396,8 +397,9 @@ def test_resolve_agent_instantiates_byok_groq_agent(db_session, sample_user):
     agent, is_custom = orchestrator._resolve_agent_for_user(sample_user.id)
     assert is_custom is True
     assert agent is not None
-    assert agent.groq_model == "llama-3.3-70b"
+    assert agent.groq_model == "llama-3.3-70b-versatile"
     assert agent.groq_pool.keys == ["custom-groq-key"]
+    assert agent.is_byok is True
 
 
 def test_handle_message_byok_401_error_feedback(db_session, sample_user):

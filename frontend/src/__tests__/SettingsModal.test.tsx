@@ -18,7 +18,7 @@ describe('SettingsModal Component', () => {
       key_hint: null,
       available_models: {
         GEMINI: ['gemini-2.5-flash', 'gemini-2.5-pro'],
-        GROQ: ['llama-4-scout-17b', 'llama-3.3-70b'],
+        GROQ: ['meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.3-70b-versatile'],
       },
     },
   };

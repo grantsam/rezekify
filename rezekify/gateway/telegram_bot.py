@@ -29,7 +29,8 @@ class TelegramGateway:
         """Handles incoming text messages, pairing commands, and runway inquiries."""
         cleaned_text = text.strip()
 
-        if cleaned_text.startswith("/start") or cleaned_text.startswith("/link"):
+        cmd = cleaned_text.split()[0].lower() if cleaned_text.split() else ""
+        if cmd in ("/start", "/link"):
             parts = cleaned_text.split()
             if len(parts) >= 2:
                 code = parts[1].strip()
@@ -42,7 +43,7 @@ class TelegramGateway:
                 except ValueError as e:
                     return f"❌ Gagal: {str(e)}"
 
-            if cleaned_text.startswith("/link"):
+            if cmd == "/link":
                 return "Format salah. Gunakan: `/link KODE-PAIRING` (dapatkan kode di Web Dashboard)."
 
             # Bare /start
