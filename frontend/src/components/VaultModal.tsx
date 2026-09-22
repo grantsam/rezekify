@@ -31,6 +31,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
   const [targetAmount, setTargetAmount] = useState('');
   const [allocatedAmount, setAllocatedAmount] = useState('');
   const [targetDate, setTargetDate] = useState('');
+  const [isLocked, setIsLocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -53,6 +54,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
     setTargetAmount('');
     setAllocatedAmount('');
     setTargetDate('');
+    setIsLocked(false);
     setErrorMsg(null);
   };
 
@@ -95,6 +97,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
           target_amount: parsedTarget,
           allocated_amount: finalAllocated,
           target_date: targetDate.trim() ? targetDate.trim() : null,
+          is_locked: isLocked,
         }),
       });
 
@@ -157,6 +160,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                 <div>
                   <label htmlFor="vault-name" className="block text-xs font-medium text-slate-400 mb-1.5">
                     Nama Tagihan / Komitmen
+                    <span className="sr-only">Nama Komitmen</span>
                   </label>
                   <input
                     id="vault-name"
@@ -194,6 +198,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                   <div>
                     <label htmlFor="target-amount" className="block text-xs font-medium text-slate-400 mb-1.5">
                       Target Biaya (Rp)
+                      <span className="sr-only">Target Nominal</span>
                     </label>
                     <input
                       id="target-amount"
@@ -235,6 +240,25 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                     value={targetDate}
                     onChange={(e) => setTargetDate(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="flex items-center gap-2.5">
+                    <Lock className={`w-4 h-4 ${isLocked ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <div>
+                      <label htmlFor="is_locked_toggle" className="text-sm font-medium text-white cursor-pointer">
+                        Kunci Dana Komitmen
+                      </label>
+                      <p className="text-xs text-slate-400">Cegah pengurangan alokasi dana secara tidak sengaja</p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="is_locked_toggle"
+                    checked={isLocked}
+                    onChange={(e) => setIsLocked(e.target.checked)}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-700 border-slate-600 cursor-pointer"
                   />
                 </div>
               </div>

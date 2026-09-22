@@ -68,6 +68,7 @@ describe('VaultModal Component', () => {
             target_amount: 1500000,
             allocated_amount: 1500000,
             target_date: '2026-10-01',
+            is_locked: false,
           }),
         })
       );
@@ -119,6 +120,7 @@ describe('VaultModal Component', () => {
             target_amount: 5000000,
             allocated_amount: 1000000,
             target_date: null,
+            is_locked: false,
           }),
         })
       );
@@ -238,5 +240,42 @@ describe('VaultModal Component', () => {
 
     fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders lock commitment toggle and passes is_locked in creation payload', async () => {
+    const apiFetchMock = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({
+      id: 'v-3',
+      name: 'Dana Darurat Terkunci',
+      vault_type: 'FIXED_BILL',
+      target_amount: 10000000,
+      allocated_amount: 10000000,
+      target_date: null,
+      is_locked: true,
+    });
+    const handleSuccess = vi.fn();
+    const handleClose = vi.fn();
+
+    render(<VaultModal isOpen={true} onClose={handleClose} onSuccess={handleSuccess} />);
+
+    const nameInput = screen.getByLabelText(/Nama Komitmen/i);
+    const targetInput = screen.getByLabelText(/Target Nominal/i);
+    const lockToggle = screen.getByLabelText(/Kunci Dana Komitmen/i);
+
+    fireEvent.change(nameInput, { target: { value: 'Dana Darurat Terkunci' } });
+    fireEvent.change(targetInput, { target: { value: '10000000' } });
+    fireEvent.click(lockToggle);
+
+    const submitBtn = screen.getByRole('button', { name: /Simpan Komitmen/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith(
+        '/vaults',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"is_locked":true'),
+        })
+      );
+    });
   });
 });

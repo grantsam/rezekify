@@ -16,12 +16,6 @@ export interface User {
 
 export type UserProfile = User;
 
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-  user?: User;
-}
-
 export interface Category {
   id: string;
   name: string;
@@ -46,6 +40,22 @@ export interface Vault {
   allocated_amount: number;
   target_date?: string | null;
   is_locked: boolean;
+}
+
+export interface VaultCreateRequest {
+  name: string;
+  vault_type: VaultType;
+  target_amount: number;
+  allocated_amount?: number;
+  target_date?: string | null;
+  is_locked?: boolean;
+}
+
+export interface VaultUpdateRequest {
+  name: string;
+  target_amount: number;
+  allocated_amount: number;
+  target_date?: string | null;
 }
 
 export interface UpcomingBill {

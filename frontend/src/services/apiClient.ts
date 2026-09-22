@@ -2,7 +2,7 @@
  * Authenticated API Client for rezekify backend services.
  */
 
-import { Transaction, TransactionUpdateRequest } from '../types/api';
+import { Transaction, TransactionUpdateRequest, Vault, VaultUpdateRequest } from '../types/api';
 
 const TOKEN_KEY = 'rezekify_auth_token';
 
@@ -62,13 +62,15 @@ export async function updateTransaction(
   });
 }
 
-export const apiClient = {
-  updateTransaction,
-  apiFetch,
-  setAuthToken,
-  getAuthToken,
-  clearAuthToken,
-  getAuthHeader,
-};
+export async function toggleVaultLock(id: string): Promise<Vault> {
+  return apiFetch<Vault>(`/vaults/${id}/toggle-lock`, {
+    method: 'PATCH',
+  });
+}
 
-export default apiClient;
+export async function updateVault(id: string, data: VaultUpdateRequest): Promise<Vault> {
+  return apiFetch<Vault>(`/vaults/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
