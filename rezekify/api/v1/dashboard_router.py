@@ -12,11 +12,16 @@ from starlette.concurrency import run_in_threadpool
 from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.orchestrator import AgentOrchestrator
 from rezekify.api.deps import get_current_user, get_db, get_gemini_key_pool
+from rezekify.core.rate_limit import RateLimiter
 from rezekify.db.models import User
 from rezekify.services.runway import RunwayService
 
 dashboard_router = APIRouter()
 analytics_router = APIRouter()
+
+# ponytail: in-memory sliding window rate limiter; upgrade to Redis-backed limiter when scaling horizontally.
+ai_chat_limiter = RateLimiter(max_requests=15, window_seconds=60)
+ai_receipt_limiter = RateLimiter(max_requests=5, window_seconds=60)
 
 ALLOWED_RECEIPT_MIMES = {"image/jpeg", "image/png", "image/webp"}
 MAX_RECEIPT_BYTES = 10 * 1024 * 1024  # 10MB
@@ -124,7 +129,7 @@ def get_dashboard_summary(
     )
 
 
-@dashboard_router.post("/ai-chat", response_model=ChatResponse)
+@dashboard_router.post("/ai-chat", response_model=ChatResponse, dependencies=[Depends(ai_chat_limiter)])
 def ai_chat_omni_input(
     req: ChatRequest,
     current_user: User = Depends(get_current_user),
@@ -137,7 +142,7 @@ def ai_chat_omni_input(
     return ChatResponse(reply=reply)
 
 
-@dashboard_router.post("/ai-receipt", response_model=ChatResponse)
+@dashboard_router.post("/ai-receipt", response_model=ChatResponse, dependencies=[Depends(ai_receipt_limiter)])
 async def ai_receipt_upload(
     file: UploadFile = File(...),
     message: Optional[str] = Form(None),

@@ -335,6 +335,40 @@ def test_api_ai_chat():
     assert len(chat_res.json()["reply"]) > 0
 
 
+def test_ai_chat_rate_limiting():
+    # Register user
+    res = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "rate_limit_chat@rezekify.id",
+            "password": "Password123!",
+            "full_name": "Rate Limit Chat Tester",
+        },
+    )
+    assert res.status_code == 200
+    token = res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Fire 15 requests to verify all succeed (200)
+    for _ in range(15):
+        chat_res = client.post(
+            "/api/v1/dashboard/ai-chat",
+            json={"message": "cek runway"},
+            headers=headers,
+        )
+        assert chat_res.status_code == 200
+
+    # 16th request must trigger HTTP 429
+    limited_res = client.post(
+        "/api/v1/dashboard/ai-chat",
+        json={"message": "cek runway"},
+        headers=headers,
+    )
+    assert limited_res.status_code == 429
+    assert "Retry-After" in limited_res.headers
+    assert "Batas permintaan tercapai" in limited_res.json()["detail"]
+
+
 def test_analytics_spending_breakdown_full_payload(sample_user, db_session):
     """Tests that GET /api/v1/analytics/spending-breakdown returns valid Daily and Monthly schemas."""
     from rezekify.core.security import create_access_token
