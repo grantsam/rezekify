@@ -341,3 +341,40 @@ def test_telegram_handle_update_voice_missing_bytes(db_session):
     assert "data audio tidak ditemukan" in reply
 
 
+def test_start_with_pairing_code_links_account(db_session, sample_user):
+    sample_user.telegram_pairing_code = "DK-5678"
+    sample_user.pairing_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    db_session.commit()
+
+    gateway = TelegramGateway(db_session)
+    reply = gateway.process_text_message(chat_id=11223344, text="/start DK-5678")
+
+    db_session.refresh(sample_user)
+    assert sample_user.telegram_chat_id == 11223344
+    assert "berhasil terhubung" in reply.lower()
+
+
+def test_start_without_code_unlinked_shows_instructions(db_session):
+    gateway = TelegramGateway(db_session)
+    reply = gateway.process_text_message(chat_id=990011, text="/start")
+    assert "Selamat datang di Bot Keuangan Rezekify" in reply
+    assert "Web Dashboard Rezekify" in reply
+
+
+def test_start_without_code_linked_shows_welcome_back(db_session, sample_user):
+    sample_user.telegram_chat_id = 990011
+    db_session.commit()
+
+    gateway = TelegramGateway(db_session)
+    reply = gateway.process_text_message(chat_id=990011, text="/start")
+    assert "Selamat datang kembali" in reply
+    assert sample_user.full_name in reply
+
+
+def test_start_with_invalid_code_shows_error(db_session):
+    gateway = TelegramGateway(db_session)
+    reply = gateway.process_text_message(chat_id=990011, text="/start DK-INVALID")
+    assert "Gagal" in reply or "tidak valid" in reply
+
+
+
