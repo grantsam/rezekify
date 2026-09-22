@@ -67,6 +67,12 @@ class VaultType(str, Enum):
     FIXED_BILL = "FIXED_BILL"
 
 
+class AIProvider(str, Enum):
+    SYSTEM = "SYSTEM"
+    GEMINI = "GEMINI"
+    GROQ = "GROQ"
+
+
 def utc_now():
     return datetime.now(timezone.utc)
 
@@ -88,6 +94,12 @@ class User(Base):
     vaults = relationship("Vault", back_populates="user", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
+    settings = relationship(
+        "UserSettings",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 
 class Account(Base):
@@ -157,3 +169,30 @@ class LedgerEntry(Base):
     amount = Column(Numeric(15, 2), nullable=False)
 
     transaction = relationship("Transaction", back_populates="ledger_entries")
+
+
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        GUID,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    ai_provider = Column(
+        SQLEnum(AIProvider, native_enum=False),
+        nullable=False,
+        default=AIProvider.SYSTEM,
+    )
+    ai_model = Column(String(100), nullable=False, default="gemini-2.5-flash")
+    encrypted_api_key = Column(Text, nullable=True)
+    key_hint = Column(String(16), nullable=True)
+    is_custom_ai_enabled = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+    user = relationship("User", back_populates="settings")
+
