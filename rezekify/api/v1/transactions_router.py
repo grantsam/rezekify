@@ -61,27 +61,6 @@ class TransactionUpdateRequest(BaseModel):
     transaction_type: Optional[str] = None
 
 
-class ManualExpenseRequest(BaseModel):
-    account_id: UUID
-    category_id: Optional[UUID] = None
-    amount: Decimal
-    description: str
-
-
-class ManualIncomeRequest(BaseModel):
-    account_id: UUID
-    category_id: Optional[UUID] = None
-    amount: Decimal
-    description: str
-
-
-class ManualTransferRequest(BaseModel):
-    from_account_id: UUID
-    to_account_id: UUID
-    amount: Decimal
-    description: Optional[str] = "Transfer Antar Akun"
-
-
 @transactions_router.get("", response_model=List[TransactionItemResponse])
 @transactions_router.get("/", response_model=List[TransactionItemResponse])
 def list_transactions(
@@ -147,49 +126,6 @@ def create_transaction(
             )
         else:
             raise ValueError(f"Unsupported transaction type: {req.transaction_type}")
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-
-@transactions_router.post("/expense", response_model=TransactionItemResponse)
-def create_manual_expense(
-    req: ManualExpenseRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Auxiliary manual expense creation."""
-    ledger = LedgerService(db)
-    try:
-        tx = ledger.record_expense(
-            user_id=current_user.id,
-            account_id=req.account_id,
-            category_id=req.category_id,
-            amount=req.amount,
-            description=req.description,
-            source_channel="WEB_MANUAL",
-        )
-        return tx
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-
-@transactions_router.post("/transfer", response_model=TransactionItemResponse)
-def create_manual_transfer(
-    req: ManualTransferRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Auxiliary manual transfer creation."""
-    ledger = LedgerService(db)
-    try:
-        tx = ledger.record_transfer(
-            user_id=current_user.id,
-            from_account_id=req.from_account_id,
-            to_account_id=req.to_account_id,
-            amount=req.amount,
-            description=req.description or "Transfer Antar Akun",
-        )
-        return tx
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

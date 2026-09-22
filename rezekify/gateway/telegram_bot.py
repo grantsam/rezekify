@@ -167,6 +167,3 @@ class TelegramGateway:
             )
 
         return "Unsupported message format."
-
-
-TelegramBot = TelegramGateway

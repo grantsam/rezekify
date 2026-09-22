@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, Save, Calendar, Tag, CreditCard, FileText } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
 import { Account, Category, Transaction, TransactionUpdateRequest } from '../types/api';
-import { apiClient } from '../services/apiClient';
+import { updateTransaction } from '../services/apiClient';
 
 interface Props {
   isOpen: boolean;
@@ -128,7 +128,7 @@ export const EditTransactionModal: React.FC<Props> = ({
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      await apiClient.updateTransaction(transaction.id, payload);
+      await updateTransaction(transaction.id, payload);
       onSuccess();
       onClose();
     } catch (err: any) {

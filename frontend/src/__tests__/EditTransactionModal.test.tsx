@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EditTransactionModal } from '../components/EditTransactionModal';
 import { Account, Category, Transaction } from '../types/api';
-import { apiClient } from '../services/apiClient';
+import * as apiClient from '../services/apiClient';
 
 describe('EditTransactionModal Component', () => {
   const mockAccounts: Account[] = [

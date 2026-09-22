@@ -30,6 +30,3 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
-
-get_db_session = get_db
-
