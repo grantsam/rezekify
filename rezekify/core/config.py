@@ -44,6 +44,25 @@ class Settings(BaseSettings):
             return [str(o).strip().rstrip("/") for o in v if str(o).strip()]
         return v
 
+    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "testserver"]
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def parse_allowed_hosts(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if v_stripped.startswith("[") and v_stripped.endswith("]"):
+                try:
+                    parsed = json.loads(v_stripped)
+                    if isinstance(parsed, list):
+                        return [str(o).strip() for o in parsed if str(o).strip()]
+                except (json.JSONDecodeError, ValueError):
+                    pass
+            return [o.strip() for o in v.split(",") if o.strip()]
+        if isinstance(v, list):
+            return [str(o).strip() for o in v if str(o).strip()]
+        return v
+
     # LLM Key Pools (comma-separated strings)
     GEMINI_API_KEYS: str = ""
     GROQ_API_KEYS: str = ""

@@ -2,6 +2,7 @@
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -19,6 +20,11 @@ app = FastAPI(
     title="rezekify Core API",
     version="1.0.0",
     description="Deterministic Double-Entry Personal Finance & Runway Engine",
+)
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=settings.ALLOWED_HOSTS,
 )
 
 app.add_middleware(
