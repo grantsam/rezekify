@@ -6,8 +6,16 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.runtime import ReActAgent
-from rezekify.db.models import Account, Category, CategoryType
+from rezekify.core.crypto import decrypt_key
+from rezekify.db.models import (
+    Account,
+    AIProvider,
+    Category,
+    CategoryType,
+    UserSettings,
+)
 from rezekify.services.ledger import LedgerService
 from rezekify.services.runway import RunwayService
 
@@ -27,6 +35,45 @@ class AgentOrchestrator:
         self.ledger = LedgerService(db)
         self.runway = RunwayService(db)
 
+    def _resolve_agent_for_user(self, user_id: UUID) -> tuple[Optional[ReActAgent], bool]:
+        """Resolves an ephemeral ReActAgent for BYOK user or falls back to system agent."""
+        settings_rec = (
+            self.db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
+        )
+
+        if (
+            settings_rec
+            and settings_rec.is_custom_ai_enabled
+            and settings_rec.encrypted_api_key
+        ):
+            try:
+                raw_key = decrypt_key(settings_rec.encrypted_api_key)
+                provider = settings_rec.ai_provider
+                model = settings_rec.ai_model
+
+                if provider == AIProvider.GEMINI:
+                    user_pool = RotaryKeyPool(keys=[raw_key], cooldown_seconds=30)
+                    agent = ReActAgent(
+                        gemini_pool=user_pool,
+                        groq_pool=None,
+                        gemini_model=model,
+                        is_byok=True,
+                    )
+                    return agent, True
+                elif provider == AIProvider.GROQ:
+                    user_pool = RotaryKeyPool(keys=[raw_key], cooldown_seconds=30)
+                    agent = ReActAgent(
+                        gemini_pool=None,
+                        groq_pool=user_pool,
+                        groq_model=model,
+                        is_byok=True,
+                    )
+                    return agent, True
+            except Exception:
+                pass
+
+        return self.agent, False
+
     def extract_entities(
         self,
         text: str,
@@ -39,9 +86,15 @@ class AgentOrchestrator:
         if lower in ("cek runway", "runway", "saldo", "cek saldo", "status", "cek status", "cek runway hari ini"):
             return {"action": "query_runway"}
 
-        if self.agent:
+        agent_to_use = self.agent
+        if user_id:
+            resolved_agent, _ = self._resolve_agent_for_user(user_id)
+            if resolved_agent:
+                agent_to_use = resolved_agent
+
+        if agent_to_use:
             uid = user_id or UUID("00000000-0000-0000-0000-000000000000")
-            return self.agent.process_input(
+            return agent_to_use.process_input(
                 user_id=uid,
                 text=text,
                 image_bytes=image_bytes,
@@ -100,6 +153,17 @@ class AgentOrchestrator:
                 text=text, image_bytes=image_bytes, user_id=user_id
             )
         action = entities.get("action")
+
+        if action == "byok_error":
+            status_code = entities.get("status_code", 400)
+            if status_code == 401:
+                return "❌ Kunci API AI kustom Anda tidak valid atau telah dicabut. Silakan periksa di menu Pengaturan."
+            elif status_code == 429:
+                return (
+                    "⚠️ Kuota kunci API AI kustom Anda telah habis (Rate Limit). "
+                    "Silakan periksa kuota Anda di dashboard provider atau nonaktifkan BYOK untuk menggunakan kuota bersama."
+                )
+            return "❌ Terjadi kendala pada kunci API AI kustom Anda. Silakan periksa di menu Pengaturan."
 
         if action == "expense":
             amount = Decimal(str(entities.get("amount", 0)))
@@ -197,8 +261,14 @@ class AgentOrchestrator:
     ) -> Dict[str, Any]:
         """Processes receipt image via vision OCR, records double-entry transaction, and returns structured result."""
         prompt_text = user_note or "Struk belanja"
-        if self.agent:
-            entities = self.agent.process_input(
+        agent_to_use = self.agent
+        if user_id:
+            resolved_agent, _ = self._resolve_agent_for_user(user_id)
+            if resolved_agent:
+                agent_to_use = resolved_agent
+
+        if agent_to_use:
+            entities = agent_to_use.process_input(
                 user_id=user_id,
                 text=prompt_text,
                 image_bytes=image_bytes,
@@ -208,6 +278,28 @@ class AgentOrchestrator:
             entities = {"action": "unknown", "text": prompt_text}
 
         action = entities.get("action")
+        if action == "byok_error":
+            status_code = entities.get("status_code", 400)
+            if status_code == 401:
+                reply = "❌ Kunci API AI kustom Anda tidak valid atau telah dicabut. Silakan periksa di menu Pengaturan."
+            elif status_code == 429:
+                reply = (
+                    "⚠️ Kuota kunci API AI kustom Anda telah habis (Rate Limit). "
+                    "Silakan periksa kuota Anda di dashboard provider atau nonaktifkan BYOK untuk menggunakan kuota bersama."
+                )
+            else:
+                reply = "❌ Terjadi kendala pada kunci API AI kustom Anda. Silakan periksa di menu Pengaturan."
+            return {
+                "reply": reply,
+                "transaction_id": None,
+                "extracted_data": {
+                    "action": "byok_error",
+                    "amount": Decimal("0.00"),
+                    "account_name": None,
+                    "category_name": None,
+                    "note": prompt_text,
+                },
+            }
         amount = Decimal("0.00")
         raw_amount = entities.get("amount")
         if raw_amount is not None:
@@ -298,7 +390,13 @@ class AgentOrchestrator:
                 "success": False,
             }
 
-        if not self.agent:
+        transcribe_agent = self.agent
+        if user_id:
+            resolved_agent, _ = self._resolve_agent_for_user(user_id)
+            if resolved_agent and resolved_agent.groq_pool and resolved_agent.groq_pool.keys:
+                transcribe_agent = resolved_agent
+
+        if not transcribe_agent:
             return {
                 "transcription": "",
                 "reply": "❌ Layanan AI belum terkonfigurasi.",
@@ -306,7 +404,7 @@ class AgentOrchestrator:
             }
 
         try:
-            transcription = self.agent.transcribe_audio(audio_bytes)
+            transcription = transcribe_agent.transcribe_audio(audio_bytes)
         except Exception as e:
             return {
                 "transcription": "",

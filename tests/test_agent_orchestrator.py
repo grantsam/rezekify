@@ -4,7 +4,8 @@ from decimal import Decimal
 from unittest.mock import MagicMock
 
 from rezekify.agent.orchestrator import AgentOrchestrator
-from rezekify.db.models import Account, AccountType
+from rezekify.core.crypto import encrypt_key
+from rezekify.db.models import Account, AccountType, AIProvider, UserSettings
 
 
 def test_agent_parses_natural_language_and_records_expense(db_session, sample_user):
@@ -352,4 +353,90 @@ def test_orchestrator_handle_voice_without_agent(db_session, sample_user):
     result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=b"audio_bytes")
     assert result["success"] is False
     assert "Layanan AI belum terkonfigurasi" in result["reply"]
+
+
+def test_resolve_agent_uses_system_pool_when_byok_disabled(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    agent, is_custom = orchestrator._resolve_agent_for_user(sample_user.id)
+    assert is_custom is False
+    assert agent == orchestrator.agent
+
+
+def test_resolve_agent_instantiates_byok_gemini_agent(db_session, sample_user):
+    settings = UserSettings(
+        user_id=sample_user.id,
+        ai_provider=AIProvider.GEMINI,
+        ai_model="gemini-2.5-pro",
+        encrypted_api_key=encrypt_key("custom-gemini-key"),
+        is_custom_ai_enabled=True,
+    )
+    db_session.add(settings)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    agent, is_custom = orchestrator._resolve_agent_for_user(sample_user.id)
+    assert is_custom is True
+    assert agent is not None
+    assert agent.gemini_model == "gemini-2.5-pro"
+    assert agent.gemini_pool.keys == ["custom-gemini-key"]
+
+
+def test_resolve_agent_instantiates_byok_groq_agent(db_session, sample_user):
+    settings = UserSettings(
+        user_id=sample_user.id,
+        ai_provider=AIProvider.GROQ,
+        ai_model="llama-3.3-70b",
+        encrypted_api_key=encrypt_key("custom-groq-key"),
+        is_custom_ai_enabled=True,
+    )
+    db_session.add(settings)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    agent, is_custom = orchestrator._resolve_agent_for_user(sample_user.id)
+    assert is_custom is True
+    assert agent is not None
+    assert agent.groq_model == "llama-3.3-70b"
+    assert agent.groq_pool.keys == ["custom-groq-key"]
+
+
+def test_handle_message_byok_401_error_feedback(db_session, sample_user):
+    settings = UserSettings(
+        user_id=sample_user.id,
+        ai_provider=AIProvider.GEMINI,
+        ai_model="gemini-2.5-flash",
+        encrypted_api_key=encrypt_key("revoked-key"),
+        is_custom_ai_enabled=True,
+    )
+    db_session.add(settings)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={"action": "byok_error", "status_code": 401}
+    )
+
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="beli pulsa 50rb")
+    assert "Kunci API AI kustom Anda tidak valid" in reply
+
+
+def test_handle_message_byok_429_error_feedback(db_session, sample_user):
+    settings = UserSettings(
+        user_id=sample_user.id,
+        ai_provider=AIProvider.GEMINI,
+        ai_model="gemini-2.5-flash",
+        encrypted_api_key=encrypt_key("rate-limited-key"),
+        is_custom_ai_enabled=True,
+    )
+    db_session.add(settings)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={"action": "byok_error", "status_code": 429}
+    )
+
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="beli pulsa 50rb")
+    assert "Kuota kunci API AI kustom Anda telah habis" in reply
+
 

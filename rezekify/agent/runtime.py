@@ -27,9 +27,19 @@ Hanya kembalikan JSON valid tanpa teks pengantar atau markdown blocks."""
 class ReActAgent:
     """Agent runtime managing multimodal parsing with Gemini 2.5 Flash and Groq fallback."""
 
-    def __init__(self, gemini_pool: RotaryKeyPool, groq_pool: Optional[RotaryKeyPool] = None):
+    def __init__(
+        self,
+        gemini_pool: Optional[RotaryKeyPool] = None,
+        groq_pool: Optional[RotaryKeyPool] = None,
+        gemini_model: str = "gemini-2.5-flash",
+        groq_model: str = "meta-llama/llama-4-scout-17b-16e-instruct",
+        is_byok: bool = False,
+    ):
         self.gemini_pool = gemini_pool
         self.groq_pool = groq_pool
+        self.gemini_model = gemini_model
+        self.groq_model = groq_model
+        self.is_byok = is_byok
 
     def _clean_json_response(self, text: str) -> Dict[str, Any]:
         """Extracts and parses JSON object from LLM response text."""
@@ -51,29 +61,35 @@ class ReActAgent:
     ) -> Dict[str, Any]:
         """Processes natural language text or receipt image into structured transaction entities."""
         # Try Gemini first using rotary key pool
-        for _ in range(len(self.gemini_pool.keys)):
-            key = self.gemini_pool.get_current_key()
-            try:
-                client = self.gemini_pool.get_gemini_client(api_key=key)
-                contents = [SYSTEM_PROMPT, f"Input pengguna: {text}"]
-                if image_bytes:
-                    from google.genai import types
-                    contents.append(
-                        types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
-                    )
+        if self.gemini_pool and self.gemini_pool.keys:
+            for _ in range(len(self.gemini_pool.keys)):
+                key = self.gemini_pool.get_current_key()
+                try:
+                    client = self.gemini_pool.get_gemini_client(api_key=key)
+                    contents = [SYSTEM_PROMPT, f"Input pengguna: {text}"]
+                    if image_bytes:
+                        from google.genai import types
+                        contents.append(
+                            types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+                        )
 
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=contents,
-                )
-                return self._clean_json_response(response.text)
-            except Exception as e:
-                err_str = str(e).lower()
-                if "429" in err_str or "resource_exhausted" in err_str or "rate limit" in err_str:
-                    self.gemini_pool.report_rate_limit(key)
-                    continue
-                # For non-429 errors or if retries fail, attempt Groq fallback if text-only
-                break
+                    response = client.models.generate_content(
+                        model=self.gemini_model,
+                        contents=contents,
+                    )
+                    return self._clean_json_response(response.text)
+                except Exception as e:
+                    err_str = str(e).lower()
+                    if "401" in err_str or "unauthenticated" in err_str or "api_key_invalid" in err_str:
+                        return {"action": "byok_error", "status_code": 401}
+                    if "429" in err_str or "resource_exhausted" in err_str or "rate limit" in err_str:
+                        if self.gemini_pool:
+                            self.gemini_pool.report_rate_limit(key)
+                        if self.is_byok or (len(self.gemini_pool.keys) == 1 and not self.groq_pool and self.is_byok):
+                            return {"action": "byok_error", "status_code": 429}
+                        continue
+                    # For non-429 errors or if retries fail, attempt Groq fallback if text-only
+                    break
 
         # Fallback to Groq if configured
         if self.groq_pool and self.groq_pool.keys:
@@ -112,7 +128,7 @@ class ReActAgent:
                     },
                 ]
                 completion = client.chat.completions.create(
-                    model="meta-llama/llama-4-scout-17b-16e-instruct",
+                    model=self.groq_model,
                     messages=messages,
                     temperature=0.1,
                 )
@@ -120,8 +136,13 @@ class ReActAgent:
                 return self._clean_json_response(content)
             except Exception as e:
                 err_str = str(e).lower()
+                if "401" in err_str or "invalid api key" in err_str:
+                    return {"action": "byok_error", "status_code": 401}
                 if "429" in err_str or "rate limit" in err_str:
-                    self.groq_pool.report_rate_limit(key)
+                    if self.groq_pool:
+                        self.groq_pool.report_rate_limit(key)
+                    if self.is_byok or (len(self.groq_pool.keys) == 1 and not self.gemini_pool):
+                        return {"action": "byok_error", "status_code": 429}
                     continue
                 break
 
@@ -129,6 +150,9 @@ class ReActAgent:
 
     def _fallback_groq(self, text: str) -> Dict[str, Any]:
         """Executes fallback entity extraction using Groq rotary key pool."""
+        if not self.groq_pool or not self.groq_pool.keys:
+            return {"action": "unknown", "text": text}
+
         for _ in range(len(self.groq_pool.keys)):
             key = self.groq_pool.get_current_key()
             try:
@@ -138,15 +162,20 @@ class ReActAgent:
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": text},
                     ],
-                    model="llama-3.3-70b-versatile",
+                    model=self.groq_model,
                     temperature=0.1,
                 )
                 content = chat_completion.choices[0].message.content
                 return self._clean_json_response(content)
             except Exception as e:
                 err_str = str(e).lower()
+                if "401" in err_str or "invalid api key" in err_str:
+                    return {"action": "byok_error", "status_code": 401}
                 if "429" in err_str or "rate limit" in err_str:
-                    self.groq_pool.report_rate_limit(key)
+                    if self.groq_pool:
+                        self.groq_pool.report_rate_limit(key)
+                    if self.is_byok or (len(self.groq_pool.keys) == 1 and not self.gemini_pool):
+                        return {"action": "byok_error", "status_code": 429}
                     continue
                 break
 
