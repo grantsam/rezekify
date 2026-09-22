@@ -157,4 +157,54 @@ export interface TransactionUpdateRequest {
   transaction_date?: string;
 }
 
+export type AIProviderType = 'SYSTEM' | 'GEMINI' | 'GROQ';
+
+export interface TelegramSettingsResponse {
+  is_connected: boolean;
+  telegram_chat_id?: number | null;
+  bot_username: string;
+}
+
+export interface AISettingsResponse {
+  is_custom_ai_enabled: boolean;
+  provider: AIProviderType;
+  model: string;
+  has_api_key: boolean;
+  key_hint?: string | null;
+  available_models: Record<string, string[]>;
+}
+
+export interface SettingsResponse {
+  telegram: TelegramSettingsResponse;
+  ai: AISettingsResponse;
+}
+
+export interface AIKeyValidateRequest {
+  provider: AIProviderType;
+  api_key: string;
+  model?: string;
+}
+
+export interface AIKeyValidateResponse {
+  valid: boolean;
+  message: string;
+}
+
+export interface AISettingsUpdateRequest {
+  is_custom_ai_enabled: boolean;
+  provider: AIProviderType;
+  model: string;
+  api_key?: string | null;
+}
+
+export interface TelegramUnlinkResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface TelegramPairingCodeResponse {
+  pairing_code: string;
+}
+
+
 

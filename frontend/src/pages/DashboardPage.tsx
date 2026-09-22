@@ -10,6 +10,7 @@ import {
   Receipt,
   Calculator,
   Wallet,
+  Settings,
 } from 'lucide-react';
 import { apiFetch } from '../services/apiClient';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +32,7 @@ import { AccountModal } from '../components/AccountModal';
 import { VaultModal } from '../components/VaultModal';
 import { SimulatePurchaseModal } from '../components/SimulatePurchaseModal';
 import { EditTransactionModal } from '../components/EditTransactionModal';
+import { SettingsModal } from '../components/SettingsModal';
 
 export const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -43,6 +45,7 @@ export const DashboardPage: React.FC = () => {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState<boolean>(false);
   const [isSimulateModalOpen, setIsSimulateModalOpen] = useState<boolean>(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [selectedTxForEdit, setSelectedTxForEdit] = useState<Transaction | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -224,6 +227,16 @@ export const DashboardPage: React.FC = () => {
               className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
             >
               + Transaksi Manual
+            </Button>
+
+            <Button
+              size="sm"
+              variant="flat"
+              onClick={() => setIsSettingsModalOpen(true)}
+              startContent={<Settings className="w-3.5 h-3.5 text-indigo-400" />}
+              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
+            >
+              Pengaturan
             </Button>
 
             {user && (
@@ -411,6 +424,12 @@ export const DashboardPage: React.FC = () => {
           loadData();
           setRefreshTrigger((prev) => prev + 1);
         }}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onSettingsUpdated={loadData}
       />
     </div>
   );

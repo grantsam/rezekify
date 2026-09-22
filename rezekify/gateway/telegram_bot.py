@@ -29,7 +29,24 @@ class TelegramGateway:
         """Handles incoming text messages, pairing commands, and runway inquiries."""
         cleaned_text = text.strip()
 
-        if cleaned_text.startswith("/start"):
+        cmd = cleaned_text.split()[0].lower() if cleaned_text.split() else ""
+        if cmd in ("/start", "/link"):
+            parts = cleaned_text.split()
+            if len(parts) >= 2:
+                code = parts[1].strip()
+                try:
+                    user = self.auth.link_telegram_chat_id(telegram_chat_id=chat_id, pairing_code=code)
+                    return (
+                        f"🎉 Selamat datang {user.full_name}! Akun rezekify Anda berhasil terhubung. "
+                        "Mulai sekarang Anda cukup ketik pengeluaran atau kirim foto struk di sini."
+                    )
+                except ValueError as e:
+                    return f"❌ Gagal: {str(e)}"
+
+            if cmd == "/link":
+                return "Format salah. Gunakan: `/link KODE-PAIRING` (dapatkan kode di Web Dashboard)."
+
+            # Bare /start
             user = self.db.query(User).filter_by(telegram_chat_id=chat_id).first()
             if user:
                 return (
@@ -40,25 +57,11 @@ class TelegramGateway:
             return (
                 "👋 Selamat datang di Bot Keuangan Rezekify!\n\n"
                 "Untuk menghubungkan bot ini dengan akun Rezekify Anda:\n"
-                "1. Buka Web Dashboard Rezekify\n"
-                "2. Klik 'Hubungkan Telegram' untuk mendapatkan kode pairing (contoh: `DK-1234`)\n"
-                "3. Kirim perintah `/link KODE-PAIRING` di sini.\n\n"
+                "1. Buka Web Dashboard Rezekify -> Pengaturan -> Integrasi Telegram.\n"
+                "2. Klik 'Dapatkan Kode Pairing' atau gunakan tautan instan 1-klik.\n"
+                "3. Atau kirim perintah `/link KODE-PAIRING` di sini.\n\n"
                 "Setelah terhubung, Anda bisa langsung mengetik pengeluaran santai atau mengirim foto struk belanja!"
             )
-
-        if cleaned_text.startswith("/link"):
-            parts = cleaned_text.split()
-            if len(parts) < 2:
-                return "Format salah. Gunakan: `/link KODE-PAIRING` (dapatkan kode di Web Dashboard)."
-            code = parts[1]
-            try:
-                user = self.auth.link_telegram_chat_id(telegram_chat_id=chat_id, pairing_code=code)
-                return (
-                    f"🎉 Selamat datang {user.full_name}! Akun rezekify Anda berhasil terhubung. "
-                    "Mulai sekarang Anda cukup ketik pengeluaran atau kirim foto struk di sini."
-                )
-            except ValueError as e:
-                return f"❌ Gagal: {str(e)}"
 
         # Resolve user by telegram_chat_id
         user = self.db.query(User).filter_by(telegram_chat_id=chat_id).first()

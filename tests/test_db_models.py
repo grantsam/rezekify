@@ -115,3 +115,34 @@ def test_cascade_delete_user(db_session):
     db_session.commit()
 
     assert db_session.query(Account).filter_by(user_id=user.id).first() is None
+
+
+def test_user_settings_model_and_relationship(db_session, sample_user):
+    from rezekify.db.models import AIProvider, UserSettings
+
+    settings = UserSettings(
+        user_id=sample_user.id,
+        ai_provider=AIProvider.GEMINI,
+        ai_model="gemini-2.5-pro",
+        encrypted_api_key="gAAAAABtestCiphertextToken12345",
+        key_hint="...1234",
+        is_custom_ai_enabled=True,
+    )
+    db_session.add(settings)
+    db_session.commit()
+    db_session.refresh(sample_user)
+
+    assert sample_user.settings is not None
+    assert sample_user.settings.ai_provider == AIProvider.GEMINI
+    assert sample_user.settings.ai_model == "gemini-2.5-pro"
+    assert sample_user.settings.encrypted_api_key == "gAAAAABtestCiphertextToken12345"
+    assert sample_user.settings.key_hint == "...1234"
+    assert sample_user.settings.is_custom_ai_enabled is True
+    assert sample_user.settings.user.id == sample_user.id
+
+    # Verify cascading delete
+    db_session.delete(sample_user)
+    db_session.commit()
+    orphan = db_session.query(UserSettings).filter_by(id=settings.id).first()
+    assert orphan is None
+

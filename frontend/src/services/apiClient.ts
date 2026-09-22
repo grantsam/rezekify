@@ -2,7 +2,19 @@
  * Authenticated API Client for rezekify backend services.
  */
 
-import { Transaction, TransactionUpdateRequest, Vault, VaultUpdateRequest } from '../types/api';
+import {
+  Transaction,
+  TransactionUpdateRequest,
+  Vault,
+  VaultUpdateRequest,
+  SettingsResponse,
+  AIKeyValidateRequest,
+  AIKeyValidateResponse,
+  AISettingsUpdateRequest,
+  AISettingsResponse,
+  TelegramUnlinkResponse,
+  TelegramPairingCodeResponse,
+} from '../types/api';
 
 const TOKEN_KEY = 'rezekify_auth_token';
 
@@ -40,6 +52,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
   }
 
   const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+    method: options.method,
     ...options,
     headers,
   });
@@ -67,6 +80,51 @@ export async function toggleVaultLock(id: string): Promise<Vault> {
     method: 'PATCH',
   });
 }
+
+export async function getSettings(): Promise<SettingsResponse> {
+  return apiFetch<SettingsResponse>('/settings');
+}
+
+export async function validateAIKey(payload: AIKeyValidateRequest): Promise<AIKeyValidateResponse> {
+  return apiFetch<AIKeyValidateResponse>('/settings/ai/validate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAISettings(payload: AISettingsUpdateRequest): Promise<AISettingsResponse> {
+  return apiFetch<AISettingsResponse>('/settings/ai', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function unlinkTelegram(): Promise<TelegramUnlinkResponse> {
+  return apiFetch<TelegramUnlinkResponse>('/settings/telegram/unlink', {
+    method: 'POST',
+  });
+}
+
+export async function getTelegramPairingCode(): Promise<TelegramPairingCodeResponse> {
+  return apiFetch<TelegramPairingCodeResponse>('/auth/telegram-pairing-code', {
+    method: 'POST',
+  });
+}
+
+export const apiClient = {
+  updateTransaction,
+  toggleVaultLock,
+  getSettings,
+  validateAIKey,
+  updateAISettings,
+  unlinkTelegram,
+  getTelegramPairingCode,
+  apiFetch,
+  setAuthToken,
+  getAuthToken,
+  clearAuthToken,
+  getAuthHeader,
+};
 
 export async function updateVault(id: string, data: VaultUpdateRequest): Promise<Vault> {
   return apiFetch<Vault>(`/vaults/${id}`, {

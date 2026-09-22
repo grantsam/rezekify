@@ -327,3 +327,51 @@ def test_react_agent_transcribe_audio_rotates_on_rate_limit():
         assert groq_pool.cooldowns["GROQ_KEY_1"] > 0
 
 
+def test_react_agent_byok_guarded_errors():
+    gemini_pool = RotaryKeyPool(keys=["KEY_1"])
+    # BYOK Agent with 401
+    byok_agent = ReActAgent(gemini_pool=gemini_pool, is_byok=True)
+    mock_client = MagicMock()
+    mock_client.models.generate_content.side_effect = Exception("401 API_KEY_INVALID")
+    with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
+        res = byok_agent.process_input(user_id=uuid4(), text="halo")
+        assert res["action"] == "byok_error"
+        assert res["status_code"] == 401
+
+    # BYOK Agent with 429
+    mock_client.models.generate_content.side_effect = Exception("429 RESOURCE_EXHAUSTED")
+    with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
+        res = byok_agent.process_input(user_id=uuid4(), text="halo")
+        assert res["action"] == "byok_error"
+        assert res["status_code"] == 429
+
+    # System Agent (is_byok=False) should NOT return byok_error
+    system_agent = ReActAgent(gemini_pool=gemini_pool, is_byok=False)
+    mock_client.models.generate_content.side_effect = Exception("401 API_KEY_INVALID")
+    with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
+        res = system_agent.process_input(user_id=uuid4(), text="halo")
+        assert res["action"] == "unknown"
+
+
+def test_react_agent_fallback_groq_vision_pins_vision_model():
+    groq_pool = RotaryKeyPool(keys=["GROQ_KEY"])
+    agent = ReActAgent(
+        groq_pool=groq_pool,
+        groq_model="llama-3.3-70b-versatile",
+    )
+    mock_client = MagicMock()
+    mock_completion = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = '{"action": "expense", "amount": 25000, "note": "Buku"}'
+    mock_completion.choices = [mock_choice]
+    mock_client.chat.completions.create.return_value = mock_completion
+
+    with patch.object(groq_pool, "get_groq_client", return_value=mock_client):
+        res = agent._fallback_groq_vision(text="struk", image_bytes=b"sample_bytes", mime_type="image/jpeg")
+        assert res["action"] == "expense"
+        # Must always use the pinned vision model, not groq_model (llama-3.3-70b-versatile)
+        kwargs = mock_client.chat.completions.create.call_args[1]
+        assert kwargs["model"] == "meta-llama/llama-4-scout-17b-16e-instruct"
+
+
+

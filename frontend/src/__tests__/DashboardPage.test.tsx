@@ -351,6 +351,40 @@ describe('DashboardPage Component', () => {
 
     expect(screen.queryByText('Edit Transaksi')).not.toBeInTheDocument();
   });
+
+  it('renders Pengaturan button and clicking opens SettingsModal', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint === '/dashboard/summary') return mockSummary;
+      if (endpoint === '/transactions') return mockTransactions;
+      if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint === '/categories') return [];
+      if (endpoint === '/settings') {
+        return {
+          telegram: { is_connected: false, telegram_chat_id: null, bot_username: 'RezekifyBot' },
+          ai: {
+            is_custom_ai_enabled: false,
+            provider: 'SYSTEM',
+            model: 'gemini-2.5-flash',
+            has_api_key: false,
+            available_models: {},
+          },
+        };
+      }
+      return {};
+    });
+
+    render(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Pengaturan/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Pengaturan/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Pengaturan Akun & Sistem')).toBeInTheDocument();
+    });
+  });
 });
 
 describe('App Component Auth Gating', () => {

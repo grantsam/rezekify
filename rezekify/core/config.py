@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: Optional[str] = None
+    TELEGRAM_BOT_USERNAME: str = "RezekifyBot"
+
+    # Security & Encryption
+    ENCRYPTION_KEY: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":

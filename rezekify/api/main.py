@@ -12,6 +12,7 @@ from rezekify.api.v1.accounts_router import accounts_router
 from rezekify.api.v1.auth_router import auth_router
 from rezekify.api.v1.dashboard_router import analytics_router, dashboard_router
 from rezekify.api.v1.gateway_router import gateway_router
+from rezekify.api.v1.settings_router import settings_router
 from rezekify.api.v1.transactions_router import transactions_router
 from rezekify.api.v1.vaults_router import vaults_router
 from rezekify.core.config import settings
@@ -42,6 +43,7 @@ app.include_router(transactions_router, prefix="/api/v1/transactions", tags=["Tr
 app.include_router(accounts_router, prefix="/api/v1/accounts", tags=["Accounts"])
 app.include_router(vaults_router, prefix="/api/v1/vaults", tags=["Vaults"])
 app.include_router(gateway_router, prefix="/api/v1/gateway", tags=["Gateway"])
+app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])
 
 
 @app.get("/healthz", tags=["Health"])
