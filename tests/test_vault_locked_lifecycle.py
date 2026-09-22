@@ -4,11 +4,11 @@ from rezekify.api.deps import get_db
 from rezekify.api.main import app
 from tests.test_api_endpoints import override_get_db
 
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
 def test_locked_vault_lifecycle():
+    app.dependency_overrides[get_db] = override_get_db
     # 0. Register user
     auth_res = client.post(
         "/api/v1/auth/register",
