@@ -1,10 +1,10 @@
 """Tests for AgentOrchestrator translating extracted intents into deterministic ledger transactions."""
 
 from decimal import Decimal
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from rezekify.agent.orchestrator import AgentOrchestrator
-from rezekify.db.models import Account, AccountType
+from rezekify.db.models import Account, AccountType, Transaction
 
 
 def test_agent_parses_natural_language_and_records_expense(db_session, sample_user):
@@ -352,4 +352,39 @@ def test_orchestrator_handle_voice_without_agent(db_session, sample_user):
     result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=b"audio_bytes")
     assert result["success"] is False
     assert "Layanan AI belum terkonfigurasi" in result["reply"]
+
+
+def test_agent_orchestrator_rolls_back_if_runway_calculation_fails(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("100000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "expense",
+            "amount": 25000,
+            "account_name": "GoPay",
+            "category_name": "Makanan",
+            "note": "Beli Makan",
+        }
+    )
+
+    with patch.object(
+        orchestrator.runway,
+        "calculate_runway",
+        side_effect=RuntimeError("Runway calculation failed"),
+    ):
+        reply = orchestrator.handle_message(sample_user.id, "beli makan 25000")
+
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("100000.00")
+    assert db_session.query(Transaction).filter_by(user_id=sample_user.id).count() == 0
+    assert "Gagal" in reply
+
 

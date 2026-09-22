@@ -13,8 +13,14 @@ from rezekify.db.models import Account, Category, EntryType, LedgerEntry, Transa
 class LedgerService:
     """Provides deterministic financial ledger transaction operations."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, auto_commit: bool = True):
         self.db = db
+        self.auto_commit = auto_commit
+
+    def _maybe_commit(self) -> None:
+        # ponytail: auto-commit hook; callers disable to manage multi-service UnitOfWork transactions.
+        if self.auto_commit:
+            self.db.commit()
 
     def record_expense(
         self,
@@ -64,8 +70,10 @@ class LedgerService:
             amount=amount,
         )
         self.db.add_all([debit_entry, credit_entry])
-        self.db.commit()
-        self.db.refresh(tx)
+        self.db.flush()
+        self._maybe_commit()
+        if self.auto_commit:
+            self.db.refresh(tx)
         return tx
 
     def record_income(
@@ -112,8 +120,10 @@ class LedgerService:
             amount=amount,
         )
         self.db.add_all([debit_entry, credit_entry])
-        self.db.commit()
-        self.db.refresh(tx)
+        self.db.flush()
+        self._maybe_commit()
+        if self.auto_commit:
+            self.db.refresh(tx)
         return tx
 
     def record_transfer(
@@ -176,8 +186,10 @@ class LedgerService:
             amount=amount,
         )
         self.db.add_all([credit_entry, debit_entry])
-        self.db.commit()
-        self.db.refresh(tx)
+        self.db.flush()
+        self._maybe_commit()
+        if self.auto_commit:
+            self.db.refresh(tx)
         return tx
 
     def delete_transaction(self, user_id: UUID, transaction_id: UUID) -> bool:
@@ -202,7 +214,8 @@ class LedgerService:
                     acc.current_balance -= entry.amount
 
         self.db.delete(tx)
-        self.db.commit()
+        self.db.flush()
+        self._maybe_commit()
         return True
 
     def update_transaction(
@@ -240,6 +253,7 @@ class LedgerService:
                 acc = (
                     self.db.query(Account)
                     .filter_by(id=entry.account_id, user_id=user_id)
+                    .with_for_update()
                     .one()
                 )
                 if entry.entry_type == EntryType.CREDIT:
@@ -283,6 +297,7 @@ class LedgerService:
             new_acc = (
                 self.db.query(Account)
                 .filter_by(id=account_id, user_id=user_id)
+                .with_for_update()
                 .one_or_none()
             )
             if not new_acc:
@@ -322,6 +337,7 @@ class LedgerService:
             new_acc = (
                 self.db.query(Account)
                 .filter_by(id=account_id, user_id=user_id)
+                .with_for_update()
                 .one_or_none()
             )
             if not new_acc:
@@ -356,24 +372,32 @@ class LedgerService:
             ]
 
         elif tt == "TRANSFER":
-            src_id = from_account_id or account_id
-            dst_id = to_account_id
-            if not src_id or not dst_id:
+            from_account_id = from_account_id or account_id
+            if not from_account_id or not to_account_id:
                 raise ValueError("Both source and destination accounts are required for transfer.")
-            if src_id == dst_id:
+            if from_account_id == to_account_id:
                 raise ValueError("Source and destination accounts must be distinct.")
 
-            from_acc = (
+            first_id, second_id = (
+                (from_account_id, to_account_id)
+                if from_account_id < to_account_id
+                else (to_account_id, from_account_id)
+            )
+            acc1 = (
                 self.db.query(Account)
-                .filter_by(id=src_id, user_id=user_id)
+                .filter_by(id=first_id, user_id=user_id)
+                .with_for_update()
                 .one_or_none()
             )
-            to_acc = (
+            acc2 = (
                 self.db.query(Account)
-                .filter_by(id=dst_id, user_id=user_id)
+                .filter_by(id=second_id, user_id=user_id)
+                .with_for_update()
                 .one_or_none()
             )
-            if not from_acc or not to_acc:
+            from_acc = acc1 if acc1 and acc1.id == from_account_id else acc2
+            to_acc = acc2 if acc2 and acc2.id == to_account_id else acc1
+            if not from_acc or not to_acc or from_acc.id != from_account_id or to_acc.id != to_account_id:
                 raise ValueError("Source or destination account not found or access denied.")
 
             from_acc.current_balance -= amount
@@ -410,6 +434,8 @@ class LedgerService:
         if transaction_date is not None:
             tx.transaction_date = transaction_date
 
-        self.db.commit()
-        self.db.refresh(tx)
+        self.db.flush()
+        self._maybe_commit()
+        if self.auto_commit:
+            self.db.refresh(tx)
         return tx

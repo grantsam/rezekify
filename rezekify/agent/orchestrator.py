@@ -24,7 +24,7 @@ class AgentOrchestrator:
         self.agent = agent
         if self.agent is None and self.key_pool is not None:
             self.agent = ReActAgent(gemini_pool=self.key_pool)
-        self.ledger = LedgerService(db)
+        self.ledger = LedgerService(db, auto_commit=False)
         self.runway = RunwayService(db)
 
     def extract_entities(
@@ -112,17 +112,23 @@ class AgentOrchestrator:
             )
             note = entities.get("note") or "Pengeluaran"
 
-            self.ledger.record_expense(
-                user_id=user_id,
-                account_id=account.id,
-                category_id=category.id,
-                amount=amount,
-                description=note,
-                source_channel="AI_AGENT",
-                raw_input_text=text,
-            )
+            try:
+                self.ledger.record_expense(
+                    user_id=user_id,
+                    account_id=account.id,
+                    category_id=category.id,
+                    amount=amount,
+                    description=note,
+                    source_channel="AI_AGENT",
+                    raw_input_text=text,
+                )
 
-            runway = self.runway.calculate_runway(user_id)
+                runway = self.runway.calculate_runway(user_id)
+                self.db.commit()
+            except Exception as e:
+                self.db.rollback()
+                return f"❌ Gagal mencatat pengeluaran: {str(e)}"
+
             return (
                 f"✅ **Tercatat:** Rp {amount:,.0f} ({note}) via {account.name}.\n"
                 f"📊 **Sisa Jatah Belanja Hari Ini:** Rp {runway.daily_safe_runway:,.0f} "
@@ -140,16 +146,22 @@ class AgentOrchestrator:
             )
             note = entities.get("note") or "Pemasukan"
 
-            self.ledger.record_income(
-                user_id=user_id,
-                account_id=account.id,
-                category_id=category.id,
-                amount=amount,
-                description=note,
-                source_channel="AI_AGENT",
-            )
+            try:
+                self.ledger.record_income(
+                    user_id=user_id,
+                    account_id=account.id,
+                    category_id=category.id,
+                    amount=amount,
+                    description=note,
+                    source_channel="AI_AGENT",
+                )
 
-            runway = self.runway.calculate_runway(user_id)
+                runway = self.runway.calculate_runway(user_id)
+                self.db.commit()
+            except Exception as e:
+                self.db.rollback()
+                return f"❌ Gagal mencatat pemasukan: {str(e)}"
+
             return (
                 f"💰 **Pemasukan Berhasil Dicatat:** Rp {amount:,.0f} ({note}) ke {account.name}.\n"
                 f"📈 Jatah aman belanja harian Anda meningkat menjadi Rp {runway.daily_safe_runway:,.0f}/hari."
@@ -162,13 +174,19 @@ class AgentOrchestrator:
             if not from_acc or not to_acc or from_acc.id == to_acc.id:
                 return "❌ Gagal: Akun sumber dan tujuan transfer harus berbeda dan terdaftar."
 
-            self.ledger.record_transfer(
-                user_id=user_id,
-                from_account_id=from_acc.id,
-                to_account_id=to_acc.id,
-                amount=amount,
-                description=entities.get("note") or f"Transfer {from_acc.name} ke {to_acc.name}",
-            )
+            try:
+                self.ledger.record_transfer(
+                    user_id=user_id,
+                    from_account_id=from_acc.id,
+                    to_account_id=to_acc.id,
+                    amount=amount,
+                    description=entities.get("note") or f"Transfer {from_acc.name} ke {to_acc.name}",
+                )
+                self.db.commit()
+            except Exception as e:
+                self.db.rollback()
+                return f"❌ Gagal memproses transfer: {str(e)}"
+
             return f"🔁 **Transfer Berhasil:** Rp {amount:,.0f} dari {from_acc.name} ke {to_acc.name}."
 
         elif action == "query_runway" or text.lower().strip() in ("cek runway", "/runway", "/saldo", "runway", "saldo", "status"):

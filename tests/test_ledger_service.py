@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.orm import Query
 
-from rezekify.db.models import Account, AccountType, Category, CategoryType, EntryType
+from rezekify.db.models import Account, AccountType, Category, CategoryType, EntryType, Transaction
 from rezekify.services.ledger import LedgerService
 
 
@@ -716,5 +716,73 @@ def test_record_transfer_deadlock_prevention_lock_ordering(db_session, sample_us
     db_session.refresh(acc_larger)
     assert acc_smaller.current_balance == Decimal("105000.00")
     assert acc_larger.current_balance == Decimal("95000.00")
+
+
+def test_ledger_service_auto_commit_false_allows_rollback(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("100000.00"),
+    )
+    cat = Category(
+        user_id=sample_user.id,
+        name="Food",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([acc, cat])
+    db_session.commit()
+
+    service = LedgerService(db_session, auto_commit=False)
+    service.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat.id,
+        amount=Decimal("20000.00"),
+        description="Lunch",
+    )
+    db_session.rollback()
+
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("100000.00")
+    assert db_session.query(Transaction).filter_by(user_id=sample_user.id).count() == 0
+
+
+def test_update_transaction_row_locking_invoked(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="Cash",
+        account_type=AccountType.CASH,
+        current_balance=Decimal("100000.00"),
+    )
+    cat = Category(
+        user_id=sample_user.id,
+        name="Food",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([acc, cat])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat.id,
+        amount=Decimal("20000.00"),
+        description="Lunch",
+    )
+
+    with patch.object(Query, "with_for_update", autospec=True, side_effect=Query.with_for_update) as spy_lock:
+        updated_tx = service.update_transaction(
+            user_id=sample_user.id,
+            transaction_id=tx.id,
+            amount=Decimal("30000.00"),
+            description="Updated Lunch",
+            account_id=acc.id,
+            category_id=cat.id,
+        )
+        assert updated_tx.description == "Updated Lunch"
+        assert spy_lock.call_count >= 1
+
 
 
