@@ -26,6 +26,21 @@ ai_receipt_limiter = RateLimiter(max_requests=5, window_seconds=60)
 ALLOWED_RECEIPT_MIMES = {"image/jpeg", "image/png", "image/webp"}
 MAX_RECEIPT_BYTES = 10 * 1024 * 1024  # 10MB
 
+ALLOWED_VOICE_MIMES = {
+    "audio/webm",
+    "audio/ogg",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/wave",
+    "audio/mp4",
+    "audio/m4a",
+    "audio/x-m4a",
+    "audio/mpeg",
+    "audio/mp3",
+    "video/webm",
+}
+MAX_VOICE_BYTES = 10 * 1024 * 1024  # 10MB
+
 
 class UpcomingBillResponse(BaseModel):
     name: str
@@ -51,6 +66,11 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+class VoiceChatResponse(BaseModel):
+    reply: str
+    transcription: str = ""
 
 
 class SimulatePurchaseRequest(BaseModel):
@@ -179,6 +199,40 @@ async def ai_receipt_upload(
         mime_type=file.content_type,
     )
     return ChatResponse(reply=reply)
+
+
+@dashboard_router.post("/ai-voice", response_model=VoiceChatResponse)
+async def ai_voice_endpoint(
+    file: UploadFile = File(...),
+    message: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    key_pool: RotaryKeyPool = Depends(get_gemini_key_pool),
+) -> VoiceChatResponse:
+    if file.content_type and file.content_type.lower() not in ALLOWED_VOICE_MIMES:
+        raise HTTPException(
+            status_code=400,
+            detail="Format file audio tidak didukung. Harap gunakan WebM, OGG, WAV, MP4, atau MP3.",
+        )
+
+    content = await file.read()
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="File audio kosong.")
+    if len(content) > MAX_VOICE_BYTES:
+        raise HTTPException(status_code=400, detail="Ukuran file audio melebihi batas maksimal 10MB.")
+
+    orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
+    result = await run_in_threadpool(
+        orchestrator.handle_voice,
+        user_id=current_user.id,
+        audio_bytes=content,
+        caption=(message or "").strip() or None,
+        mime_type=file.content_type or "audio/webm",
+    )
+    return VoiceChatResponse(
+        reply=result.get("reply", ""),
+        transcription=result.get("transcription", ""),
+    )
 
 
 @dashboard_router.post("/simulate-purchase", response_model=SimulatePurchaseResponse)

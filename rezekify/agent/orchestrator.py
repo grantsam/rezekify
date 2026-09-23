@@ -136,22 +136,10 @@ class AgentOrchestrator:
             self.db.flush()
         return category
 
-    def handle_message(
-        self,
-        user_id: UUID,
-        text: str,
-        image_bytes: Optional[bytes] = None,
-        mime_type: Optional[str] = "image/jpeg",
+    def _execute_action(
+        self, user_id: UUID, entities: Dict[str, Any], text: str
     ) -> str:
-        """Processes natural language input or receipts, executes ledger mutations, and returns telemetry response."""
-        try:
-            entities = self.extract_entities(
-                text=text, image_bytes=image_bytes, user_id=user_id, mime_type=mime_type
-            )
-        except TypeError:
-            entities = self.extract_entities(
-                text=text, image_bytes=image_bytes, user_id=user_id
-            )
+        """Executes double-entry ledger mutations or runway queries based on parsed entities."""
         action = entities.get("action")
 
         if action == "byok_error":
@@ -270,130 +258,32 @@ class AgentOrchestrator:
 
         return "Saya siap membantu mencatat pengeluaran, pemasukan, transfer, atau memeriksa status jatah belanja harian Anda."
 
-    def handle_receipt(
+    def handle_message(
         self,
         user_id: UUID,
-        image_bytes: bytes,
-        mime_type: str = "image/jpeg",
-        user_note: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Processes receipt image via vision OCR, records double-entry transaction, and returns structured result."""
-        prompt_text = user_note or "Struk belanja"
-        agent_to_use = self.agent
-        if user_id:
-            resolved_agent, _ = self._resolve_agent_for_user(user_id)
-            if resolved_agent:
-                agent_to_use = resolved_agent
-
-        if agent_to_use:
-            entities = agent_to_use.process_input(
-                user_id=user_id,
-                text=prompt_text,
-                image_bytes=image_bytes,
-                mime_type=mime_type,
+        text: str,
+        image_bytes: Optional[bytes] = None,
+        mime_type: Optional[str] = "image/jpeg",
+    ) -> str:
+        """Processes natural language input or receipts, executes ledger mutations, and returns telemetry response."""
+        try:
+            entities = self.extract_entities(
+                text=text, image_bytes=image_bytes, user_id=user_id, mime_type=mime_type
             )
-        else:
-            entities = {"action": "unknown", "text": prompt_text}
-
-        action = entities.get("action")
-        if action == "byok_error":
-            status_code = entities.get("status_code", 400)
-            if status_code == 401:
-                reply = "❌ Kunci API AI kustom Anda tidak valid atau telah dicabut. Silakan periksa di menu Pengaturan."
-            elif status_code == 429:
-                reply = (
-                    "⚠️ Kuota kunci API AI kustom Anda telah habis (Rate Limit). "
-                    "Silakan periksa kuota Anda di dashboard provider atau nonaktifkan BYOK untuk menggunakan kuota bersama."
-                )
-            else:
-                reply = "❌ Terjadi kendala pada kunci API AI kustom Anda. Silakan periksa di menu Pengaturan."
-            return {
-                "reply": reply,
-                "transaction_id": None,
-                "extracted_data": {
-                    "action": "byok_error",
-                    "amount": Decimal("0.00"),
-                    "account_name": None,
-                    "category_name": None,
-                    "note": prompt_text,
-                },
-            }
-        amount = Decimal("0.00")
-        raw_amount = entities.get("amount")
-        if raw_amount is not None:
-            try:
-                amount = Decimal(str(raw_amount))
-            except Exception:
-                amount = Decimal("0.00")
-
-        if action == "expense" and amount > Decimal("0"):
-            account = self._resolve_account(user_id, entities.get("account_name"))
-            if not account:
-                return {
-                    "reply": "❌ Gagal: Anda belum memiliki akun keuangan. Silakan tambahkan akun terlebih dahulu.",
-                    "transaction_id": None,
-                    "extracted_data": {
-                        "action": "expense",
-                        "amount": amount,
-                        "account_name": None,
-                        "category_name": None,
-                        "note": prompt_text,
-                    },
-                }
-
-            category = self._resolve_or_create_category(
-                user_id, entities.get("category_name"), CategoryType.EXPENSE
+        except TypeError:
+            entities = self.extract_entities(
+                text=text, image_bytes=image_bytes, user_id=user_id
             )
-            note = entities.get("note") or prompt_text
-
-            tx = self.ledger.record_expense(
-                user_id=user_id,
-                account_id=account.id,
-                category_id=category.id,
-                amount=amount,
-                description=note,
-                source_channel="WEB_AI",
-                raw_input_text=prompt_text,
-            )
-
-            runway = self.runway.calculate_runway(user_id)
-            reply = (
-                f"✅ **Tercatat dari Struk:** Rp {amount:,.0f} ({note}) via {account.name}.\n"
-                f"📊 **Sisa Jatah Belanja Hari Ini:** Rp {runway.daily_safe_runway:,.0f} "
-                f"({runway.days_remaining} hari menuju siklus baru)."
-            )
-
-            return {
-                "reply": reply,
-                "transaction_id": tx.id,
-                "extracted_data": {
-                    "action": "expense",
-                    "amount": amount,
-                    "account_name": account.name,
-                    "category_name": category.name,
-                    "note": note,
-                },
-            }
-
-        return {
-            "reply": "⚠️ Struk tidak terbaca jelas. Pastikan foto terang dan menampilkan total belanja.",
-            "transaction_id": None,
-            "extracted_data": {
-                "action": "unknown",
-                "amount": Decimal("0.00"),
-                "account_name": None,
-                "category_name": None,
-                "note": prompt_text,
-            },
-        }
+        return self._execute_action(user_id, entities, text)
 
     def handle_voice(
         self,
         user_id: UUID,
         audio_bytes: bytes,
         caption: Optional[str] = None,
+        mime_type: Optional[str] = "audio/webm",
     ) -> Dict[str, Any]:
-        """Transcribes voice note audio and processes transaction via handle_message."""
+        """Processes voice note audio directly via 1-Hop multimodal agent or Whisper fallback."""
         if not audio_bytes:
             return {
                 "transcription": "",
@@ -401,20 +291,20 @@ class AgentOrchestrator:
                 "success": False,
             }
 
-        if len(audio_bytes) > 25 * 1024 * 1024:
+        if len(audio_bytes) > 10 * 1024 * 1024:
             return {
                 "transcription": "",
-                "reply": "❌ Ukuran pesan suara melebihi batas maksimal 25MB.",
+                "reply": "❌ Ukuran pesan suara melebihi batas maksimal 10MB.",
                 "success": False,
             }
 
-        transcribe_agent = self.agent
+        active_agent = self.agent
         if user_id:
             resolved_agent, _ = self._resolve_agent_for_user(user_id)
-            if resolved_agent and resolved_agent.groq_pool and resolved_agent.groq_pool.keys:
-                transcribe_agent = resolved_agent
+            if resolved_agent:
+                active_agent = resolved_agent
 
-        if not transcribe_agent:
+        if not active_agent:
             return {
                 "transcription": "",
                 "reply": "❌ Layanan AI belum terkonfigurasi.",
@@ -422,7 +312,11 @@ class AgentOrchestrator:
             }
 
         try:
-            transcription = transcribe_agent.transcribe_audio(audio_bytes)
+            parsed_result = active_agent.process_audio(
+                audio_bytes=audio_bytes,
+                mime_type=mime_type or "audio/webm",
+                text_context=caption,
+            )
         except Exception as e:
             return {
                 "transcription": "",
@@ -430,23 +324,22 @@ class AgentOrchestrator:
                 "success": False,
             }
 
-        if not transcription or not transcription.strip():
+        transcription = parsed_result.get("transcription", "")
+        action = parsed_result.get("action", "unknown")
+
+        if not transcription and action == "unknown":
             return {
                 "transcription": "",
                 "reply": "⚠️ Suara tidak terdengar jelas atau audio kosong. Silakan ulangi rekaman suara Anda.",
                 "success": False,
             }
 
-        # Combine transcription with optional caption
-        effective_text = transcription
-        if caption and caption.strip():
-            effective_text = f"{transcription} ({caption.strip()})"
+        reply = self._execute_action(user_id, parsed_result, transcription or caption or "")
 
-        # Dispatch to deterministic handler
-        reply = self.handle_message(user_id=user_id, text=effective_text)
         return {
             "transcription": transcription,
             "reply": reply,
-            "success": True,
+            "success": action != "unknown",
+            "parsed_data": parsed_result,
         }
 

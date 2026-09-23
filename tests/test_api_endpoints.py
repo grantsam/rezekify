@@ -191,6 +191,7 @@ def test_api_dashboard_and_analytics():
             "target_amount": 500000.00,
             "allocated_amount": 200000.00,
             "target_date": due_date,
+            "is_locked": True,
         },
         headers=headers,
     )
@@ -256,6 +257,7 @@ def test_api_transactions_crud_and_balance_reversal():
             "account_id": acc1["id"],
             "amount": 150000.00,
             "description": "Belanja Mingguan",
+            "transaction_date": "2026-05-10T14:30:00Z",
         },
         headers=headers,
     )
@@ -263,6 +265,7 @@ def test_api_transactions_crud_and_balance_reversal():
     exp_data = exp_res.json()
     assert exp_data["description"] == "Belanja Mingguan"
     assert len(exp_data["ledger_entries"]) == 2
+    assert "2026-05-10" in exp_data["transaction_date"]
     exp_id = exp_data["id"]
 
     # 2. Record Income via POST /api/v1/transactions
@@ -587,6 +590,74 @@ def test_ai_receipt_upload_empty_file(sample_user, db_session):
         res = client.post("/api/v1/dashboard/ai-receipt", headers=headers, files=files)
         assert res.status_code == 400
         assert res.json()["detail"] == "File gambar kosong."
+
+
+def test_ai_voice_upload_success(sample_user, db_session):
+    """Tests POST /api/v1/dashboard/ai-voice endpoint with valid audio file and message."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+        fake_audio = io.BytesIO(b"RIFF....WAVEfmt ....data....")
+        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_voice", return_value={"transcription": "beli kopi 25rb", "reply": "Tercatat!", "success": True}) as mock_handle:
+            res = client.post(
+                "/api/v1/dashboard/ai-voice",
+                files={"file": ("voice.webm", fake_audio, "audio/webm")},
+                data={"message": "Catatan tambahan"},
+                headers=headers,
+            )
+            assert res.status_code == 200
+            assert res.json() == {"reply": "Tercatat!", "transcription": "beli kopi 25rb"}
+            assert mock_handle.called
+            call_kwargs = mock_handle.call_args.kwargs
+            assert call_kwargs["user_id"] == sample_user.id
+            assert call_kwargs["audio_bytes"] == b"RIFF....WAVEfmt ....data...."
+            assert call_kwargs["caption"] == "Catatan tambahan"
+            assert call_kwargs["mime_type"] == "audio/webm"
+
+
+def test_ai_voice_upload_invalid_mime(sample_user, db_session):
+    """Tests that non-audio MIME types are rejected with HTTP 400."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        files = {"file": ("statement.pdf", io.BytesIO(b"%PDF-1.4..."), "application/pdf")}
+        res = client.post("/api/v1/dashboard/ai-voice", headers=headers, files=files)
+        assert res.status_code == 400
+        assert res.json()["detail"] == "Format file audio tidak didukung. Harap gunakan WebM, OGG, WAV, MP4, atau MP3."
+
+
+def test_ai_voice_upload_empty_file(sample_user, db_session):
+    """Tests that empty 0-byte voice uploads are rejected with HTTP 400."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        files = {"file": ("empty.webm", io.BytesIO(b""), "audio/webm")}
+        res = client.post("/api/v1/dashboard/ai-voice", headers=headers, files=files)
+        assert res.status_code == 400
+        assert res.json()["detail"] == "File audio kosong."
+
+
+def test_ai_voice_upload_size_limit_exceeded(sample_user, db_session):
+    """Tests that audio uploads exceeding 10MB are rejected with HTTP 400."""
+    from rezekify.core.security import create_access_token
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        large_bytes = b"0" * (11 * 1024 * 1024)
+        files = {"file": ("huge_audio.webm", io.BytesIO(large_bytes), "audio/webm")}
+        res = client.post("/api/v1/dashboard/ai-voice", headers=headers, files=files)
+        assert res.status_code == 400
+        assert res.json()["detail"] == "Ukuran file audio melebihi batas maksimal 10MB."
 
 
 def test_simulate_purchase_api(sample_user, db_session):
@@ -1052,4 +1123,240 @@ def test_update_transaction_endpoint_tenant_isolation():
     )
     assert res.status_code == 404
     assert res.json()["detail"] == "Transaction not found"
+
+
+def test_list_transactions_query_filtering_and_pagination():
+    """Tests server-side query filtering and pagination envelope for transactions."""
+    email = f"filter_test_{uuid.uuid4().hex[:8]}@rezekify.id"
+    reg_res = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Password123!",
+            "full_name": "Filter Test User",
+        },
+    )
+    assert reg_res.status_code == 200
+    token = reg_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Create Accounts
+    acc1_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "Bank BCA", "account_type": "BANK", "initial_balance": 1000000.00},
+        headers=headers,
+    )
+    assert acc1_res.status_code == 200
+    acc1_id = acc1_res.json()["id"]
+
+    acc2_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "Dompet Cash", "account_type": "CASH", "initial_balance": 500000.00},
+        headers=headers,
+    )
+    assert acc2_res.status_code == 200
+    acc2_id = acc2_res.json()["id"]
+
+    # Create Categories
+    cat1_res = client.post(
+        "/api/v1/categories",
+        json={"name": "Makanan", "category_type": "EXPENSE"},
+        headers=headers,
+    )
+    assert cat1_res.status_code == 200
+    cat1_id = cat1_res.json()["id"]
+
+    cat2_res = client.post(
+        "/api/v1/categories",
+        json={"name": "Pendidikan", "category_type": "EXPENSE"},
+        headers=headers,
+    )
+    assert cat2_res.status_code == 200
+    cat2_id = cat2_res.json()["id"]
+
+    # Create 3 transactions with varied dates, accounts, categories, and descriptions
+    tx1_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc1_id,
+            "category_id": cat1_id,
+            "amount": 25000.00,
+            "description": "Kopi Kenangan Pagi",
+            "transaction_date": "2026-09-20T10:00:00Z",
+        },
+        headers=headers,
+    )
+    assert tx1_res.status_code == 200
+
+    tx2_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc2_id,
+            "category_id": cat2_id,
+            "amount": 75000.00,
+            "description": "Buku Panduan Belajar",
+            "transaction_date": "2026-09-21T10:00:00Z",
+        },
+        headers=headers,
+    )
+    assert tx2_res.status_code == 200
+
+    tx3_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "INCOME",
+            "account_id": acc1_id,
+            "category_id": cat1_id,
+            "amount": 500000.00,
+            "description": "Gaji Proyek Lepas",
+            "transaction_date": "2026-09-22T10:00:00Z",
+        },
+        headers=headers,
+    )
+    assert tx3_res.status_code == 200
+
+    # 1. Test PaginatedTransactionsResponse envelope
+    page_res = client.get("/api/v1/transactions?page=1&page_size=2", headers=headers)
+    assert page_res.status_code == 200
+    page_data = page_res.json()
+    assert "items" in page_data
+    assert "total" in page_data
+    assert "page" in page_data
+    assert "page_size" in page_data
+    assert "total_pages" in page_data
+    assert page_data["total"] == 3
+    assert page_data["page"] == 1
+    assert page_data["page_size"] == 2
+    assert page_data["total_pages"] == 2
+    assert len(page_data["items"]) == 2
+
+    # 2. Test filtering by account_id
+    acc_filter_res = client.get(
+        f"/api/v1/transactions?account_id={acc2_id}&page=1&page_size=10",
+        headers=headers,
+    )
+    assert acc_filter_res.status_code == 200
+    acc_data = acc_filter_res.json()
+    assert acc_data["total"] == 1
+    assert len(acc_data["items"]) == 1
+    assert acc_data["items"][0]["description"] == "Buku Panduan Belajar"
+
+    # 3. Test filtering by category_id
+    cat_filter_res = client.get(
+        f"/api/v1/transactions?category_id={cat2_id}&page=1&page_size=10",
+        headers=headers,
+    )
+    assert cat_filter_res.status_code == 200
+    cat_data = cat_filter_res.json()
+    assert cat_data["total"] == 1
+    assert len(cat_data["items"]) == 1
+    assert cat_data["items"][0]["description"] == "Buku Panduan Belajar"
+
+    # 4. Test keyword search
+    search_res = client.get(
+        "/api/v1/transactions?search=Kenangan&page=1&page_size=10",
+        headers=headers,
+    )
+    assert search_res.status_code == 200
+    search_data = search_res.json()
+    assert search_data["total"] == 1
+    assert search_data["items"][0]["description"] == "Kopi Kenangan Pagi"
+
+    # 5. Test date range start_date and end_date
+    date_res = client.get(
+        "/api/v1/transactions?start_date=2026-09-21T00:00:00Z&end_date=2026-09-21T23:59:59Z&page=1&page_size=10",
+        headers=headers,
+    )
+    assert date_res.status_code == 200
+    date_data = date_res.json()
+    assert date_data["total"] == 1
+    assert date_data["items"][0]["description"] == "Buku Panduan Belajar"
+
+
+def test_account_lifecycle_and_tenant_isolation():
+    # User A
+    email_a = f"acc_lifecycle_a_{uuid.uuid4().hex[:6]}@rezekify.id"
+    reg_a = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email_a,
+            "password": "Password123!",
+            "full_name": "Account Life Tester A",
+        },
+    )
+    token_a = reg_a.json()["access_token"]
+    headers_a = {"Authorization": f"Bearer {token_a}"}
+
+    # Create account for User A
+    acc_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "Bank BCA Awal", "account_type": "BANK", "initial_balance": 1000000.00},
+        headers=headers_a,
+    )
+    assert acc_res.status_code == 200
+    acc_id = acc_res.json()["id"]
+
+    # 1. Test PUT /api/v1/accounts/{id} updates name and account type
+    update_res = client.put(
+        f"/api/v1/accounts/{acc_id}",
+        json={"name": "Bank BCA Diganti", "account_type": "EWALLET"},
+        headers=headers_a,
+    )
+    assert update_res.status_code == 200
+    updated_data = update_res.json()
+    assert updated_data["name"] == "Bank BCA Diganti"
+    assert updated_data["account_type"] == "EWALLET"
+
+    # User B setup
+    email_b = f"acc_lifecycle_b_{uuid.uuid4().hex[:6]}@rezekify.id"
+    reg_b = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email_b,
+            "password": "Password123!",
+            "full_name": "Account Life Tester B",
+        },
+    )
+    token_b = reg_b.json()["access_token"]
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    # 2. Test cross-tenant isolation: user B attempting PUT or DELETE on user A's account returns 404
+    hijack_put = client.put(
+        f"/api/v1/accounts/{acc_id}",
+        json={"name": "Bank Hijack"},
+        headers=headers_b,
+    )
+    assert hijack_put.status_code == 404
+    assert hijack_put.json()["detail"] == "Rekening tidak ditemukan."
+
+    hijack_del = client.delete(
+        f"/api/v1/accounts/{acc_id}",
+        headers=headers_b,
+    )
+    assert hijack_del.status_code == 404
+    assert hijack_del.json()["detail"] == "Rekening tidak ditemukan."
+
+    # 3. Test DELETE /api/v1/accounts/{id} soft-deactivates the account (is_active == False)
+    del_res = client.delete(
+        f"/api/v1/accounts/{acc_id}",
+        headers=headers_a,
+    )
+    assert del_res.status_code == 200
+    assert del_res.json() == {"detail": "Rekening berhasil dinonaktifkan."}
+
+    # 4. Test GET /api/v1/accounts excludes deactivated account by default, but includes it when ?include_inactive=true
+    list_active = client.get("/api/v1/accounts", headers=headers_a)
+    assert list_active.status_code == 200
+    active_accounts = list_active.json()
+    assert not any(a["id"] == acc_id for a in active_accounts)
+
+    list_all = client.get("/api/v1/accounts?include_inactive=true", headers=headers_a)
+    assert list_all.status_code == 200
+    all_accounts = list_all.json()
+    found = next((a for a in all_accounts if a["id"] == acc_id), None)
+    assert found is not None
+    assert found["is_active"] is False
+
 

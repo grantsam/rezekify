@@ -201,7 +201,7 @@ def test_agent_expense_no_account_fails_gracefully(db_session, sample_user):
     assert "Gagal: Anda belum memiliki akun keuangan" in reply
 
 
-def test_handle_receipt_safe_amount_guard(db_session, sample_user):
+def test_agent_handle_message_with_receipt_image(db_session, sample_user):
     acc = Account(
         user_id=sample_user.id,
         name="BCA",
@@ -214,56 +214,30 @@ def test_handle_receipt_safe_amount_guard(db_session, sample_user):
     mock_agent = MagicMock()
     orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
 
-    # 1. Valid receipt with positive amount
     mock_agent.process_input.return_value = {
         "action": "expense",
-        "amount": "45000",
+        "amount": 45000,
         "account_name": "BCA",
         "category_name": "Makanan",
         "note": "Makan Padang",
     }
-    res_valid = orchestrator.handle_receipt(
+    reply = orchestrator.handle_message(
         user_id=sample_user.id,
+        text="struk belanja",
         image_bytes=b"fake_image_bytes",
     )
-    assert res_valid["transaction_id"] is not None
-    assert "Tercatat dari Struk" in res_valid["reply"]
+    mock_agent.process_input.assert_called_once_with(
+        user_id=sample_user.id,
+        text="struk belanja",
+        image_bytes=b"fake_image_bytes",
+        mime_type="image/jpeg",
+    )
+    assert "Tercatat:" in reply
+    assert "Rp 45,000" in reply
+    assert "Makan Padang" in reply
 
-    # 2. Amount is non-numeric string
-    mock_agent.process_input.return_value = {
-        "action": "expense",
-        "amount": "not_a_number",
-    }
-    res_invalid_str = orchestrator.handle_receipt(
-        user_id=sample_user.id,
-        image_bytes=b"fake_image_bytes",
-    )
-    assert res_invalid_str["transaction_id"] is None
-    assert "Struk tidak terbaca jelas" in res_invalid_str["reply"]
-
-    # 3. Amount is None
-    mock_agent.process_input.return_value = {
-        "action": "expense",
-        "amount": None,
-    }
-    res_none = orchestrator.handle_receipt(
-        user_id=sample_user.id,
-        image_bytes=b"fake_image_bytes",
-    )
-    assert res_none["transaction_id"] is None
-    assert "Struk tidak terbaca jelas" in res_none["reply"]
-
-    # 4. Amount is zero or negative
-    mock_agent.process_input.return_value = {
-        "action": "expense",
-        "amount": 0,
-    }
-    res_zero = orchestrator.handle_receipt(
-        user_id=sample_user.id,
-        image_bytes=b"fake_image_bytes",
-    )
-    assert res_zero["transaction_id"] is None
-    assert "Struk tidak terbaca jelas" in res_zero["reply"]
+    db_session.refresh(acc)
+    assert acc.current_balance == Decimal("55000.00")
 
 
 def test_orchestrator_handle_voice_success(db_session, sample_user):
@@ -277,22 +251,29 @@ def test_orchestrator_handle_voice_success(db_session, sample_user):
     db_session.commit()
 
     mock_agent = MagicMock()
-    mock_agent.transcribe_audio.return_value = "makan bakso 25rb pake gopay"
+    mock_agent.process_audio.return_value = {
+        "transcription": "makan bakso 25rb pake gopay",
+        "action": "expense",
+        "amount": 25000,
+        "account_name": "GoPay",
+        "category_name": "Makanan",
+        "note": "Bakso",
+    }
     orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
-    orchestrator.extract_entities = MagicMock(
-        return_value={
-            "action": "expense",
-            "amount": 25000,
-            "account_name": "GoPay",
-            "category_name": "Makanan",
-            "note": "Bakso",
-        }
-    )
 
-    result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=b"sample_ogg_bytes")
+    result = orchestrator.handle_voice(
+        user_id=sample_user.id,
+        audio_bytes=b"sample_webm_bytes",
+        mime_type="audio/webm",
+    )
     assert result["success"] is True
     assert result["transcription"] == "makan bakso 25rb pake gopay"
     assert "Rp 25,000" in result["reply"]
+    mock_agent.process_audio.assert_called_once_with(
+        audio_bytes=b"sample_webm_bytes",
+        mime_type="audio/webm",
+        text_context=None,
+    )
 
     db_session.refresh(acc)
     assert acc.current_balance == Decimal("75000.00")
@@ -300,10 +281,10 @@ def test_orchestrator_handle_voice_success(db_session, sample_user):
 
 def test_orchestrator_handle_voice_silent_audio(db_session, sample_user):
     mock_agent = MagicMock()
-    mock_agent.transcribe_audio.return_value = ""
+    mock_agent.process_audio.return_value = {"action": "unknown", "transcription": ""}
     orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
 
-    result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=b"silent_ogg")
+    result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=b"silent_webm")
     assert result["success"] is False
     assert result["transcription"] == ""
     assert "Suara tidak terdengar jelas" in result["reply"]
@@ -311,10 +292,10 @@ def test_orchestrator_handle_voice_silent_audio(db_session, sample_user):
 
 def test_orchestrator_handle_voice_oversized_audio(db_session, sample_user):
     orchestrator = AgentOrchestrator(db=db_session)
-    oversized = b"0" * (25 * 1024 * 1024 + 1)
+    oversized = b"0" * (10 * 1024 * 1024 + 1)
     result = orchestrator.handle_voice(user_id=sample_user.id, audio_bytes=oversized)
     assert result["success"] is False
-    assert "25MB" in result["reply"]
+    assert "10MB" in result["reply"]
 
 
 def test_orchestrator_handle_voice_with_caption(db_session, sample_user):
@@ -328,24 +309,30 @@ def test_orchestrator_handle_voice_with_caption(db_session, sample_user):
     db_session.commit()
 
     mock_agent = MagicMock()
-    mock_agent.transcribe_audio.return_value = "isi bensin 50rb"
+    mock_agent.process_audio.return_value = {
+        "transcription": "isi bensin 50rb",
+        "action": "expense",
+        "amount": 50000,
+        "account_name": "BCA",
+        "category_name": "Transport",
+        "note": "Bensin Motor",
+    }
     orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
-    orchestrator.extract_entities = MagicMock(
-        return_value={
-            "action": "expense",
-            "amount": 50000,
-            "account_name": "BCA",
-            "category_name": "Transport",
-            "note": "Bensin Motor",
-        }
-    )
 
     result = orchestrator.handle_voice(
-        user_id=sample_user.id, audio_bytes=b"voice_bytes", caption="bensin motor"
+        user_id=sample_user.id,
+        audio_bytes=b"voice_bytes",
+        caption="bensin motor",
+        mime_type="audio/ogg",
     )
     assert result["success"] is True
     assert result["transcription"] == "isi bensin 50rb"
     assert "Rp 50,000" in result["reply"]
+    mock_agent.process_audio.assert_called_once_with(
+        audio_bytes=b"voice_bytes",
+        mime_type="audio/ogg",
+        text_context="bensin motor",
+    )
 
 
 def test_orchestrator_handle_voice_without_agent(db_session, sample_user):
