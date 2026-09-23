@@ -292,8 +292,8 @@ def test_react_agent_transcribe_audio_oversized():
     gemini_pool = RotaryKeyPool(keys=["GEMINI_KEY_1"])
     agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
 
-    oversized = b"x" * (25 * 1024 * 1024 + 1)
-    with pytest.raises(ValueError, match="25MB"):
+    oversized = b"x" * (10 * 1024 * 1024 + 1)
+    with pytest.raises(ValueError, match="10MB"):
         agent.transcribe_audio(oversized)
 
 
@@ -372,6 +372,90 @@ def test_react_agent_fallback_groq_vision_pins_vision_model():
         # Must always use the pinned vision model, not groq_model (llama-3.3-70b-versatile)
         kwargs = mock_client.chat.completions.create.call_args[1]
         assert kwargs["model"] == "meta-llama/llama-4-scout-17b-16e-instruct"
+
+
+def test_react_agent_process_audio_empty_bytes():
+    agent = ReActAgent()
+    res = agent.process_audio(b"")
+    assert res == {"action": "unknown", "transcription": ""}
+
+
+def test_react_agent_process_audio_oversized():
+    agent = ReActAgent()
+    oversized = b"x" * (10 * 1024 * 1024 + 1)
+    with pytest.raises(ValueError, match="10MB"):
+        agent.process_audio(oversized)
+
+
+def test_react_agent_process_audio_gemini_1hop_success():
+    gemini_pool = RotaryKeyPool(keys=["KEY_AUDIO"])
+    agent = ReActAgent(gemini_pool=gemini_pool)
+
+    mock_client = MagicMock()
+    mock_resp = MagicMock()
+    mock_resp.text = '{"transcription": "beli soto ayam 25000", "action": "expense", "amount": 25000, "account_name": "GoPay", "category_name": "Makanan", "note": "Soto Ayam"}'
+    mock_client.models.generate_content.return_value = mock_resp
+
+    fake_audio_bytes = b"fake_audio_bytes_123"
+
+    with patch("google.genai.types.Part.from_bytes") as mock_part:
+        mock_part.return_value = "mock_audio_part"
+        with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
+            res = agent.process_audio(
+                audio_bytes=fake_audio_bytes,
+                mime_type="audio/webm",
+                text_context="catatan tambahan",
+            )
+            assert res["action"] == "expense"
+            assert res["amount"] == 25000
+            assert res["transcription"] == "beli soto ayam 25000"
+            mock_part.assert_called_once_with(data=fake_audio_bytes, mime_type="audio/webm")
+            mock_client.models.generate_content.assert_called_once()
+            contents = mock_client.models.generate_content.call_args.kwargs["contents"]
+            assert "Catatan teks tambahan: catatan tambahan" in contents[2]
+
+
+def test_react_agent_process_audio_falls_back_to_groq_whisper_on_gemini_failure():
+    gemini_pool = RotaryKeyPool(keys=["GEMINI_FAIL"])
+    groq_pool = RotaryKeyPool(keys=["GROQ_FALLBACK"])
+    agent = ReActAgent(gemini_pool=gemini_pool, groq_pool=groq_pool)
+
+    mock_gemini = MagicMock()
+    mock_gemini.models.generate_content.side_effect = Exception("429 Resource exhausted")
+
+    mock_groq = MagicMock()
+    mock_transcription = MagicMock()
+    mock_transcription.text = "makan siang 35000 bca"
+    mock_groq.audio.transcriptions.create.return_value = mock_transcription
+
+    mock_chat = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = '{"action": "expense", "amount": 35000, "account_name": "BCA", "category_name": "Makanan", "note": "Makan Siang"}'
+    mock_chat.choices = [mock_choice]
+    mock_groq.chat.completions.create.return_value = mock_chat
+
+    with patch("google.genai.types.Part.from_bytes"):
+        with patch.object(gemini_pool, "get_gemini_client", return_value=mock_gemini):
+            with patch.object(groq_pool, "get_groq_client", return_value=mock_groq):
+                res = agent.process_audio(b"audio_bytes_content", mime_type="audio/ogg")
+                assert res["action"] == "expense"
+                assert res["amount"] == 35000
+                assert res["transcription"] == "makan siang 35000 bca"
+
+
+def test_react_agent_process_audio_byok_401():
+    gemini_pool = RotaryKeyPool(keys=["BYOK_KEY"])
+    byok_agent = ReActAgent(gemini_pool=gemini_pool, is_byok=True)
+
+    mock_client = MagicMock()
+    mock_client.models.generate_content.side_effect = Exception("401 API_KEY_INVALID")
+
+    with patch("google.genai.types.Part.from_bytes"):
+        with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
+            res = byok_agent.process_audio(b"fake_bytes")
+            assert res["action"] == "byok_error"
+            assert res["status_code"] == 401
+
 
 
 
