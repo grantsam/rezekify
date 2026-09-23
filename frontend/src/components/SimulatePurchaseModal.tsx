@@ -112,9 +112,11 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
-                  onClick={handleClose}
+                  variant="light"
+                  isIconOnly
+                  onPress={handleClose}
                   aria-label="Tutup modal"
                   className="sr-only"
                 />

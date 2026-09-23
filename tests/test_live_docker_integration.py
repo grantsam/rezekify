@@ -132,6 +132,7 @@ def test_full_stack_user_lifecycle_e2e(client: TestClient):
         "target_amount": 1000000.00,
         "allocated_amount": 500000.00,
         "target_date": due_date,
+        "is_locked": True,
     }
     vault_res = client.post("/api/v1/vaults", headers=headers, json=vault_payload)
     assert vault_res.status_code == 200

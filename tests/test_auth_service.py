@@ -1,11 +1,13 @@
 """Tests for AuthService and security utilities."""
 
 from datetime import datetime, timedelta, timezone
+import re
+from unittest.mock import patch
 import pytest
 from jose import jwt
 
 from rezekify.core.config import settings
-from rezekify.core.security import verify_password
+from rezekify.core.security import PAIRING_ALPHABET, generate_pairing_code, verify_password
 from rezekify.services.auth import AuthService
 
 
@@ -23,8 +25,8 @@ def test_user_registration_and_pairing_flow(db_session):
     assert payload["email"] == "test@kampus.ac.id"
 
     code = auth.generate_telegram_pairing_code(user.id)
-    assert code.startswith("DK-")
-    assert len(code) == 7  # DK-XXXX
+    assert re.match(r"^DK-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$", code)
+    assert len(code) == 9  # DK-XXXXXX
 
     linked_user = auth.link_telegram_chat_id(telegram_chat_id=123456789, pairing_code=code)
     assert linked_user.id == user.id
@@ -84,4 +86,83 @@ def test_telegram_pairing_reassigns_chat_id_cleanly(db_session):
     db_session.refresh(user2)
     assert user1.telegram_chat_id is None
     assert user2.telegram_chat_id == 1234567
+
+
+def test_pairing_code_generator_entropy_and_alphabet():
+    for _ in range(50):
+        code = generate_pairing_code()
+        assert re.match(r"^DK-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$", code)
+        suffix = code.split("-")[1]
+        assert len(suffix) == 6
+        assert all(c in PAIRING_ALPHABET for c in suffix)
+
+
+def test_telegram_pairing_collision_retry_succeeds(db_session):
+    auth = AuthService(db_session)
+    user1 = auth.register("col1@test.local", "Password123!", "Collision User 1")
+    user2 = auth.register("col2@test.local", "Password123!", "Collision User 2")
+
+    user1.telegram_pairing_code = "DK-COLLID"
+    user1.pairing_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    db_session.commit()
+
+    with patch(
+        "rezekify.services.auth.generate_pairing_code",
+        side_effect=["DK-COLLID", "DK-COLLID", "DK-UNIQUE"],
+    ) as mock_gen:
+        code = auth.generate_telegram_pairing_code(user2.id)
+        assert code == "DK-UNIQUE"
+        assert mock_gen.call_count == 3
+
+    db_session.refresh(user2)
+    assert user2.telegram_pairing_code == "DK-UNIQUE"
+
+
+def test_telegram_pairing_collision_retry_exhausted_raises(db_session):
+    auth = AuthService(db_session)
+    user1 = auth.register("col3@test.local", "Password123!", "Collision User 3")
+    user2 = auth.register("col4@test.local", "Password123!", "Collision User 4")
+
+    user1.telegram_pairing_code = "DK-COLLID"
+    user1.pairing_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    db_session.commit()
+
+    with patch(
+        "rezekify.services.auth.generate_pairing_code",
+        return_value="DK-COLLID",
+    ) as mock_gen:
+        with pytest.raises(RuntimeError, match="Gagal menghasilkan kode pairing yang unik"):
+            auth.generate_telegram_pairing_code(user2.id)
+        assert mock_gen.call_count == 5
+
+
+def test_telegram_pairing_collision_allows_expired_code(db_session):
+    auth = AuthService(db_session)
+    user1 = auth.register("col5@test.local", "Password123!", "Collision User 5")
+    user2 = auth.register("col6@test.local", "Password123!", "Collision User 6")
+
+    user1.telegram_pairing_code = "DK-EXPIRE"
+    user1.pairing_code_expires_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+    db_session.commit()
+
+    with patch(
+        "rezekify.services.auth.generate_pairing_code",
+        return_value="DK-EXPIRE",
+    ) as mock_gen:
+        code = auth.generate_telegram_pairing_code(user2.id)
+        assert code == "DK-EXPIRE"
+        assert mock_gen.call_count == 1
+
+    db_session.refresh(user1)
+    db_session.refresh(user2)
+    assert user1.telegram_pairing_code is None
+    assert user2.telegram_pairing_code == "DK-EXPIRE"
+
+
+def test_telegram_pairing_code_collision_retry(db_session):
+    auth = AuthService(db_session)
+    u1 = auth.register("u1@rezekify.local", "Password123!", "User 1")
+    code1 = auth.generate_telegram_pairing_code(u1.id)
+    assert len(code1) == 9
+
 

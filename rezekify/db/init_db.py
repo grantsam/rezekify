@@ -8,7 +8,7 @@ from typing import Optional
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 
@@ -57,11 +57,20 @@ def init_db(
                     has_users = "users" in table_names
 
                     if not has_alembic and has_users:
-                        print(
-                            "[Schema Boot] Existing unversioned schema detected. Stamping alembic head..."
+                        stamp_revision = (
+                            "002_user_settings_and_byok"
+                            if "user_settings" in table_names
+                            else "001_initial_schema"
                         )
-                        command.stamp(cfg, "head")
-                        print("[Schema Boot] Database stamped with head revision.")
+                        print(
+                            f"[Schema Boot] Existing unversioned schema detected. Stamping alembic {stamp_revision}..."
+                        )
+                        command.stamp(cfg, stamp_revision)
+                        print(
+                            f"[Schema Boot] Database stamped with {stamp_revision}. Applying pending migrations ('upgrade head')..."
+                        )
+                        command.upgrade(cfg, "head")
+                        print("[Schema Boot] Schema successfully upgraded to head.")
                     elif has_alembic:
                         print(
                             "[Schema Boot] Versioned database detected. Applying pending migrations ('upgrade head')..."
@@ -74,8 +83,6 @@ def init_db(
                         )
                         command.upgrade(cfg, "head")
                         print("[Schema Boot] Schema successfully initialized to head.")
-
-                    return True
 
                 except Exception as alembic_err:
                     logger.warning("Alembic execution encountered an error: %s", alembic_err)
@@ -92,7 +99,28 @@ def init_db(
                         print("[Schema Boot] Fallback stamped head successfully.")
                     except Exception as stamp_err:
                         logger.warning("Failed to stamp head during fallback: %s", stamp_err)
-                    return True
+
+                # Post-migration column reconciliation safety check
+                inspector = inspect(conn)
+                if "users" in inspector.get_table_names():
+                    user_columns = [col["name"] for col in inspector.get_columns("users")]
+                    if "safe_runway_threshold" not in user_columns:
+                        if conn.dialect.name == "postgresql":
+                            conn.execute(
+                                text(
+                                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS safe_runway_threshold NUMERIC(15, 2) NOT NULL DEFAULT 30000.00;"
+                                )
+                            )
+                        else:
+                            conn.execute(
+                                text(
+                                    "ALTER TABLE users ADD COLUMN safe_runway_threshold NUMERIC(15, 2) NOT NULL DEFAULT 30000.00;"
+                                )
+                            )
+                        conn.commit()
+                        print("[Schema Boot] Reconciled missing safe_runway_threshold column in users table.")
+
+                return True
 
         except OperationalError as exc:
             if attempt == max_retries:

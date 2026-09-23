@@ -2,7 +2,7 @@
 
 import os
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class RotaryKeyPool:
@@ -14,6 +14,8 @@ class RotaryKeyPool:
         self.cooldown_seconds = cooldown_seconds
         self.current_index = 0
         self.cooldowns: Dict[str, float] = {k: 0.0 for k in self.keys}
+        self._gemini_clients: Dict[str, Any] = {}
+        self._groq_clients: Dict[str, Any] = {}
 
     @classmethod
     def from_env(cls, env_var: str, cooldown_seconds: int = 60) -> "RotaryKeyPool":
@@ -57,7 +59,9 @@ class RotaryKeyPool:
             ) from e
 
         key = api_key or self.get_current_key()
-        return genai.Client(api_key=key)
+        if key not in self._gemini_clients:
+            self._gemini_clients[key] = genai.Client(api_key=key)
+        return self._gemini_clients[key]
 
     def get_groq_client(self, api_key: Optional[str] = None):
         """Provide a Groq Client configured with an active key."""
@@ -69,4 +73,6 @@ class RotaryKeyPool:
             ) from e
 
         key = api_key or self.get_current_key()
-        return Groq(api_key=key)
+        if key not in self._groq_clients:
+            self._groq_clients[key] = Groq(api_key=key)
+        return self._groq_clients[key]

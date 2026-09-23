@@ -117,27 +117,39 @@ class RunwayService:
         # Total locked vault reserves
         vault_sum = (
             self.db.query(func.coalesce(func.sum(Vault.allocated_amount), Decimal("0.00")))
-            .filter(Vault.user_id == user_id)
+            .filter(Vault.user_id == user_id, Vault.is_locked == True)
             .scalar()
         )
 
         operational_free = max(Decimal("0.00"), liquid_sum - vault_sum)
 
         # Calculate days remaining until monthly cycle day
-        cycle_day = user.monthly_cycle_day
-        if today.day < cycle_day:
-            days_remaining = cycle_day - today.day
+        cycle_day = int(user.monthly_cycle_day)
+        # ponytail: caps monthly cycle day to month length; add dateutil.rrule if custom recurrences needed
+        _, days_in_current_month = monthrange(today.year, today.month)
+        effective_cycle_day: int = min(cycle_day, int(days_in_current_month))
+
+        if today.day < effective_cycle_day:
+            days_remaining = effective_cycle_day - today.day
         else:
-            _, days_in_current_month = monthrange(today.year, today.month)
-            days_remaining = (days_in_current_month - today.day) + cycle_day
+            next_year = today.year + 1 if today.month == 12 else today.year
+            next_month = 1 if today.month == 12 else today.month + 1
+            _, days_in_next_month = monthrange(next_year, next_month)
+            next_effective_cycle: int = min(cycle_day, int(days_in_next_month))
+            days_remaining = (days_in_current_month - today.day) + next_effective_cycle
 
         days_remaining = max(1, days_remaining)
         daily_safe = (operational_free / Decimal(str(days_remaining))).quantize(Decimal("0.01"))
 
         # Health status evaluation
+        threshold = (
+            user.safe_runway_threshold
+            if getattr(user, "safe_runway_threshold", None) is not None
+            else Decimal("30000.00")
+        )
         if operational_free <= Decimal("0.00"):
             status = "CRITICAL"
-        elif daily_safe < Decimal("30000.00"):
+        elif daily_safe < threshold:
             status = "WARNING"
         else:
             status = "HEALTHY"
@@ -192,12 +204,18 @@ class RunwayService:
         self, user_id: UUID, planned_amount: Decimal, today: Optional[date] = None
     ) -> SimulationReport:
         """Simulates the cognitive and financial impact of a discretionary purchase on daily runway."""
+        user = self.db.query(User).filter_by(id=user_id).one()
+        threshold = (
+            user.safe_runway_threshold
+            if getattr(user, "safe_runway_threshold", None) is not None
+            else Decimal("30000.00")
+        )
         current = self.calculate_runway(user_id, today)
         projected_free = max(Decimal("0.00"), current.operational_free_cash - planned_amount)
         projected_daily = (projected_free / Decimal(str(current.days_remaining))).quantize(Decimal("0.01"))
         drop = current.daily_safe_runway - projected_daily
 
-        is_safe = projected_daily >= Decimal("30000.00")
+        is_safe = projected_daily >= threshold
         advice = (
             f"Pembelian sebesar Rp {planned_amount:,.0f} aman dilakukan. "
             f"Jatah harian Anda tersisa Rp {projected_daily:,.0f}/hari."

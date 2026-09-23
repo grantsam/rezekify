@@ -1,6 +1,7 @@
 """Tests for Settings API schemas, probe validator, and REST endpoints."""
 
 from datetime import datetime, timezone
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 import pytest
@@ -21,6 +22,8 @@ from rezekify.schemas.settings import (
     SettingsResponse,
     TelegramSettingsResponse,
     TelegramUnlinkResponse,
+    UserProfileResponse,
+    UserProfileUpdateRequest,
     validate_ai_credentials,
 )
 
@@ -46,9 +49,21 @@ def test_settings_schemas_serialization():
     assert ai_resp.provider == AIProvider.GEMINI
     assert "gemini-2.5-flash" in ai_resp.available_models["GEMINI"]
 
-    settings_resp = SettingsResponse(telegram=telegram_resp, ai=ai_resp)
+    profile_resp = UserProfileResponse(
+        id="user-123",
+        email="test@user.local",
+        full_name="Test User",
+        monthly_cycle_day=1,
+        safe_runway_threshold=Decimal("30000.00"),
+    )
+    assert profile_resp.monthly_cycle_day == 1
+    assert profile_resp.safe_runway_threshold == Decimal("30000.00")
+
+    settings_resp = SettingsResponse(telegram=telegram_resp, ai=ai_resp, profile=profile_resp)
     assert settings_resp.telegram.is_connected is True
     assert settings_resp.ai.has_api_key is True
+    assert settings_resp.profile is not None
+    assert settings_resp.profile.monthly_cycle_day == 1
 
 
 def test_validate_ai_credentials_gemini_success():
@@ -163,7 +178,8 @@ def api_test_client():
     app.dependency_overrides[get_current_user] = override_user
     client = TestClient(app, raise_server_exceptions=False)
     yield client, user, TestingSession
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_get_settings_auto_creates_default_and_omits_secrets(api_test_client):
@@ -349,3 +365,60 @@ def test_unlink_telegram_endpoint(api_test_client):
     # Subsequent GET /settings reflects disconnected status
     get_res = client.get("/api/v1/settings")
     assert get_res.json()["telegram"]["is_connected"] is False
+
+
+def test_get_settings_returns_profile(api_test_client):
+    client, user, SessionMaker = api_test_client
+    res = client.get("/api/v1/settings")
+    assert res.status_code == 200
+    data = res.json()
+    assert "profile" in data
+    profile = data["profile"]
+    assert profile["email"] == "settings_user@rezekify.local"
+    assert profile["monthly_cycle_day"] == 1
+    assert Decimal(str(profile["safe_runway_threshold"])) == Decimal("30000.00")
+
+
+def test_put_user_profile_success(api_test_client):
+    client, user, SessionMaker = api_test_client
+    res = client.put(
+        "/api/v1/settings/profile",
+        json={
+            "monthly_cycle_day": 15,
+            "safe_runway_threshold": 45000.00,
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["monthly_cycle_day"] == 15
+    assert Decimal(str(data["safe_runway_threshold"])) == Decimal("45000.00")
+
+    # Verify DB persistence
+    db = SessionMaker()
+    refreshed_user = db.query(User).filter_by(id=user.id).first()
+    assert refreshed_user.monthly_cycle_day == 15
+    assert Decimal(str(refreshed_user.safe_runway_threshold)) == Decimal("45000.00")
+    db.close()
+
+    # Subsequent GET /settings reflects updated profile
+    get_res = client.get("/api/v1/settings")
+    assert get_res.json()["profile"]["monthly_cycle_day"] == 15
+    assert Decimal(str(get_res.json()["profile"]["safe_runway_threshold"])) == Decimal("45000.00")
+
+
+def test_put_user_profile_validation_rejections(api_test_client):
+    client, user, SessionMaker = api_test_client
+    # monthly_cycle_day = 32 (invalid, > 31)
+    res_bad_day = client.put(
+        "/api/v1/settings/profile",
+        json={"monthly_cycle_day": 32},
+    )
+    assert res_bad_day.status_code in (400, 422)
+
+    # safe_runway_threshold = -1000 (invalid, <= 0)
+    res_bad_threshold = client.put(
+        "/api/v1/settings/profile",
+        json={"safe_runway_threshold": -1000.00},
+    )
+    assert res_bad_threshold.status_code in (400, 422)
+

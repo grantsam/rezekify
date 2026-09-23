@@ -5,7 +5,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
+from rezekify.core.rate_limit import RateLimiter
 from rezekify.db.models import Base, User
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiters_per_test():
+    RateLimiter.reset_all()
+    yield
+    RateLimiter.reset_all()
 
 
 @pytest.fixture(scope="function")

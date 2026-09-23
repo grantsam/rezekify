@@ -4,6 +4,7 @@
 
 export type AccountType = 'CASH' | 'BANK' | 'EWALLET' | 'LIABILITY';
 export type VaultType = 'SAVINGS' | 'FIXED_BILL';
+export type CategoryType = 'EXPENSE' | 'INCOME';
 export type EntryType = 'DEBIT' | 'CREDIT';
 export type HealthStatus = 'HEALTHY' | 'WARNING' | 'CRITICAL';
 
@@ -19,7 +20,21 @@ export type UserProfile = User;
 export interface Category {
   id: string;
   name: string;
-  category_type?: string;
+  category_type?: CategoryType | string;
+  icon?: string;
+  color?: string;
+}
+
+export interface CategoryCreateRequest {
+  name: string;
+  category_type?: CategoryType;
+  icon?: string;
+  color?: string;
+}
+
+export interface CategoryUpdateRequest {
+  name?: string;
+  category_type?: CategoryType;
   icon?: string;
   color?: string;
 }
@@ -30,6 +45,11 @@ export interface Account {
   account_type: AccountType;
   current_balance: number;
   is_active: boolean;
+}
+
+export interface AccountUpdateRequest {
+  name?: string;
+  account_type?: AccountType;
 }
 
 export interface Vault {
@@ -95,8 +115,31 @@ export interface Transaction {
   ledger_entries?: LedgerEntry[];
 }
 
+export interface PaginatedTransactionsResponse {
+  items: Transaction[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface TransactionFilterParams {
+  account_id?: string;
+  category_id?: string;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  page_size?: number;
+}
+
 export interface ChatResponse {
   reply: string;
+}
+
+export interface VoiceChatResponse {
+  reply: string;
+  transcription?: string;
 }
 
 export interface ReceiptExtractedData {
@@ -105,12 +148,6 @@ export interface ReceiptExtractedData {
   account_name?: string | null;
   category_name?: string | null;
   note?: string | null;
-}
-
-export interface ReceiptUploadResponse {
-  reply: string;
-  transaction_id?: string | null;
-  extracted_data: ReceiptExtractedData;
 }
 
 export interface DailySpendingItemModel {
@@ -174,9 +211,23 @@ export interface AISettingsResponse {
   available_models: Record<string, string[]>;
 }
 
+export interface UserProfileResponse {
+  id: string;
+  email: string;
+  full_name: string;
+  monthly_cycle_day: number;
+  safe_runway_threshold: number;
+}
+
+export interface UserProfileUpdateRequest {
+  monthly_cycle_day?: number;
+  safe_runway_threshold?: number;
+}
+
 export interface SettingsResponse {
   telegram: TelegramSettingsResponse;
   ai: AISettingsResponse;
+  profile?: UserProfileResponse;
 }
 
 export interface AIKeyValidateRequest {

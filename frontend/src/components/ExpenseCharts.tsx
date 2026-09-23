@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tooltip, Progress } from '@heroui/react';
-import { BarChart3, AlertCircle, Loader2 } from 'lucide-react';
+import { Tooltip, Progress, Button } from '@heroui/react';
+import { BarChart3, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { apiFetch } from '../services/apiClient';
 import { SpendingBreakdownResponse, DailySpendingResponse, MonthlySpendingResponse } from '../types/api';
@@ -66,39 +66,62 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           aria-label="Pilih rentang waktu analitik"
           className="flex bg-slate-800/90 p-1 rounded-xl text-xs self-start sm:self-auto border border-slate-700/60"
         >
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant={period === 'daily' ? 'solid' : 'flat'}
+            color={period === 'daily' ? 'primary' : 'default'}
             role="tab"
             aria-selected={period === 'daily'}
-            onClick={() => setPeriod('daily')}
-            className={`min-h-[36px] px-3.5 py-1.5 rounded-lg transition-all ${
+            onPress={() => setPeriod('daily')}
+            className={`min-h-[38px] px-3.5 py-1.5 rounded-lg transition-all ${
               period === 'daily'
                 ? 'bg-indigo-600 text-white font-medium shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
             Harian (Daily)
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            size="sm"
+            variant={period === 'monthly' ? 'solid' : 'flat'}
+            color={period === 'monthly' ? 'primary' : 'default'}
             role="tab"
             aria-selected={period === 'monthly'}
-            onClick={() => setPeriod('monthly')}
-            className={`min-h-[36px] px-3.5 py-1.5 rounded-lg transition-all ${
+            onPress={() => setPeriod('monthly')}
+            className={`min-h-[38px] px-3.5 py-1.5 rounded-lg transition-all ${
               period === 'monthly'
                 ? 'bg-indigo-600 text-white font-medium shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
             Bulanan (Monthly)
-          </button>
+          </Button>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="h-44 flex items-center justify-center text-slate-400 gap-2">
-          <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
-          <span className="text-xs">Memuat analitik...</span>
+        <div
+          data-testid="expense-charts-skeleton"
+          aria-busy="true"
+          className="h-44 flex flex-col justify-between animate-pulse"
+        >
+          <div className="h-32 flex items-end justify-between gap-2 sm:gap-3">
+            {[45, 65, 25, 90, 50, 20, 75].map((heightPct, idx) => (
+              <div key={idx} className="flex-1 bg-slate-800/60 rounded-t-lg h-full flex items-end overflow-hidden">
+                <div
+                  className="w-full bg-slate-700/60 rounded-t-md"
+                  style={{ height: `${heightPct}%` }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-slate-800/80 pb-2">
+            {[...Array(7)].map((_, idx) => (
+              <div key={idx} className="flex-1 flex justify-center">
+                <div className="h-3 w-6 bg-slate-800/80 rounded" />
+              </div>
+            ))}
+          </div>
         </div>
       ) : error ? (
         <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-800 rounded-xl">
@@ -188,7 +211,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                         style={{ originY: 1, height: '100%' }}
                         initial={{ scaleY: 0 }}
                         animate={{ scaleY: heightPct / 100 }}
-                        transition={{ type: 'spring', stiffness: 220, damping: 20, delay: idx * 0.04 }}
+                        transition={{ duration: 0.25, ease: 'easeOut', delay: idx * 0.02 }}
                         className={`w-full rounded-t-md transition-colors ${
                           isOver ? 'bg-rose-500' : 'bg-emerald-500'
                         }`}

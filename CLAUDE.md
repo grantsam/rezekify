@@ -9,13 +9,13 @@
 - **Core Invariant 5: Zero-Bloat Scope**: Focus strictly on Daily Safe Runway + H-7 Upcoming Bills. No fake credit scores, no premature yearly aggregation, no vanity metrics.
 
 ## 2. Superpowers Workflow Protocol
-Enforce sequential skill execution across every feature lifecycle:
-1. **Ideation & Scoping**: Invoke `superpowers:brainstorming` before any new feature, architecture change, or behavioral modification.
-2. **Implementation Planning**: Invoke `superpowers:writing-plans` to generate strict, bite-sized TDD plans with checkbox syntax.
-3. **Execution Mode**: Invoke `superpowers:subagent-driven-development` to execute plans task-by-task using fresh, single-purpose worker subagents.
-4. **Code Construction**: Invoke `superpowers:test-driven-development` using Red (failing test) -> Green (minimal working code) -> Refactor.
-5. **Issue Resolution**: Invoke `superpowers:systematic-debugging` to investigate root causes, inspect logs and traces, and prevent speculative retry loops.
-6. **Delivery & Quality Gate**: Invoke `superpowers:verification-before-completion` to execute test suites, confirm exit code 0, and verify proof before claiming completion.
+Enforce sequential skill execution across every feature lifecycle using the `Skill` tool:
+1. **Ideation & Scoping**: Invoke `superpowers:brainstorming` via `Skill` before any new feature, architecture change, or behavioral modification. Follow hard gates: classify complexity (spike / bounded / architectural), ask one question at a time, present design sections, get approval, and save approved specifications to `docs/superpowers/specs/`.
+2. **Implementation Planning**: Invoke `superpowers:writing-plans` via `Skill` to generate strict, bite-sized TDD plans with checkbox syntax saved to `docs/superpowers/plans/`. Hard gate: never start implementation before the plan is approved.
+3. **Execution Mode**: Invoke `superpowers:subagent-driven-development` via `Skill` to execute plans task-by-task using fresh, single-purpose worker subagents sequentially.
+4. **Code Construction**: Adhere to `superpowers:test-driven-development` using Red (failing test) -> Green (minimal working code) -> Refactor.
+5. **Issue Resolution**: Adhere to `superpowers:systematic-debugging` to investigate root causes, inspect logs and traces, and prevent speculative retry loops.
+6. **Delivery & Quality Gate**: Adhere to `superpowers:verification-before-completion` to execute test suites, confirm exit code 0 with command output evidence before claiming completion.
 
 ## 3. Backend Engineering Workflow (Python & FastAPI)
 - **Location**: `rezekify/` and `tests/`
@@ -34,17 +34,18 @@ Enforce sequential skill execution across every feature lifecycle:
 - **Location**: `frontend/`
 - **Stack**: React 18, Vite, TypeScript, Tailwind CSS, Lucide React, Framer Motion.
 - **Mandatory Impeccable Protocol**:
-  - Always invoke `impeccable:impeccable` skill before generating or editing any frontend code.
+  - Always invoke `impeccable:impeccable` via the `Skill` tool before generating or editing any frontend code.
+  - Apply `frontend-design:frontend-design` for distinct typography, dark slate color palette, and layout polish.
   - **Craft Standards & Visual Hierarchy**:
     - **Hero Omni-Input Bar**: Casual natural language entry + receipt dropzone acts as the primary center of gravity.
     - **Runway Telemetry Gauge**: High-contrast traffic-light status indicators (Emerald for `HEALTHY`, Amber for `WARNING`, Rose for `CRITICAL`).
     - **Upcoming Bills Banner**: Clear H-7 alert banner highlighting fixed financial commitments due within 7 days.
     - **Focused Analytics**: Explicit toggle between Daily spending (vs Runway threshold) and Monthly category breakdown.
-    - **Accessibility & Responsiveness**: Mobile-first design (360px up to 4K ultra-wide), strict WCAG contrast compliance, and fluid micro-interactions.
-  - **Specialized Impeccable Subagents**:
-    - `impeccable:impeccable-finish-reviewer` for quality/polish review.
-    - `impeccable:impeccable-documenter` for `DESIGN.md`.
-    - `impeccable:impeccable-asset-producer` for raster assets.
+    - **Accessibility & Responsiveness**: Mobile-first design (360px up to 4K ultra-wide), minimum 38px touch targets, motion restraint (transitions <= 250ms), strict WCAG contrast compliance, and fluid micro-interactions.
+  - **Specialized Impeccable Subagents & Reviews**:
+    - Dispatch `impeccable:impeccable-finish-reviewer` for quality, contrast, and polish review before considering UI work complete.
+    - Use `impeccable:impeccable-documenter` for `DESIGN.md`.
+    - Use `impeccable:impeccable-asset-producer` for raster assets.
 - **Frontend Commands (PowerShell)**:
   - Dev server: `npm run dev` (inside `frontend/`)
   - Typecheck / Build: `npm run build` or `npx tsc --noEmit` (inside `frontend/`)

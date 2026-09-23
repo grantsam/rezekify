@@ -86,3 +86,93 @@ def test_rate_limiter_isolates_authenticated_users():
     assert client.get("/test", headers=headers_b).status_code == 200
     assert client.get("/test", headers=headers_b).status_code == 200
     assert client.get("/test", headers=headers_b).status_code == 429
+
+
+def test_rate_limiter_evicts_empty_keys():
+    from fastapi import Request
+    limiter = RateLimiter(max_requests=2, window_seconds=1)
+    mock_request = Request({"type": "http", "headers": [], "client": ("127.0.0.1", 12345)})
+    limiter(mock_request)
+    assert "ip:127.0.0.1" in limiter._history
+    time.sleep(1.1)
+    # Next call after expiry should evict empty key before appending new
+    limiter(mock_request)
+    assert len(limiter._history["ip:127.0.0.1"]) == 1
+
+
+def test_rate_limiter_evicts_empty_keys_when_all_requests_expire():
+    from fastapi import Request
+    limiter = RateLimiter(max_requests=2, window_seconds=1)
+    req1 = Request({"type": "http", "headers": [], "client": ("192.168.1.10", 12345)})
+    req2 = Request({"type": "http", "headers": [], "client": ("192.168.1.20", 12345)})
+
+    limiter(req1)
+    assert "ip:192.168.1.10" in limiter._history
+
+    # Wait for req1 to expire
+    time.sleep(1.1)
+
+    # Next call from a different client triggers eviction of the expired empty key
+    limiter(req2)
+    assert "ip:192.168.1.10" not in limiter._history
+    assert "ip:192.168.1.20" in limiter._history
+
+
+def test_auth_login_rate_limit_exceeded():
+    from rezekify.api.main import app
+    from rezekify.api.v1.auth_router import auth_limiter
+
+    auth_limiter.reset()
+    client = TestClient(app, raise_server_exceptions=False)
+
+    for _ in range(auth_limiter.max_requests):
+        res = client.post(
+            "/api/v1/auth/login",
+            json={"email": "nonexistent@test.com", "password": "wrongpassword123"},
+        )
+        assert res.status_code != 429
+
+    # Next request must be throttled with 429
+    res = client.post(
+        "/api/v1/auth/login",
+        json={"email": "nonexistent@test.com", "password": "wrongpassword123"},
+    )
+    assert res.status_code == 429
+    assert "Retry-After" in res.headers
+    auth_limiter.reset()
+
+
+def test_settings_ai_validate_rate_limit_exceeded():
+    from unittest.mock import patch
+    from rezekify.api.main import app
+    from rezekify.api.v1.settings_router import ai_validate_limiter
+    from rezekify.api.deps import get_current_user
+    from rezekify.db.models import User
+
+    ai_validate_limiter.reset()
+    mock_user = User(
+        id=uuid4(),
+        email="ai_test@rezekify.local",
+        password_hash="dummy",
+        full_name="AI Tester",
+    )
+    app.dependency_overrides[get_current_user] = lambda: mock_user
+    client = TestClient(app, raise_server_exceptions=False)
+
+    try:
+        with patch("rezekify.api.v1.settings_router.validate_ai_credentials") as mock_val:
+            mock_val.return_value = (True, "Valid")
+            payload = {"provider": "GEMINI", "api_key": "AIzaSyDummy12345678", "model": "gemini-2.5-flash"}
+
+            for _ in range(ai_validate_limiter.max_requests):
+                res = client.post("/api/v1/settings/ai/validate", json=payload)
+                assert res.status_code == 200
+
+            # Next request must exceed limit and return 429
+            res = client.post("/api/v1/settings/ai/validate", json=payload)
+            assert res.status_code == 429
+            assert "Retry-After" in res.headers
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        ai_validate_limiter.reset()
+

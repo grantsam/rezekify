@@ -1,11 +1,14 @@
 """FastAPI router for user settings, Telegram lifecycle, and AI BYOK configuration."""
 
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from rezekify.api.deps import get_current_user, get_db
 from rezekify.core.config import settings as app_settings
 from rezekify.core.crypto import encrypt_key, mask_key
+from rezekify.core.rate_limit import RateLimiter
 from rezekify.db.models import AIProvider, User, UserSettings
 from rezekify.schemas.settings import (
     AVAILABLE_MODELS,
@@ -16,10 +19,13 @@ from rezekify.schemas.settings import (
     SettingsResponse,
     TelegramSettingsResponse,
     TelegramUnlinkResponse,
+    UserProfileResponse,
+    UserProfileUpdateRequest,
     validate_ai_credentials,
 )
 
 settings_router = APIRouter()
+ai_validate_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
 
 def _get_or_create_settings(db: Session, user_id) -> UserSettings:
@@ -61,10 +67,65 @@ def get_settings(
         key_hint=settings_rec.key_hint,
     )
 
-    return SettingsResponse(telegram=telegram_resp, ai=ai_resp)
+    threshold = (
+        current_user.safe_runway_threshold
+        if getattr(current_user, "safe_runway_threshold", None) is not None
+        else Decimal("30000.00")
+    )
+    profile_resp = UserProfileResponse(
+        id=str(current_user.id),
+        email=current_user.email,
+        full_name=current_user.full_name,
+        monthly_cycle_day=current_user.monthly_cycle_day,
+        safe_runway_threshold=threshold,
+    )
+
+    return SettingsResponse(telegram=telegram_resp, ai=ai_resp, profile=profile_resp)
 
 
-@settings_router.post("/ai/validate", response_model=AIKeyValidateResponse)
+@settings_router.put("/profile", response_model=UserProfileResponse)
+def update_user_profile(
+    payload: UserProfileUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UserProfileResponse:
+    """Updates user profile settings like monthly cycle day and safe runway threshold."""
+    if payload.monthly_cycle_day is not None and not (1 <= payload.monthly_cycle_day <= 31):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Hari siklus bulanan harus antara tanggal 1 dan 31.",
+        )
+    if payload.safe_runway_threshold is not None and payload.safe_runway_threshold <= Decimal("0.00"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ambang batas runway aman harus lebih besar dari 0.",
+        )
+
+    user = db.query(User).filter_by(id=current_user.id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pengguna tidak ditemukan.",
+        )
+
+    if payload.monthly_cycle_day is not None:
+        user.monthly_cycle_day = payload.monthly_cycle_day
+    if payload.safe_runway_threshold is not None:
+        user.safe_runway_threshold = payload.safe_runway_threshold
+
+    db.commit()
+    db.refresh(user)
+
+    return UserProfileResponse(
+        id=str(user.id),
+        email=user.email,
+        full_name=user.full_name,
+        monthly_cycle_day=user.monthly_cycle_day,
+        safe_runway_threshold=user.safe_runway_threshold,
+    )
+
+
+@settings_router.post("/ai/validate", response_model=AIKeyValidateResponse, dependencies=[Depends(ai_validate_limiter)])
 def validate_ai_key(
     payload: AIKeyValidateRequest,
     current_user: User = Depends(get_current_user),

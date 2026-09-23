@@ -36,6 +36,7 @@ def test_calculate_runway_days_and_daily_budget(db_session, sample_user):
         vault_type=VaultType.SAVINGS,
         target_amount=Decimal("500000.00"),
         allocated_amount=Decimal("300000.00"),
+        is_locked=True,
     )
     bill = Vault(
         user_id=sample_user.id,
@@ -44,6 +45,7 @@ def test_calculate_runway_days_and_daily_budget(db_session, sample_user):
         target_amount=Decimal("500000.00"),
         allocated_amount=Decimal("200000.00"),
         target_date=date(2026, 9, 23),
+        is_locked=True,
     )
     db_session.add_all([acc, vlt, bill])
     db_session.commit()
@@ -437,3 +439,124 @@ def test_uncategorized_expense_included_in_daily_and_monthly_breakdowns(db_sessi
     assert monthly.items[0].category_name == "Lainnya / Tanpa Kategori"
     assert monthly.items[0].amount == Decimal("15000.00")
     assert monthly.items[0].percentage == Decimal("100.0")
+
+
+def test_unlocked_vault_not_counted_in_locked_cash(db_session, sample_user):
+    """Verifies that unlocked vaults (is_locked=False) do not deduct from operational free cash."""
+    sample_user.monthly_cycle_day = 25
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    locked_vlt = Vault(
+        user_id=sample_user.id,
+        name="Tabungan Darurat",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("500000.00"),
+        allocated_amount=Decimal("200000.00"),
+        is_locked=True,
+    )
+    unlocked_vlt = Vault(
+        user_id=sample_user.id,
+        name="Wishlist Gadget",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("1000000.00"),
+        allocated_amount=Decimal("300000.00"),
+        is_locked=False,
+    )
+    db_session.add_all([acc, locked_vlt, unlocked_vlt])
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 18))
+
+    assert report.total_liquid_cash == Decimal("1000000.00")
+    assert report.vault_locked_cash == Decimal("200000.00")
+    assert report.operational_free_cash == Decimal("800000.00")
+
+
+def test_runway_month_end_cycle_day_short_month(db_session, sample_user):
+    """Verifies that monthly_cycle_day=31 on Feb 20 correctly caps at 28 days returning 8 days remaining."""
+    sample_user.monthly_cycle_day = 31
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    # February 2026 has 28 days (non-leap year). 28 - 20 = 8 days remaining.
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 2, 20))
+
+    assert report.days_remaining == 8
+
+
+def test_runway_custom_safe_threshold_warning(db_session, sample_user):
+    """When user.safe_runway_threshold = 50,000 and daily safe is 40,000, status evaluates to WARNING."""
+    sample_user.monthly_cycle_day = 25
+    sample_user.safe_runway_threshold = Decimal("50000.00")
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("200000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 20))
+
+    assert report.daily_safe_runway == Decimal("40000.00")
+    assert report.health_status == "WARNING"
+
+
+def test_runway_custom_safe_threshold_healthy(db_session, sample_user):
+    """When user.safe_runway_threshold = 20,000 and daily safe is 25,000, status evaluates to HEALTHY."""
+    sample_user.monthly_cycle_day = 25
+    sample_user.safe_runway_threshold = Decimal("20000.00")
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("125000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 20))
+
+    assert report.daily_safe_runway == Decimal("25000.00")
+    assert report.health_status == "HEALTHY"
+
+
+def test_simulate_purchase_uses_custom_safe_threshold(db_session, sample_user):
+    """simulate_purchase uses the user's custom threshold for determining is_safe."""
+    sample_user.monthly_cycle_day = 25
+    sample_user.safe_runway_threshold = Decimal("50000.00")
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    sim = service.simulate_purchase(
+        user_id=sample_user.id,
+        planned_amount=Decimal("200000.00"),
+        today=date(2026, 9, 18),
+    )
+
+    assert sim.projected_daily_runway == Decimal("42857.14")
+    assert sim.is_safe is False
+    assert "Peringatan" in sim.advice
+

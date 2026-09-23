@@ -28,7 +28,9 @@ describe('RunwayMetricCard Component', () => {
 
   it('renders skeleton loader when summary is null and onOpenAuth is omitted', () => {
     render(<RunwayMetricCard summary={null} />);
-    expect(screen.getByTestId('runway-skeleton')).toBeInTheDocument();
+    const skeleton = screen.getByTestId('runway-skeleton');
+    expect(skeleton).toBeInTheDocument();
+    expect(skeleton).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryByText(/Belum Terautentikasi/i)).not.toBeInTheDocument();
   });
 
@@ -45,7 +47,7 @@ describe('RunwayMetricCard Component', () => {
   });
 
   it('renders healthy state with "Aman Terkendali", formatted amounts, and breakdown columns', () => {
-    render(<RunwayMetricCard summary={mockHealthySummary} />);
+    const { container } = render(<RunwayMetricCard summary={mockHealthySummary} />);
 
     expect(screen.getByText('Batas Belanja Harian (Runway)')).toBeInTheDocument();
     expect(screen.getByText('Aman Terkendali')).toBeInTheDocument();
@@ -58,16 +60,29 @@ describe('RunwayMetricCard Component', () => {
     expect(screen.getByText(/Rp 2\.000\.000/i)).toBeInTheDocument();
     expect(screen.getByText('Cadangan Terkunci')).toBeInTheDocument();
     expect(screen.getByText(/Rp 1\.000\.000/i)).toBeInTheDocument();
+
+    // Check dynamic emerald glow and border
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).toContain('border-emerald-500/30');
+    expect(card.className).toContain('shadow-emerald-500/10');
   });
 
-  it('renders warning status with "Mode Waspada"', () => {
-    render(<RunwayMetricCard summary={mockWarningSummary} />);
+  it('renders warning status with "Mode Waspada" and dynamic amber glow', () => {
+    const { container } = render(<RunwayMetricCard summary={mockWarningSummary} />);
     expect(screen.getByText('Mode Waspada')).toBeInTheDocument();
+
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).toContain('border-amber-500/30');
+    expect(card.className).toContain('shadow-amber-500/10');
   });
 
-  it('renders critical status with "Mode Hemat Ketat" and avoids punitive "Insolvent" jargon', () => {
-    render(<RunwayMetricCard summary={mockCriticalSummary} />);
+  it('renders critical status with "Mode Hemat Ketat", dynamic rose glow, and avoids punitive "Insolvent" jargon', () => {
+    const { container } = render(<RunwayMetricCard summary={mockCriticalSummary} />);
     expect(screen.getByText('Mode Hemat Ketat')).toBeInTheDocument();
     expect(screen.queryByText(/Insolvent/i)).not.toBeInTheDocument();
+
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).toContain('border-rose-500/30');
+    expect(card.className).toContain('shadow-rose-500/10');
   });
 });

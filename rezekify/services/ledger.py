@@ -32,6 +32,7 @@ class LedgerService:
         source_channel: str = "WEB_AI",
         raw_input_text: Optional[str] = None,
         receipt_image_url: Optional[str] = None,
+        transaction_date: Optional[datetime] = None,
     ) -> Transaction:
         """Records an expense transaction with balanced debit/credit entries."""
         if amount <= 0:
@@ -43,6 +44,15 @@ class LedgerService:
             .with_for_update()
             .one()
         )
+
+        if category_id:
+            cat = (
+                self.db.query(Category)
+                .filter_by(id=category_id, user_id=user_id)
+                .one_or_none()
+            )
+            if not cat:
+                raise ValueError("Category not found or access denied.")
         account.current_balance -= amount
 
         tx = Transaction(
@@ -52,6 +62,8 @@ class LedgerService:
             receipt_image_url=receipt_image_url,
             source_channel=source_channel,
         )
+        if transaction_date:
+            tx.transaction_date = transaction_date
         self.db.add(tx)
         self.db.flush()
 
@@ -84,6 +96,7 @@ class LedgerService:
         amount: Decimal,
         description: str,
         source_channel: str = "WEB_AI",
+        transaction_date: Optional[datetime] = None,
     ) -> Transaction:
         """Records an income transaction with balanced debit/credit entries."""
         if amount <= 0:
@@ -95,6 +108,15 @@ class LedgerService:
             .with_for_update()
             .one()
         )
+
+        if category_id:
+            cat = (
+                self.db.query(Category)
+                .filter_by(id=category_id, user_id=user_id)
+                .one_or_none()
+            )
+            if not cat:
+                raise ValueError("Category not found or access denied.")
         account.current_balance += amount
 
         tx = Transaction(
@@ -102,6 +124,8 @@ class LedgerService:
             description=description,
             source_channel=source_channel,
         )
+        if transaction_date:
+            tx.transaction_date = transaction_date
         self.db.add(tx)
         self.db.flush()
 
@@ -133,6 +157,7 @@ class LedgerService:
         to_account_id: UUID,
         amount: Decimal,
         description: str = "Transfer Antar Akun",
+        transaction_date: Optional[datetime] = None,
     ) -> Transaction:
         """Records a balance transfer between two accounts with balanced entries."""
         if amount <= 0:
@@ -168,6 +193,8 @@ class LedgerService:
             description=description,
             source_channel="WEB_MANUAL",
         )
+        if transaction_date:
+            tx.transaction_date = transaction_date
         self.db.add(tx)
         self.db.flush()
 

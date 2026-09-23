@@ -7,10 +7,12 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from rezekify.api.deps import get_current_user, get_db
+from rezekify.core.rate_limit import RateLimiter
 from rezekify.db.models import User
 from rezekify.services.auth import AuthService
 
 auth_router = APIRouter()
+auth_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
 
 class RegisterRequest(BaseModel):
@@ -50,7 +52,7 @@ class TelegramPairingCodeResponse(BaseModel):
     pairing_code: str
 
 
-@auth_router.post("/register", response_model=RegisterResponse)
+@auth_router.post("/register", response_model=RegisterResponse, dependencies=[Depends(auth_limiter)])
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
     """Registers a new user and returns access token with user profile."""
     auth = AuthService(db)
@@ -70,7 +72,7 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@auth_router.post("/login", response_model=TokenResponse)
+@auth_router.post("/login", response_model=TokenResponse, dependencies=[Depends(auth_limiter)])
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     """Authenticates credentials and returns access token."""
     auth = AuthService(db)

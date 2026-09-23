@@ -11,11 +11,21 @@ from rezekify.core.config import settings
 
 class RateLimiter:
     """Sliding-window rate limiter utilizing time.monotonic and deques."""
+    _instances: list["RateLimiter"] = []
 
     def __init__(self, max_requests: int, window_seconds: int = 60):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
         self._history: dict[str, deque[float]] = defaultdict(deque)
+        RateLimiter._instances.append(self)
+
+    @classmethod
+    def reset_all(cls) -> None:
+        for instance in cls._instances:
+            instance._history.clear()
+
+    def reset(self) -> None:
+        self._history.clear()
 
     def __call__(self, request: Request) -> None:
         key = None
@@ -37,12 +47,24 @@ class RateLimiter:
             key = f"ip:{host}"
 
         now = time.monotonic()
+        boundary = now - self.window_seconds
+
+        # Prune expired keys across history to prevent unbounded memory leak
+        for k in list(self._history.keys()):
+            k_q = self._history[k]
+            while k_q and k_q[0] <= boundary:
+                k_q.popleft()
+            if not k_q and k in self._history:
+                del self._history[k]
+
         q = self._history[key]
 
         # Prune timestamps outside window
-        boundary = now - self.window_seconds
         while q and q[0] <= boundary:
             q.popleft()
+
+        if not q and key in self._history:
+            del self._history[key]
 
         if len(q) >= self.max_requests:
             oldest = q[0]
@@ -53,4 +75,4 @@ class RateLimiter:
                 headers={"Retry-After": str(retry_after)},
             )
 
-        q.append(now)
+        self._history[key].append(now)

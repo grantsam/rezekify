@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.orm import Query
 
-from rezekify.db.models import Account, AccountType, Category, CategoryType, EntryType, Transaction
+from rezekify.db.models import Account, AccountType, Category, CategoryType, EntryType, Transaction, User
 from rezekify.services.ledger import LedgerService
 
 
@@ -783,6 +783,85 @@ def test_update_transaction_row_locking_invoked(db_session, sample_user):
         )
         assert updated_tx.description == "Updated Lunch"
         assert spy_lock.call_count >= 1
+
+
+def test_record_expense_with_foreign_category_rejected(db_session, sample_user):
+    user_a = User(
+        email="user_a_expense@rezekify.local",
+        password_hash="hash_a",
+        full_name="User A",
+    )
+    user_b = User(
+        email="user_b_expense@rezekify.local",
+        password_hash="hash_b",
+        full_name="User B",
+    )
+    db_session.add_all([user_a, user_b])
+    db_session.commit()
+
+    cat_a = Category(
+        user_id=user_a.id,
+        name="Category User A",
+        category_type=CategoryType.EXPENSE,
+    )
+    acc_b = Account(
+        user_id=user_b.id,
+        name="Account User B",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add_all([cat_a, acc_b])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    with pytest.raises(ValueError, match="Category not found or access denied."):
+        service.record_expense(
+            user_id=user_b.id,
+            account_id=acc_b.id,
+            category_id=cat_a.id,
+            amount=Decimal("50000.00"),
+            description="Illegal category expense",
+        )
+
+
+def test_record_income_with_foreign_category_rejected(db_session, sample_user):
+    user_a = User(
+        email="user_a_income@rezekify.local",
+        password_hash="hash_a",
+        full_name="User A",
+    )
+    user_b = User(
+        email="user_b_income@rezekify.local",
+        password_hash="hash_b",
+        full_name="User B",
+    )
+    db_session.add_all([user_a, user_b])
+    db_session.commit()
+
+    cat_a = Category(
+        user_id=user_a.id,
+        name="Category User A",
+        category_type=CategoryType.INCOME,
+    )
+    acc_b = Account(
+        user_id=user_b.id,
+        name="Account User B",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add_all([cat_a, acc_b])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    with pytest.raises(ValueError, match="Category not found or access denied."):
+        service.record_income(
+            user_id=user_b.id,
+            account_id=acc_b.id,
+            category_id=cat_a.id,
+            amount=Decimal("100000.00"),
+            description="Illegal category income",
+        )
+
 
 
 

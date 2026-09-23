@@ -2,15 +2,17 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
+import math
+from typing import List, Optional, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 
 from rezekify.api.deps import get_current_user, get_db
-from rezekify.db.models import EntryType, Transaction, User
+from rezekify.db.models import EntryType, LedgerEntry, Transaction, User
 from rezekify.services.ledger import LedgerService
 
 transactions_router = APIRouter()
@@ -39,6 +41,16 @@ class TransactionItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PaginatedTransactionsResponse(BaseModel):
+    items: List[TransactionItemResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class TransactionCreateRequest(BaseModel):
     transaction_type: str = "EXPENSE"  # EXPENSE, INCOME, TRANSFER
     amount: Decimal
@@ -48,6 +60,7 @@ class TransactionCreateRequest(BaseModel):
     from_account_id: Optional[UUID] = None
     to_account_id: Optional[UUID] = None
     source_channel: str = "WEB_MANUAL"
+    transaction_date: Optional[datetime] = None
 
 
 class TransactionUpdateRequest(BaseModel):
@@ -61,23 +74,62 @@ class TransactionUpdateRequest(BaseModel):
     transaction_type: Optional[str] = None
 
 
-@transactions_router.get("", response_model=List[TransactionItemResponse])
-@transactions_router.get("/", response_model=List[TransactionItemResponse])
+@transactions_router.get("", response_model=Union[PaginatedTransactionsResponse, List[TransactionItemResponse]])
+@transactions_router.get("/", response_model=Union[PaginatedTransactionsResponse, List[TransactionItemResponse]])
 def list_transactions(
+    account_id: Optional[UUID] = Query(default=None),
+    category_id: Optional[UUID] = Query(default=None),
+    search: Optional[str] = Query(default=None),
+    start_date: Optional[datetime] = Query(default=None),
+    end_date: Optional[datetime] = Query(default=None),
+    page: Optional[int] = Query(default=None, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
     limit: int = Query(default=50, ge=1, le=100, description="Max number of transactions to return (1-100)."),
     offset: int = Query(default=0, ge=0, description="Number of transactions to skip for pagination."),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Lists historical transactions with ledger entries for the user."""
-    return (
-        db.query(Transaction)
-        .filter(Transaction.user_id == current_user.id)
-        .order_by(Transaction.transaction_date.desc(), Transaction.id.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    """Lists historical transactions with ledger entries, optional filtering, and pagination."""
+    query = db.query(Transaction).filter(Transaction.user_id == current_user.id)
+
+    if account_id is not None:
+        query = query.filter(Transaction.ledger_entries.any(LedgerEntry.account_id == account_id))
+
+    if category_id is not None:
+        query = query.filter(Transaction.ledger_entries.any(LedgerEntry.category_id == category_id))
+
+    if search and search.strip():
+        search_term = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                Transaction.description.ilike(search_term),
+                Transaction.raw_input_text.ilike(search_term),
+            )
+        )
+
+    if start_date is not None:
+        query = query.filter(Transaction.transaction_date >= start_date)
+
+    if end_date is not None:
+        query = query.filter(Transaction.transaction_date <= end_date)
+
+    query = query.distinct()
+    total = query.count()
+    query = query.order_by(Transaction.transaction_date.desc(), Transaction.id.desc())
+
+    if page is not None:
+        items = query.offset((page - 1) * page_size).limit(page_size).all()
+        total_pages = math.ceil(total / page_size) if total > 0 else 1
+        return PaginatedTransactionsResponse(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
+
+    # Backward compatibility for legacy tests and callers
+    return query.offset(offset).limit(limit).all()
 
 
 @transactions_router.post("", response_model=TransactionItemResponse)
@@ -101,6 +153,7 @@ def create_transaction(
                 amount=req.amount,
                 description=req.description,
                 source_channel=req.source_channel,
+                transaction_date=req.transaction_date,
             )
         elif tt == "INCOME":
             if not req.account_id:
@@ -112,6 +165,7 @@ def create_transaction(
                 amount=req.amount,
                 description=req.description,
                 source_channel=req.source_channel,
+                transaction_date=req.transaction_date,
             )
         elif tt == "TRANSFER":
             from_acc = req.from_account_id or req.account_id
@@ -123,6 +177,7 @@ def create_transaction(
                 to_account_id=req.to_account_id,
                 amount=req.amount,
                 description=req.description,
+                transaction_date=req.transaction_date,
             )
         else:
             raise ValueError(f"Unsupported transaction type: {req.transaction_type}")

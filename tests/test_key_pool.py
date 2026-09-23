@@ -114,3 +114,21 @@ def test_reset_gemini_key_pool(monkeypatch):
     finally:
         reset_gemini_key_pool()
 
+
+def test_key_pool_client_instance_reuse():
+    pool = RotaryKeyPool(keys=["GEMINI_KEY", "GROQ_KEY"])
+    with patch("google.genai.Client") as mock_gemini_cls, patch("groq.Groq") as mock_groq_cls:
+        # First calls instantiate clients
+        gemini_1 = pool.get_gemini_client("GEMINI_KEY")
+        groq_1 = pool.get_groq_client("GROQ_KEY")
+
+        # Second calls with same keys reuse cached clients
+        gemini_2 = pool.get_gemini_client("GEMINI_KEY")
+        groq_2 = pool.get_groq_client("GROQ_KEY")
+
+        assert gemini_1 is gemini_2
+        assert groq_1 is groq_2
+        assert mock_gemini_cls.call_count == 1
+        assert mock_groq_cls.call_count == 1
+
+

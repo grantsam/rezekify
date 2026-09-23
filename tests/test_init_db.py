@@ -3,7 +3,9 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 import pytest
-from sqlalchemy import create_engine, inspect
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.pool import StaticPool
 
@@ -140,3 +142,99 @@ def test_entrypoint_script_executable():
     assert "set -eo pipefail" in content
     assert "python -m rezekify.db.init_db" in content
     assert "exec uvicorn rezekify.api.main:app" in content
+
+
+def test_init_db_unversioned_without_user_settings_stamps_001_and_upgrades_head():
+    """Verifies that an unversioned database at 001 schema stamps 001 and executes pending migrations to head."""
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    cfg = Config("alembic.ini")
+    cfg.set_main_option("sqlalchemy.url", str(engine.url))
+    cfg.attributes["connection"] = engine
+    cfg.attributes["target_engine"] = engine
+
+    # Upgrade to 001 only and remove alembic_version table
+    command.upgrade(cfg, "001_initial_schema")
+    with engine.connect() as conn:
+        conn.execute(text("DROP TABLE alembic_version;"))
+        conn.commit()
+
+    result = init_db(target_engine=engine, max_retries=3, retry_interval=0.01)
+    assert result is True
+
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    assert "user_settings" in table_names
+    assert "alembic_version" in table_names
+
+    user_cols = {col["name"] for col in inspector.get_columns("users")}
+    assert "safe_runway_threshold" in user_cols
+
+
+def test_init_db_unversioned_with_user_settings_stamps_002_and_upgrades_head():
+    """Verifies that an unversioned database at 002 schema stamps 002 and executes 003 to head."""
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    cfg = Config("alembic.ini")
+    cfg.set_main_option("sqlalchemy.url", str(engine.url))
+    cfg.attributes["connection"] = engine
+    cfg.attributes["target_engine"] = engine
+
+    # Upgrade to 002 only and remove alembic_version table
+    command.upgrade(cfg, "002_user_settings_and_byok")
+    with engine.connect() as conn:
+        conn.execute(text("DROP TABLE alembic_version;"))
+        conn.commit()
+
+    result = init_db(target_engine=engine, max_retries=3, retry_interval=0.01)
+    assert result is True
+
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+    assert "user_settings" in table_names
+    assert "alembic_version" in table_names
+
+    user_cols = {col["name"] for col in inspector.get_columns("users")}
+    assert "safe_runway_threshold" in user_cols
+
+
+def test_init_db_column_reconciliation_safety_check():
+    """Verifies that post-migration column reconciliation adds safe_runway_threshold if missing."""
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    # Create minimal users table without safe_runway_threshold
+    with engine.connect() as conn:
+        conn.execute(
+            text(
+                "CREATE TABLE users ("
+                "id CHAR(36) PRIMARY KEY, "
+                "email VARCHAR(255) NOT NULL, "
+                "password_hash VARCHAR(255) NOT NULL, "
+                "full_name VARCHAR(100) NOT NULL"
+                ");"
+            )
+        )
+        conn.execute(
+            text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY);")
+        )
+        # Stamp as if head was already applied
+        conn.execute(
+            text("INSERT INTO alembic_version (version_num) VALUES ('003_add_safe_runway_threshold');")
+        )
+        conn.commit()
+
+    result = init_db(target_engine=engine, max_retries=3, retry_interval=0.01)
+    assert result is True
+
+    inspector = inspect(engine)
+    user_cols = {col["name"] for col in inspector.get_columns("users")}
+    assert "safe_runway_threshold" in user_cols

@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import { Loader2, PiggyBank, Receipt, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Loader2, PiggyBank, Receipt, Lock, Pencil } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
-import { VaultType } from '../types/api';
-import { apiFetch } from '../services/apiClient';
+import { Vault, VaultType } from '../types/api';
+import { apiFetch, apiClient } from '../services/apiClient';
 
 export interface VaultModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => Promise<void> | void;
+  vault?: Vault | null; // If provided, switches to EDIT mode
+  initialVault?: Vault | null;
+  mode?: 'create' | 'edit';
 }
 
 interface VaultOption {
@@ -25,7 +28,13 @@ export const VaultModal: React.FC<VaultModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  vault,
+  initialVault,
+  mode,
 }) => {
+  const activeVault = vault ?? initialVault;
+  const isEdit = mode === 'edit' || Boolean(activeVault);
+
   const [name, setName] = useState('');
   const [vaultType, setVaultType] = useState<VaultType>('FIXED_BILL');
   const [targetAmount, setTargetAmount] = useState('');
@@ -35,18 +44,40 @@ export const VaultModal: React.FC<VaultModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (isEdit && activeVault) {
+      setName(activeVault.name || '');
+      setVaultType(activeVault.vault_type || 'FIXED_BILL');
+      setTargetAmount(activeVault.target_amount !== undefined ? activeVault.target_amount.toString() : '');
+      setAllocatedAmount(activeVault.allocated_amount !== undefined ? activeVault.allocated_amount.toString() : '');
+      setTargetDate(activeVault.target_date || '');
+      setIsLocked(Boolean(activeVault.is_locked));
+      setErrorMsg(null);
+    } else if (!isEdit) {
+      setName('');
+      setVaultType('FIXED_BILL');
+      setTargetAmount('');
+      setAllocatedAmount('');
+      setTargetDate('');
+      setIsLocked(false);
+      setErrorMsg(null);
+    }
+  }, [isEdit, activeVault, isOpen]);
+
+  const titleId = isEdit ? 'edit-vault-modal-title' : 'vault-modal-title';
+
   const dialogRef = React.useCallback((node: HTMLElement | null) => {
     if (!node) return;
-    node.setAttribute('aria-labelledby', 'vault-modal-title');
+    node.setAttribute('aria-labelledby', titleId);
     const observer = new MutationObserver(() => {
-      if (node.getAttribute('aria-labelledby') !== 'vault-modal-title') {
-        node.setAttribute('aria-labelledby', 'vault-modal-title');
+      if (node.getAttribute('aria-labelledby') !== titleId) {
+        node.setAttribute('aria-labelledby', titleId);
       }
     });
     observer.observe(node, { attributes: true, attributeFilter: ['aria-labelledby'] });
-  }, []);
+  }, [titleId]);
 
-  if (!isOpen) return null;
+  if (!isOpen || (isEdit && !activeVault)) return null;
 
   const resetForm = () => {
     setName('');
@@ -77,11 +108,19 @@ export const VaultModal: React.FC<VaultModalProps> = ({
       return;
     }
 
-    const finalAllocated =
-      allocatedAmount.trim() === '' ? parsedTarget : parseFloat(allocatedAmount) || 0;
+    const parsedAllocated =
+      allocatedAmount.trim() === ''
+        ? (isEdit ? 0 : parsedTarget)
+        : parseFloat(allocatedAmount);
 
-    if (finalAllocated < 0) {
+    if (isNaN(parsedAllocated) || parsedAllocated < 0) {
       setErrorMsg('Alokasi terkunci tidak boleh negatif');
+      return;
+    }
+
+    // Guard: Locked vaults cannot decrease allocated amount
+    if (isEdit && activeVault?.is_locked && parsedAllocated < activeVault.allocated_amount) {
+      setErrorMsg('Alokasi dana pada vault terkunci tidak boleh dikurangi');
       return;
     }
 
@@ -89,22 +128,32 @@ export const VaultModal: React.FC<VaultModalProps> = ({
     setErrorMsg(null);
 
     try {
-      await apiFetch('/vaults', {
-        method: 'POST',
-        body: JSON.stringify({
+      if (isEdit && activeVault) {
+        // ponytail: direct update call; add transaction-backed reallocation history when ledger auditing required
+        await apiClient.updateVault(activeVault.id, {
           name: trimmedName,
-          vault_type: vaultType,
           target_amount: parsedTarget,
-          allocated_amount: finalAllocated,
+          allocated_amount: parsedAllocated,
           target_date: targetDate.trim() ? targetDate.trim() : null,
-          is_locked: isLocked,
-        }),
-      });
+        });
+      } else {
+        await apiFetch('/vaults', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: trimmedName,
+            vault_type: vaultType,
+            target_amount: parsedTarget,
+            allocated_amount: parsedAllocated,
+            target_date: targetDate.trim() ? targetDate.trim() : null,
+            is_locked: isLocked,
+          }),
+        });
+      }
 
       await onSuccess();
       handleClose();
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Gagal menyimpan komitmen vault.');
+      setErrorMsg(err?.message || (isEdit ? 'Gagal memperbarui komitmen vault.' : 'Gagal menyimpan komitmen vault.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -129,20 +178,30 @@ export const VaultModal: React.FC<VaultModalProps> = ({
             onSubmit={handleSubmit}
             noValidate
             ref={(el) => {
-              el?.closest('[role="dialog"]')?.setAttribute('aria-labelledby', 'vault-modal-title');
+              el?.closest('[role="dialog"]')?.setAttribute('aria-labelledby', titleId);
             }}
           >
             <ModalHeader>
               <div className="flex items-center justify-between w-full pr-6">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <Lock className="w-4 h-4" />
+                    {isEdit ? (
+                      <Pencil className="w-4 h-4" />
+                    ) : vaultType === 'SAVINGS' ? (
+                      <PiggyBank className="w-4 h-4" />
+                    ) : (
+                      <Receipt className="w-4 h-4" />
+                    )}
                   </div>
-                  <h3 id="vault-modal-title" className="font-semibold text-lg text-slate-100">Tambah Komitmen & Vault</h3>
+                  <h3 id={titleId} className="font-semibold text-lg text-slate-100">
+                    {isEdit ? 'Edit Komitmen Vault' : 'Tambah Komitmen & Vault'}
+                  </h3>
                 </div>
-                <button
+                <Button
                   type="button"
-                  onClick={handleClose}
+                  variant="light"
+                  isIconOnly
+                  onPress={handleClose}
                   aria-label="Tutup modal"
                   className="sr-only"
                 />
@@ -150,6 +209,15 @@ export const VaultModal: React.FC<VaultModalProps> = ({
             </ModalHeader>
 
             <ModalBody>
+              {isEdit && activeVault?.is_locked && (
+                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
+                  <Lock className="w-4 h-4 shrink-0 text-amber-400" />
+                  <span>
+                    Vault ini sedang terkunci. Anda dapat menambah alokasi, namun tidak dapat mengurangi alokasi di bawah dana saat ini.
+                  </span>
+                </div>
+              )}
+
               {errorMsg && (
                 <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">
                   {errorMsg}
@@ -173,26 +241,28 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                   />
                 </div>
 
-                <div>
-                  <span className="block text-xs font-medium text-slate-400 mb-1.5">Tipe Pos</span>
-                  <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                    {VAULT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setVaultType(type)}
-                        className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
-                          vaultType === type
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                            : 'text-slate-400 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{label}</span>
-                      </button>
-                    ))}
+                {!isEdit && (
+                  <div>
+                    <span className="block text-xs font-medium text-slate-400 mb-1.5">Tipe Pos</span>
+                    <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                      {VAULT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setVaultType(type)}
+                          className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
+                            vaultType === type
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
+                              : 'text-slate-400 hover:text-white border border-transparent'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span>{label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -224,7 +294,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       step="any"
                       value={allocatedAmount}
                       onChange={(e) => setAllocatedAmount(e.target.value)}
-                      placeholder="Sama dengan target"
+                      placeholder={isEdit ? '0' : 'Sama dengan target'}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
@@ -243,24 +313,26 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center gap-2.5">
-                    <Lock className={`w-4 h-4 ${isLocked ? 'text-amber-400' : 'text-slate-400'}`} />
-                    <div>
-                      <label htmlFor="is_locked_toggle" className="text-sm font-medium text-white cursor-pointer">
-                        Kunci Dana Komitmen
-                      </label>
-                      <p className="text-xs text-slate-400">Cegah pengurangan alokasi dana secara tidak sengaja</p>
+                {!isEdit && (
+                  <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                    <div className="flex items-center gap-2.5">
+                      <Lock className={`w-4 h-4 ${isLocked ? 'text-amber-400' : 'text-slate-400'}`} />
+                      <div>
+                        <label htmlFor="is_locked_toggle" className="text-sm font-medium text-white cursor-pointer">
+                          Kunci Dana Komitmen
+                        </label>
+                        <p className="text-xs text-slate-400">Cegah pengurangan alokasi dana secara tidak sengaja</p>
+                      </div>
                     </div>
+                    <input
+                      type="checkbox"
+                      id="is_locked_toggle"
+                      checked={isLocked}
+                      onChange={(e) => setIsLocked(e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-700 border-slate-600 cursor-pointer"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    id="is_locked_toggle"
-                    checked={isLocked}
-                    onChange={(e) => setIsLocked(e.target.checked)}
-                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-700 border-slate-600 cursor-pointer"
-                  />
-                </div>
+                )}
               </div>
             </ModalBody>
 
@@ -282,11 +354,14 @@ export const VaultModal: React.FC<VaultModalProps> = ({
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" data-testid="submit-loading-spinner" />
+                    <Loader2
+                      className="w-4 h-4 animate-spin"
+                      data-testid={isEdit ? 'edit-submit-loading-spinner' : 'submit-loading-spinner'}
+                    />
                     <span>Menyimpan...</span>
                   </>
                 ) : (
-                  <span>Simpan Komitmen</span>
+                  <span>{isEdit ? 'Simpan Perubahan' : 'Simpan Komitmen'}</span>
                 )}
               </Button>
             </ModalFooter>

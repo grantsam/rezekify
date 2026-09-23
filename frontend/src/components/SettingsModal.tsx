@@ -19,6 +19,7 @@ import {
   Loader2,
   Radio,
   Server,
+  Calendar,
 } from 'lucide-react';
 import {
   getSettings,
@@ -26,6 +27,7 @@ import {
   updateAISettings,
   unlinkTelegram,
   getTelegramPairingCode,
+  updateUserProfile,
 } from '../services/apiClient';
 import { SettingsResponse, AIProviderType } from '../types/api';
 
@@ -40,13 +42,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   onSettingsUpdated,
 }) => {
-  const [activeTab, setActiveTab] = useState<'telegram' | 'ai'>('telegram');
+  const [activeTab, setActiveTab] = useState<'telegram' | 'ai' | 'profile'>('telegram');
   const [settings, setSettings] = useState<SettingsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [isGeneratingCode, setIsGeneratingCode] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isUnlinking, setIsUnlinking] = useState<boolean>(false);
+
+  // Profile cycle & runway threshold form state
+  const [monthlyCycleDay, setMonthlyCycleDay] = useState<number>(1);
+  const [safeRunwayThreshold, setSafeRunwayThreshold] = useState<number>(30000);
+  const [isSavingProfile, setIsSavingProfile] = useState<boolean>(false);
 
   // AI BYOK form state
   const [isCustomAi, setIsCustomAi] = useState<boolean>(false);
@@ -67,6 +74,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setIsCustomAi(data.ai.is_custom_ai_enabled);
       setProvider(data.ai.provider === 'SYSTEM' ? 'GEMINI' : data.ai.provider);
       setModel(data.ai.model || 'gemini-2.5-flash');
+      if (data.profile) {
+        setMonthlyCycleDay(data.profile.monthly_cycle_day ?? 1);
+        setSafeRunwayThreshold(data.profile.safe_runway_threshold ?? 30000);
+      }
     } catch (err: any) {
       setFeedbackMsg({ isError: true, text: err?.message || 'Gagal memuat pengaturan.' });
     } finally {
@@ -164,6 +175,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  const handleSaveProfile = async () => {
+    const cycleDay = Number(monthlyCycleDay);
+    const threshold = Number(safeRunwayThreshold);
+
+    if (isNaN(cycleDay) || cycleDay < 1 || cycleDay > 31) {
+      setFeedbackMsg({ isError: true, text: 'Hari siklus bulanan harus antara tanggal 1 dan 31.' });
+      return;
+    }
+    if (isNaN(threshold) || threshold <= 0) {
+      setFeedbackMsg({ isError: true, text: 'Ambang batas runway aman harus lebih besar dari 0.' });
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      setFeedbackMsg(null);
+      await updateUserProfile({
+        monthly_cycle_day: cycleDay,
+        safe_runway_threshold: threshold,
+      });
+      setFeedbackMsg({ isError: false, text: 'Preferensi siklus dan ambang batas berhasil disimpan.' });
+      await fetchSettings();
+      onSettingsUpdated?.();
+    } catch (err: any) {
+      setFeedbackMsg({ isError: true, text: err?.message || 'Gagal menyimpan preferensi profil.' });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   const availableModelsList = settings?.ai?.available_models?.[provider] || (
     provider === 'GEMINI'
       ? ['gemini-2.5-flash', 'gemini-2.5-pro']
@@ -210,30 +251,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
 
               {/* Navigation Tabs */}
-              <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+              <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
                 <button
                   type="button"
                   onClick={() => setActiveTab('telegram')}
-                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'telegram'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <Send className="w-3.5 h-3.5" />
-                  Integrasi Telegram
+                  <span>Integrasi Telegram</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('ai')}
-                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'ai'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   <Bot className="w-3.5 h-3.5" />
-                  Model & Kunci AI (BYOK)
+                  <span>Model & Kunci AI (BYOK)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('profile')}
+                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
+                    activeTab === 'profile'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Siklus & Ambang Batas</span>
                 </button>
               </div>
 
@@ -262,7 +315,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         size="sm"
                         variant="flat"
                         color="danger"
-                        onClick={handleUnlinkTelegram}
+                        onPress={handleUnlinkTelegram}
                         disabled={isUnlinking}
                         className="text-rose-400 bg-rose-500/10 border border-rose-500/20 text-xs font-semibold rounded-xl"
                       >
@@ -283,7 +336,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {!pairingCode ? (
                         <Button
                           size="sm"
-                          onClick={handleGeneratePairingCode}
+                          onPress={handleGeneratePairingCode}
                           disabled={isGeneratingCode}
                           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl"
                         >
@@ -302,7 +355,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <Button
                               size="sm"
                               variant="flat"
-                              onClick={handleCopyCode}
+                              onPress={handleCopyCode}
                               className="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl min-h-[44px]"
                             >
                               {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -486,7 +539,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <Button
                           size="sm"
                           variant="flat"
-                          onClick={handleValidateKey}
+                          onPress={handleValidateKey}
                           disabled={isValidating || !apiKey.trim()}
                           className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold"
                         >
@@ -499,11 +552,79 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="pt-3 flex justify-end">
                     <Button
                       size="sm"
-                      onClick={handleSaveAISettings}
+                      onPress={handleSaveAISettings}
                       disabled={isSaving}
                       className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs px-5 min-h-[38px]"
                     >
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Pengaturan'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: SIKLUS & AMBANG BATAS */}
+              {activeTab === 'profile' && (
+                <div className="space-y-4 pt-2">
+                  <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-4">
+                    <div>
+                      <label htmlFor="monthly-cycle-day-input" className="block text-xs font-medium text-slate-300 mb-1">
+                        Hari Siklus Finansial Bulanan
+                      </label>
+                      <p className="text-[11px] text-slate-400 mb-2">
+                        Pilih tanggal antara 1 sampai 31 yang menandai awal bulan finansial atau tanggal gajian Anda.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <input
+                          id="monthly-cycle-day-input"
+                          type="number"
+                          min={1}
+                          max={31}
+                          value={monthlyCycleDay}
+                          onChange={(e) => setMonthlyCycleDay(parseInt(e.target.value, 10) || 1)}
+                          className="w-28 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        />
+                        <span className="text-xs text-slate-400">Tiap tanggal {monthlyCycleDay} per bulan</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-800/80 pt-4">
+                      <label htmlFor="safe-runway-threshold-input" className="block text-xs font-medium text-slate-300 mb-1">
+                        Ambang Batas Jatah Harian Aman (IDR)
+                      </label>
+                      <p className="text-[11px] text-slate-400 mb-2">
+                        Batas minimum pengeluaran harian aman. Bila jatah harian berada di bawah nominal ini, status runway menjadi WARNING.
+                      </p>
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <span className="absolute left-3.5 top-2.5 text-xs text-slate-500 font-medium">Rp</span>
+                          <input
+                            id="safe-runway-threshold-input"
+                            type="number"
+                            min={1000}
+                            step={1000}
+                            value={safeRunwayThreshold}
+                            onChange={(e) => setSafeRunwayThreshold(parseFloat(e.target.value) || 0)}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/50">
+                          <span>Preview Ambang Batas:</span>
+                          <span className="font-semibold text-emerald-400">
+                            Rp {Number(safeRunwayThreshold || 0).toLocaleString('id-ID')} / hari
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <Button
+                      size="sm"
+                      onPress={handleSaveProfile}
+                      disabled={isSavingProfile}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs px-5 min-h-[38px]"
+                    >
+                      {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Preferensi Siklus'}
                     </Button>
                   </div>
                 </div>

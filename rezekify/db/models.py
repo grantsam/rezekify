@@ -7,7 +7,7 @@ import uuid
 
 from sqlalchemy import (
     BigInteger, Boolean, Column, Date, DateTime,
-    Enum as SQLEnum, ForeignKey, Integer, Numeric, String, Text
+    Enum as SQLEnum, ForeignKey, Index, Integer, Numeric, String, Text
 )
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import declarative_base, relationship
@@ -87,6 +87,7 @@ class User(Base):
     telegram_pairing_code = Column(String(32), unique=True, nullable=True, index=True)
     pairing_code_expires_at = Column(DateTime(timezone=True), nullable=True)
     monthly_cycle_day = Column(Integer, nullable=False, default=1)
+    safe_runway_threshold = Column(Numeric(15, 2), nullable=False, default=Decimal("30000.00"))
     currency = Column(String(3), nullable=False, default="IDR")
     created_at = Column(DateTime(timezone=True), default=utc_now)
 
@@ -117,6 +118,7 @@ class Account(Base):
 
 class Vault(Base):
     __tablename__ = "vaults"
+    __table_args__ = (Index("idx_vaults_user_due", "user_id", "target_date"),)
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False)
@@ -144,6 +146,7 @@ class Category(Base):
 
 class Transaction(Base):
     __tablename__ = "transactions"
+    __table_args__ = (Index("idx_transactions_user_date", "user_id", "transaction_date"),)
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     description = Column(Text, nullable=False)
@@ -159,6 +162,10 @@ class Transaction(Base):
 
 class LedgerEntry(Base):
     __tablename__ = "ledger_entries"
+    __table_args__ = (
+        Index("idx_ledger_account_type", "account_id", "entry_type"),
+        Index("idx_ledger_category_type", "category_id", "entry_type"),
+    )
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     transaction_id = Column(GUID, ForeignKey("transactions.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

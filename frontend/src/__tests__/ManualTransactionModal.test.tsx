@@ -26,7 +26,7 @@ describe('ManualTransactionModal Component', () => {
       <ManualTransactionModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} accounts={mockAccounts} />
     );
 
-    expect(screen.getByText(/Catat Transaksi Manual/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tambah Transaksi Manual/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Nominal/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Deskripsi/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Pilih Akun/i)).toBeInTheDocument();
@@ -52,15 +52,18 @@ describe('ManualTransactionModal Component', () => {
         '/transactions',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({
-            transaction_type: 'EXPENSE',
-            amount: 50000,
-            description: 'Kopi Kenangan',
-            account_id: 'acc-1',
-            source_channel: 'WEB_MANUAL',
-          }),
         })
       );
+      const callArgs = apiFetchSpy.mock.calls[0][1] as any;
+      const parsedBody = JSON.parse(callArgs.body);
+      expect(parsedBody).toMatchObject({
+        transaction_type: 'EXPENSE',
+        amount: 50000,
+        description: 'Kopi Kenangan',
+        account_id: 'acc-1',
+        source_channel: 'WEB_MANUAL',
+      });
+      expect(parsedBody.transaction_date).toBeDefined();
       expect(handleSuccess).toHaveBeenCalled();
       expect(handleClose).toHaveBeenCalled();
     });
@@ -78,5 +81,65 @@ describe('ManualTransactionModal Component', () => {
 
     fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders in edit mode and submits via apiClient.updateTransaction', async () => {
+    const mockTx = {
+      id: 'tx-manual-edit-1',
+      description: 'Makan Bakso',
+      source_channel: 'WEB_MANUAL',
+      transaction_date: '2026-09-20T10:00:00.000Z',
+      ledger_entries: [
+        { id: 'le-1', entry_type: 'CREDIT' as const, amount: 30000, account_id: 'acc-1' },
+      ],
+    };
+    const updateSpy = vi.spyOn(apiClient, 'updateTransaction').mockResolvedValue(mockTx as any);
+    const handleSuccess = vi.fn();
+    const handleClose = vi.fn();
+
+    render(
+      <ManualTransactionModal
+        isOpen={true}
+        onClose={handleClose}
+        onSuccess={handleSuccess}
+        accounts={mockAccounts}
+        transaction={mockTx as any}
+      />
+    );
+
+    expect(screen.getByText('Edit Transaksi')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('30000')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Makan Bakso')).toBeInTheDocument();
+
+    const descInput = screen.getByLabelText(/Keterangan Transaksi/i);
+    fireEvent.change(descInput, { target: { value: 'Makan Bakso Urat' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Perubahan/i }));
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith(
+        'tx-manual-edit-1',
+        expect.objectContaining({
+          description: 'Makan Bakso Urat',
+          amount: 30000,
+        })
+      );
+      expect(handleSuccess).toHaveBeenCalled();
+      expect(handleClose).toHaveBeenCalled();
+    });
+  });
+
+  it('enforces WCAG AA minimum 38px touch targets on transaction type buttons', () => {
+    render(
+      <ManualTransactionModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} accounts={mockAccounts} />
+    );
+
+    const expenseBtn = screen.getByRole('button', { name: 'Pengeluaran' });
+    const incomeBtn = screen.getByRole('button', { name: 'Pemasukan' });
+    const transferBtn = screen.getByRole('button', { name: 'Transfer' });
+
+    expect(expenseBtn).toHaveClass('min-h-[38px]');
+    expect(incomeBtn).toHaveClass('min-h-[38px]');
+    expect(transferBtn).toHaveClass('min-h-[38px]');
   });
 });

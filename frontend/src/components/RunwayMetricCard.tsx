@@ -39,6 +39,7 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
     return (
       <div
         data-testid="runway-skeleton"
+        aria-busy="true"
         className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[260px] animate-pulse"
       >
         <div>
@@ -75,23 +76,26 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
       color: 'success' as const,
       label: 'Aman Terkendali',
       icon: ShieldCheck,
+      glowStyle: 'border-emerald-500/30 shadow-lg shadow-emerald-500/10',
     },
     WARNING: {
       color: 'warning' as const,
       label: 'Mode Waspada',
       icon: AlertTriangle,
+      glowStyle: 'border-amber-500/30 shadow-lg shadow-amber-500/10',
     },
     CRITICAL: {
       color: 'danger' as const,
       label: 'Mode Hemat Ketat',
       icon: AlertCircle,
+      glowStyle: 'border-rose-500/30 shadow-lg shadow-rose-500/10',
     },
   }[summary.health_status];
 
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden flex flex-col justify-between">
+    <div className={`bg-slate-900/90 border ${statusConfig.glowStyle} rounded-3xl p-6 md:p-8 text-white relative overflow-hidden flex flex-col justify-between transition-all duration-300`}>
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

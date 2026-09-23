@@ -47,9 +47,45 @@ class AuthService:
     def generate_telegram_pairing_code(self, user_id: UUID) -> str:
         """Generates a 15-minute expiring pairing code for Telegram linking."""
         user = self.db.query(User).filter_by(id=user_id).one()
-        code = generate_pairing_code()
+        now = datetime.now(timezone.utc)
+
+        code: str | None = None
+        for _ in range(5):
+            candidate = generate_pairing_code()
+            collision = (
+                self.db.query(User)
+                .filter(
+                    User.telegram_pairing_code == candidate,
+                    User.pairing_code_expires_at > now,
+                    User.id != user_id,
+                )
+                .first()
+            )
+            if not collision:
+                code = candidate
+                break
+
+        if not code:
+            # ponytail: ceiling is 1 in 1.07B^5, upgrade to exception or larger entropy if keyspace saturated
+            raise RuntimeError("Gagal menghasilkan kode pairing yang unik.")
+
+        # Clean up any stale expired records holding this code to avoid unique constraint collision
+        stale_users = (
+            self.db.query(User)
+            .filter(
+                User.telegram_pairing_code == code,
+                User.id != user_id,
+            )
+            .all()
+        )
+        if stale_users:
+            for stale in stale_users:
+                stale.telegram_pairing_code = None
+                stale.pairing_code_expires_at = None
+            self.db.flush()
+
         user.telegram_pairing_code = code
-        user.pairing_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+        user.pairing_code_expires_at = now + timedelta(minutes=15)
         self.db.commit()
         return code
 

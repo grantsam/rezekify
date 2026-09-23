@@ -58,6 +58,7 @@ Thumbs.db
 # Superpowers SDD workspace & Claude Code
 .superpowers/
 .claude/
+.codegraph/
 
 # Databases & caches
 *.db

@@ -278,4 +278,81 @@ describe('VaultModal Component', () => {
       );
     });
   });
+
+  it('renders in EDIT mode when vault is provided and submits via apiClient.updateVault', async () => {
+    const sampleVault = {
+      id: 'v-edit-test',
+      name: 'Cicilan Rumah',
+      vault_type: 'FIXED_BILL' as const,
+      target_amount: 3000000,
+      allocated_amount: 1500000,
+      target_date: '2026-10-10',
+      is_locked: false,
+    };
+    const updateSpy = vi.spyOn(apiClient.apiClient, 'updateVault').mockResolvedValue(sampleVault as any);
+    const handleSuccess = vi.fn();
+    const handleClose = vi.fn();
+
+    render(
+      <VaultModal
+        isOpen={true}
+        onClose={handleClose}
+        onSuccess={handleSuccess}
+        vault={sampleVault}
+      />
+    );
+
+    expect(screen.getByText('Edit Komitmen Vault')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nama Tagihan \/ Komitmen/i)).toHaveValue('Cicilan Rumah');
+    expect(screen.getByLabelText(/Target Biaya/i)).toHaveValue(3000000);
+    expect(screen.getByLabelText(/Alokasi Terkunci/i)).toHaveValue(1500000);
+
+    fireEvent.change(screen.getByLabelText(/Alokasi Terkunci/i), {
+      target: { value: '2000000' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Perubahan/i }));
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith('v-edit-test', {
+        name: 'Cicilan Rumah',
+        target_amount: 3000000,
+        allocated_amount: 2000000,
+        target_date: '2026-10-10',
+      });
+      expect(handleSuccess).toHaveBeenCalled();
+      expect(handleClose).toHaveBeenCalled();
+    });
+  });
+
+  it('enforces locked vault allocation guard in edit mode', async () => {
+    const lockedVault = {
+      id: 'v-locked-test',
+      name: 'Dana Darurat Locked',
+      vault_type: 'SAVINGS' as const,
+      target_amount: 5000000,
+      allocated_amount: 3000000,
+      target_date: null,
+      is_locked: true,
+    };
+
+    render(
+      <VaultModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        vault={lockedVault}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Alokasi Terkunci/i), {
+      target: { value: '2000000' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Perubahan/i }));
+
+    expect(
+      await screen.findByText(/Alokasi dana pada vault terkunci tidak boleh dikurangi/i)
+    ).toBeInTheDocument();
+  });
 });

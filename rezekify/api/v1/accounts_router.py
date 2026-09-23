@@ -1,9 +1,9 @@
 """Accounts Management Router."""
 
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -19,6 +19,11 @@ class AccountCreateRequest(BaseModel):
     initial_balance: Decimal = Decimal("0.00")
 
 
+class AccountUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    account_type: Optional[AccountType] = None
+
+
 class AccountResponse(BaseModel):
     id: UUID
     name: str
@@ -32,15 +37,15 @@ class AccountResponse(BaseModel):
 @accounts_router.get("", response_model=List[AccountResponse])
 @accounts_router.get("/", response_model=List[AccountResponse])
 def list_accounts(
+    include_inactive: bool = Query(default=False),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Lists all active holding accounts for the authenticated user."""
-    return (
-        db.query(Account)
-        .filter(Account.user_id == current_user.id, Account.is_active == True)
-        .all()
-    )
+    """Lists holding accounts for the authenticated user."""
+    query = db.query(Account).filter(Account.user_id == current_user.id)
+    if not include_inactive:
+        query = query.filter(Account.is_active == True)
+    return query.all()
 
 
 @accounts_router.post("", response_model=AccountResponse)
@@ -61,3 +66,39 @@ def create_account(
     db.commit()
     db.refresh(acc)
     return acc
+
+
+@accounts_router.put("/{account_id}", response_model=AccountResponse)
+def update_account(
+    account_id: UUID,
+    req: AccountUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    account = db.query(Account).filter_by(id=account_id, user_id=current_user.id).one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Rekening tidak ditemukan.")
+
+    if req.name is not None and req.name.strip():
+        account.name = req.name.strip()
+    if req.account_type is not None:
+        account.account_type = req.account_type
+
+    db.commit()
+    db.refresh(account)
+    return account
+
+
+@accounts_router.delete("/{account_id}")
+def deactivate_account(
+    account_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    account = db.query(Account).filter_by(id=account_id, user_id=current_user.id).one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Rekening tidak ditemukan.")
+
+    account.is_active = False
+    db.commit()
+    return {"detail": "Rekening berhasil dinonaktifkan."}

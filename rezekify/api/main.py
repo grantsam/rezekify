@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from rezekify.api.deps import get_db
 from rezekify.api.v1.accounts_router import accounts_router
 from rezekify.api.v1.auth_router import auth_router
+from rezekify.api.v1.categories_router import categories_router
 from rezekify.api.v1.dashboard_router import analytics_router, dashboard_router
 from rezekify.api.v1.gateway_router import gateway_router
 from rezekify.api.v1.settings_router import settings_router
@@ -41,6 +42,7 @@ app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["Dashboar
 app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["Analytics"])
 app.include_router(transactions_router, prefix="/api/v1/transactions", tags=["Transactions"])
 app.include_router(accounts_router, prefix="/api/v1/accounts", tags=["Accounts"])
+app.include_router(categories_router, prefix="/api/v1/categories", tags=["Categories"])
 app.include_router(vaults_router, prefix="/api/v1/vaults", tags=["Vaults"])
 app.include_router(gateway_router, prefix="/api/v1/gateway", tags=["Gateway"])
 app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])

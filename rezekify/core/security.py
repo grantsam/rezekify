@@ -34,6 +34,10 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
+PAIRING_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+
 def generate_pairing_code() -> str:
-    """Generates a secure 4-digit numeric code with DK- prefix for Telegram OTP linking."""
-    return f"DK-{secrets.randbelow(9000) + 1000}"
+    """Generates a secure 6-character base32 alphanumeric code with DK- prefix."""
+    suffix = "".join(secrets.choice(PAIRING_ALPHABET) for _ in range(6))
+    return f"DK-{suffix}"

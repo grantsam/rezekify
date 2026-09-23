@@ -21,6 +21,13 @@ describe('SettingsModal Component', () => {
         GROQ: ['meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.3-70b-versatile'],
       },
     },
+    profile: {
+      id: 'usr-1',
+      email: 'user@rezekify.local',
+      full_name: 'Pengguna Rezekify',
+      monthly_cycle_day: 1,
+      safe_runway_threshold: 30000,
+    },
   };
 
   beforeEach(() => {
@@ -144,6 +151,83 @@ describe('SettingsModal Component', () => {
         model: 'gemini-2.5-flash',
         api_key: 'AIzaSyD-TestKey9999',
       });
+    });
+  });
+
+  it('renders profile tab trigger and displays pre-populated cycle and threshold values', async () => {
+    render(<SettingsModal isOpen={true} onClose={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Siklus & Ambang Batas/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Siklus & Ambang Batas/i }));
+
+    const cycleDayInput = screen.getByLabelText(/Hari Siklus Finansial Bulanan/i) as HTMLInputElement;
+    const thresholdInput = screen.getByLabelText(/Ambang Batas Jatah Harian Aman/i) as HTMLInputElement;
+
+    expect(cycleDayInput.value).toBe('1');
+    expect(thresholdInput.value).toBe('30000');
+  });
+
+  it('updates monthly cycle day and safe runway threshold and calls updateUserProfile on submit', async () => {
+    const updateProfileSpy = vi.spyOn(apiClient, 'updateUserProfile').mockResolvedValue({
+      id: 'usr-1',
+      email: 'user@rezekify.local',
+      full_name: 'Pengguna Rezekify',
+      monthly_cycle_day: 25,
+      safe_runway_threshold: 50000,
+    });
+    const onUpdated = vi.fn();
+
+    render(<SettingsModal isOpen={true} onClose={vi.fn()} onSettingsUpdated={onUpdated} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Siklus & Ambang Batas/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Siklus & Ambang Batas/i }));
+
+    const cycleDayInput = screen.getByLabelText(/Hari Siklus Finansial Bulanan/i);
+    const thresholdInput = screen.getByLabelText(/Ambang Batas Jatah Harian Aman/i);
+
+    fireEvent.change(cycleDayInput, { target: { value: '25' } });
+    fireEvent.change(thresholdInput, { target: { value: '50000' } });
+
+    const saveBtn = screen.getByRole('button', { name: /Simpan Preferensi Siklus/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(updateProfileSpy).toHaveBeenCalledWith({
+        monthly_cycle_day: 25,
+        safe_runway_threshold: 50000,
+      });
+      expect(screen.getByText(/Preferensi siklus dan ambang batas berhasil disimpan/i)).toBeInTheDocument();
+      expect(onUpdated).toHaveBeenCalled();
+    });
+  });
+
+  it('validates cycle day and threshold inputs before submitting', async () => {
+    const updateProfileSpy = vi.spyOn(apiClient, 'updateUserProfile');
+
+    render(<SettingsModal isOpen={true} onClose={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Siklus & Ambang Batas/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Siklus & Ambang Batas/i }));
+
+    const cycleDayInput = screen.getByLabelText(/Hari Siklus Finansial Bulanan/i);
+    const saveBtn = screen.getByRole('button', { name: /Simpan Preferensi Siklus/i });
+
+    // Invalid day (> 31)
+    fireEvent.change(cycleDayInput, { target: { value: '35' } });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Hari siklus bulanan harus antara tanggal 1 dan 31/i)).toBeInTheDocument();
+      expect(updateProfileSpy).not.toHaveBeenCalled();
     });
   });
 });

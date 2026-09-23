@@ -1,5 +1,6 @@
 """Pydantic schemas and live validation logic for user settings and AI BYOK."""
 
+from decimal import Decimal
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 from rezekify.db.models import AIProvider
@@ -31,9 +32,23 @@ class AISettingsResponse(BaseModel):
     available_models: Dict[str, List[str]] = Field(default_factory=lambda: AVAILABLE_MODELS)
 
 
+class UserProfileResponse(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    monthly_cycle_day: int
+    safe_runway_threshold: Decimal
+
+
+class UserProfileUpdateRequest(BaseModel):
+    monthly_cycle_day: Optional[int] = Field(None, ge=1, le=31)
+    safe_runway_threshold: Optional[Decimal] = Field(None, gt=Decimal("0.00"))
+
+
 class SettingsResponse(BaseModel):
     telegram: TelegramSettingsResponse
     ai: AISettingsResponse
+    profile: Optional[UserProfileResponse] = None
 
 
 class AIKeyValidateRequest(BaseModel):

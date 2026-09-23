@@ -110,4 +110,25 @@ describe('ExpenseCharts Component', () => {
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
   });
+
+  it('renders zero-layout-shift skeleton loader with aria-busy while loading', () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(() => new Promise(() => {}));
+    render(<ExpenseCharts />);
+    const skeleton = screen.getByTestId('expense-charts-skeleton');
+    expect(skeleton).toBeInTheDocument();
+    expect(skeleton).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('enforces WCAG AA minimum 38px touch targets on period tab buttons', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
+    render(<ExpenseCharts />);
+
+    await waitFor(() => {
+      const dailyBtn = screen.getByRole('tab', { name: /Harian \(Daily\)/i });
+      const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
+
+      expect(dailyBtn).toHaveClass('min-h-[38px]');
+      expect(monthlyBtn).toHaveClass('min-h-[38px]');
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AccountModal } from '../components/AccountModal';
+import { Account } from '../types/api';
 import * as apiClient from '../services/apiClient';
 
 describe('AccountModal Component', () => {
@@ -123,5 +124,114 @@ describe('AccountModal Component', () => {
 
     fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('pre-populates fields and disables balance in edit mode', () => {
+    const mockAccount: Account = {
+      id: 'acc-edit-1',
+      name: 'BCA Prioritas',
+      account_type: 'BANK',
+      current_balance: 15000000,
+      is_active: true,
+    };
+
+    render(
+      <AccountModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        accountToEdit={mockAccount}
+      />
+    );
+
+    expect(screen.getByText(/Edit Rekening/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nama Rekening/i)).toHaveValue('BCA Prioritas');
+    expect(screen.getByLabelText(/Saldo Saat Ini/i)).toBeDisabled();
+    expect(screen.getByDisplayValue(/15\.000\.000/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Simpan Perubahan/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Nonaktifkan Rekening/i })).toBeInTheDocument();
+  });
+
+  it('submits form in edit mode calling updateAccount and invoking onSuccess', async () => {
+    const updateSpy = vi.spyOn(apiClient, 'updateAccount').mockResolvedValue({
+      id: 'acc-edit-1',
+      name: 'BCA Platinum',
+      account_type: 'BANK',
+      current_balance: 15000000,
+      is_active: true,
+    });
+    const handleSuccess = vi.fn().mockResolvedValue(undefined);
+    const handleClose = vi.fn();
+
+    const mockAccount: Account = {
+      id: 'acc-edit-1',
+      name: 'BCA Prioritas',
+      account_type: 'BANK',
+      current_balance: 15000000,
+      is_active: true,
+    };
+
+    render(
+      <AccountModal
+        isOpen={true}
+        onClose={handleClose}
+        onSuccess={handleSuccess}
+        accountToEdit={mockAccount}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Nama Rekening/i), {
+      target: { value: 'BCA Platinum' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Perubahan/i }));
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith('acc-edit-1', {
+        name: 'BCA Platinum',
+        account_type: 'BANK',
+      });
+      expect(handleSuccess).toHaveBeenCalled();
+      expect(handleClose).toHaveBeenCalled();
+    });
+  });
+
+  it('triggers confirmation and deactivates account via deactivateAccount', async () => {
+    const deactivateSpy = vi.spyOn(apiClient, 'deactivateAccount').mockResolvedValue({
+      detail: 'Rekening berhasil dinonaktifkan.',
+    });
+    const handleSuccess = vi.fn().mockResolvedValue(undefined);
+    const handleClose = vi.fn();
+
+    const mockAccount: Account = {
+      id: 'acc-edit-1',
+      name: 'BCA Prioritas',
+      account_type: 'BANK',
+      current_balance: 15000000,
+      is_active: true,
+    };
+
+    render(
+      <AccountModal
+        isOpen={true}
+        onClose={handleClose}
+        onSuccess={handleSuccess}
+        accountToEdit={mockAccount}
+      />
+    );
+
+    const deactivateBtn = screen.getByRole('button', { name: /Nonaktifkan Rekening/i });
+    fireEvent.click(deactivateBtn);
+
+    expect(screen.getByText(/Konfirmasi Penonaktifan Rekening/i)).toBeInTheDocument();
+
+    const confirmBtn = screen.getByRole('button', { name: /Ya, Nonaktifkan/i });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(deactivateSpy).toHaveBeenCalledWith('acc-edit-1');
+      expect(handleSuccess).toHaveBeenCalled();
+      expect(handleClose).toHaveBeenCalled();
+    });
   });
 });
