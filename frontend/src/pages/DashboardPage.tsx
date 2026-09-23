@@ -1,87 +1,46 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Chip, Button, Card, CardBody } from '@heroui/react';
-import {
-  PlusCircle,
-  RefreshCw,
-  CheckCircle2,
-  AlertCircle,
-  LogOut,
-  Building2,
-  Receipt,
-  Calculator,
-  Wallet,
-  Settings,
-} from 'lucide-react';
-import { apiFetch } from '../services/apiClient';
+import React, { useState } from 'react';
+import { apiFetch, submitVoice } from '../services/apiClient';
 import { useAuth } from '../context/AuthContext';
-import {
-  DashboardSummaryResponse,
-  Transaction,
-  Account,
-  Category,
-  ChatResponse,
-  ReceiptUploadResponse,
-} from '../types/api';
-import { OmniInputHero } from '../components/OmniInputHero';
-import { UpcomingBillsCard } from '../components/UpcomingBillsCard';
-import { RunwayMetricCard } from '../components/RunwayMetricCard';
-import { ExpenseCharts } from '../components/ExpenseCharts';
-import { TransactionsTable } from '../components/TransactionsTable';
+import { ChatResponse } from '../types/api';
+import { useDashboardModals } from '../hooks/useDashboardModals';
+import { useTransactionsLedger } from '../hooks/useTransactionsLedger';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { AppLayout } from '../components/AppLayout';
+import { QuickCaptureBar } from '../components/QuickCaptureBar';
+import { OverviewView } from '../components/OverviewView';
+import { LedgerView } from '../components/LedgerView';
+import { VaultsView } from '../components/VaultsView';
 import { ManualTransactionModal } from '../components/ManualTransactionModal';
 import { AccountModal } from '../components/AccountModal';
 import { VaultModal } from '../components/VaultModal';
 import { SimulatePurchaseModal } from '../components/SimulatePurchaseModal';
 import { EditTransactionModal } from '../components/EditTransactionModal';
+import { EditVaultModal } from '../components/EditVaultModal';
 import { SettingsModal } from '../components/SettingsModal';
+import { CategoryManagerModal } from '../components/CategoryManagerModal';
 
 export const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
-  const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const modals = useDashboardModals();
+  const ledger = useTransactionsLedger();
+  const dashboard = useDashboardData();
+
+  const [activeView, setActiveView] = useState<'overview' | 'ledger' | 'vaults' | 'settings'>('overview');
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
-  const [isManualModalOpen, setIsManualModalOpen] = useState<boolean>(false);
-  const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
-  const [isVaultModalOpen, setIsVaultModalOpen] = useState<boolean>(false);
-  const [isSimulateModalOpen, setIsSimulateModalOpen] = useState<boolean>(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
-  const [selectedTxForEdit, setSelectedTxForEdit] = useState<Transaction | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isDeleting, setIsDeleting] = useState<boolean>(false);
-  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [aiMessage, setAiMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [txErrorMessage, setTxErrorMessage] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [sumData, txData, accData, catData] = await Promise.all([
-        apiFetch<DashboardSummaryResponse>('/dashboard/summary').catch(() => null),
-        apiFetch<Transaction[]>('/transactions').catch(() => []),
-        apiFetch<Account[]>('/accounts').catch(() => []),
-        apiFetch<Category[]>('/categories').catch(() => []),
-      ]);
+  const activeTxError = txErrorMessage || ledger.error;
 
-      if (sumData) setSummary(sumData);
-      setTransactions(txData || []);
-      setAccounts(accData || []);
-      setCategories(catData || []);
-    } catch (err) {
-      console.error('Failed to load dashboard data', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const handleDismissTxError = () => {
+    setTxErrorMessage(null);
+    ledger.clearError();
+  };
 
-  const triggerRefresh = useCallback(() => {
-    loadData();
-    setRefreshTrigger((prev) => prev + 1);
-  }, [loadData]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const refreshAllData = async () => {
+    await Promise.all([dashboard.refreshAll(), ledger.loadTransactions()]);
+  };
 
   const handleAiSubmit = async (
     input: string | { text: string; file: File | null },
@@ -106,7 +65,7 @@ export const DashboardPage: React.FC = () => {
         if (text.trim()) {
           formData.append('message', text.trim());
         }
-        const res = await apiFetch<ReceiptUploadResponse>('/dashboard/ai-receipt', {
+        const res = await apiFetch<ChatResponse>('/dashboard/ai-receipt', {
           method: 'POST',
           body: formData,
         });
@@ -123,8 +82,7 @@ export const DashboardPage: React.FC = () => {
         setAiMessage({ text: res.reply || 'Berhasil dicatat ke dalam ledger!' });
       }
 
-      await loadData();
-      setRefreshTrigger((prev) => prev + 1);
+      await refreshAllData();
     } catch (err: any) {
       setAiMessage({
         text: err?.message || 'Gagal memproses input AI. Silakan coba lagi.',
@@ -135,302 +93,214 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleDeleteTransaction = async (id: string) => {
+  const handleVoiceSubmit = async (blob: Blob, caption?: string) => {
+    setIsAiLoading(true);
+    setAiMessage(null);
     try {
-      setIsDeleting(true);
-      await apiFetch(`/transactions/${id}`, { method: 'DELETE' });
-      await loadData();
-      setRefreshTrigger((prev) => prev + 1);
+      const res = await submitVoice(blob, caption);
+      const isError = !res.reply || res.reply.startsWith('❌') || res.reply.includes('Gagal');
+      setAiMessage({
+        text: res.reply || (isError ? 'Gagal memproses pesan suara.' : 'Pesan suara berhasil dicatat ke dalam ledger!'),
+        isError,
+      });
+      await refreshAllData();
     } catch (err: any) {
-      alert(err?.message || 'Gagal menghapus transaksi.');
+      setAiMessage({
+        text: err?.message || 'Gagal memproses pesan suara. Silakan coba lagi.',
+        isError: true,
+      });
     } finally {
-      setIsDeleting(false);
+      setIsAiLoading(false);
     }
   };
 
-  const getUserInitials = (name?: string): string => {
-    if (!name) return 'U';
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+  const handleDeleteTransaction = async (id: string) => {
+    setTxErrorMessage(null);
+    ledger.clearError();
+    try {
+      const success = await ledger.deleteTransaction(id);
+      if (success) {
+        await dashboard.refreshAll();
+      }
+    } catch (err: any) {
+      setTxErrorMessage(err?.message || 'Gagal menghapus transaksi.');
     }
-    return name.trim().slice(0, 2).toUpperCase() || 'U';
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-600/30">
-              <span className="font-extrabold text-white text-base">R</span>
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-950" />
-            </div>
-            <div>
-              <span className="font-bold text-lg tracking-tight text-white">Rezekify</span>
-              <span className="hidden sm:inline-block ml-2 text-[11px] px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-medium">
-                Deterministic Runway
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto py-1">
-            <button
-              type="button"
-              onClick={() => {
-                loadData();
-                setRefreshTrigger((prev) => prev + 1);
-              }}
-              disabled={isLoading}
-              aria-label="Perbarui data"
-              className="p-2.5 min-w-[38px] min-h-[38px] flex items-center justify-center text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/60 transition-colors disabled:opacity-40 shrink-0"
-              title="Perbarui Data"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-
-            <Button
-              size="sm"
-              variant="flat"
-              onClick={() => setIsAccountModalOpen(true)}
-              startContent={<Building2 className="w-3.5 h-3.5 text-indigo-400" />}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
-            >
-              + Rekening
-            </Button>
-
-            <Button
-              size="sm"
-              variant="flat"
-              onClick={() => setIsVaultModalOpen(true)}
-              startContent={<Receipt className="w-3.5 h-3.5 text-indigo-400" />}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
-            >
-              + Tagihan
-            </Button>
-
-            <Button
-              size="sm"
-              variant="flat"
-              onClick={() => setIsSimulateModalOpen(true)}
-              startContent={<Calculator className="w-3.5 h-3.5 text-indigo-400" />}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
-            >
-              Simulasi Belanja
-            </Button>
-
-            <Button
-              size="sm"
-              variant="flat"
-              onClick={() => setIsManualModalOpen(true)}
-              startContent={<PlusCircle className="w-3.5 h-3.5 text-indigo-400" />}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
-            >
-              + Transaksi Manual
-            </Button>
-
-            <Button
-              size="sm"
-              variant="flat"
-              onClick={() => setIsSettingsModalOpen(true)}
-              startContent={<Settings className="w-3.5 h-3.5 text-indigo-400" />}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 min-h-[38px] rounded-xl text-xs font-semibold shrink-0"
-            >
-              Pengaturan
-            </Button>
-
-            {user && (
-              <div className="flex items-center gap-2 pl-1 sm:pl-2 shrink-0 border-l border-slate-800">
-                <div
-                  className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold flex items-center justify-center"
-                  title={user.full_name}
-                >
-                  {getUserInitials(user.full_name)}
-                </div>
-                <span className="text-xs font-medium text-slate-200 hidden lg:inline max-w-[120px] truncate">
-                  {user.full_name}
-                </span>
-              </div>
-            )}
-
-            <Button
-              size="sm"
-              variant="flat"
-              onPress={logout}
-              title="Keluar (Logout)"
-              startContent={<LogOut className="w-3.5 h-3.5 text-slate-400" />}
-              className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 min-h-[38px] rounded-xl text-xs font-medium shrink-0"
-            >
-              Keluar
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <AppLayout
+      activeView={activeView}
+      onViewChange={(view) => {
+        if (view === 'settings') {
+          modals.openSettingsModal();
+        } else {
+          setActiveView(view);
+        }
+      }}
+      accounts={dashboard.accounts}
+      transactionCount={ledger.pagination.total}
+      user={user}
+      onLogout={logout}
+      onOpenCreateAccount={modals.openCreateAccount}
+      onOpenSettings={modals.openSettingsModal}
+      onQuickCapturePress={() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+    >
+      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <h1 className="sr-only">Dashboard Keuangan Rezekify</h1>
-        {!isLoading && accounts.length === 0 && (
-          <Card className="bg-gradient-to-r from-indigo-950/50 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl shadow-lg shadow-indigo-950/40">
-            <CardBody className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-visible">
-              <div className="flex items-start gap-3.5">
-                <div className="p-2.5 bg-indigo-600/20 border border-indigo-500/30 rounded-xl shrink-0 mt-0.5 sm:mt-0">
-                  <Wallet className="w-5 h-5 text-indigo-400" />
-                </div>
-                <div>
-                  <h2 className="text-sm sm:text-base font-semibold text-white">
-                    Mulai Hitung Batas Belanja Harian
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal mt-1">
-                    Selamat datang di Rezekify. Tambahkan rekening atau dompet pertama Anda (BCA, GoPay, atau Tunai) untuk mengaktifkan telemetri runway otomatis dan kalkulasi belanja harian bebas risiko.
-                  </p>
-                </div>
-              </div>
-              <Button
-                color="primary"
-                onPress={() => setIsAccountModalOpen(true)}
-                startContent={<Building2 className="w-4 h-4" />}
-                className="font-semibold text-xs py-2.5 px-4 min-h-[40px] rounded-xl shrink-0"
-              >
-                Tambah Rekening Pertama
-              </Button>
-            </CardBody>
-          </Card>
-        )}
 
-        {/* Active Account Strip */}
-        {accounts.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-none">
-            <span className="text-slate-400 font-medium shrink-0 flex items-center gap-1.5 mr-1">
-              <Wallet className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Saldo Akun:</span>
-            </span>
-            {accounts
-              .filter((acc) => acc.is_active !== false)
-              .map((acc) => (
-                <Chip
-                  key={acc.id}
-                  variant="flat"
-                  color="primary"
-                  size="sm"
-                  className="shrink-0"
-                >
-                  <span className="text-slate-300 font-medium">{acc.name}:</span>{' '}
-                  <span className="text-white font-semibold tabular-nums font-mono">
-                    Rp {acc.current_balance.toLocaleString('id-ID')}
-                  </span>
-                </Chip>
-              ))}
-          </div>
-        )}
+        {/* Precision 44px Command Bar */}
+        <QuickCaptureBar
+          onSubmit={handleAiSubmit}
+          onVoiceSubmit={handleVoiceSubmit}
+          isLoading={isAiLoading}
+          toastMessage={aiMessage}
+          onDismissToast={() => setAiMessage(null)}
+        />
 
-        {/* Situational Awareness & Health Command Center */}
-        {summary?.upcoming_bills && <UpcomingBillsCard bills={summary.upcoming_bills} />}
-
-        <RunwayMetricCard summary={summary} />
-
-        {/* Quick Action Data Entry */}
-        <OmniInputHero onSubmit={handleAiSubmit} isLoading={isAiLoading} />
-
-        {aiMessage && (
+        {/* In-surface Transaction Error Banner */}
+        {activeTxError && (
           <div
-            className={`p-4 rounded-2xl border flex items-start justify-between gap-3 text-sm transition-all ${
-              aiMessage.isError
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-            }`}
+            role="alert"
+            className="p-4 rounded-xl border bg-rose-500/10 border-rose-500/30 text-rose-300 flex items-start justify-between gap-3 text-sm"
           >
-            <div className="flex items-start gap-2.5">
-              {aiMessage.isError ? (
-                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-              ) : (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-              )}
-              <div>
-                <p className="font-semibold text-xs uppercase tracking-wider mb-0.5 text-slate-400">
-                  {aiMessage.isError ? 'Gagal Memproses' : 'Hasil Konfirmasi AI'}
-                </p>
-                <p className="text-slate-200 whitespace-pre-line text-xs md:text-sm">{aiMessage.text}</p>
-              </div>
+            <div>
+              <p className="font-semibold text-xs uppercase tracking-wider mb-0.5 text-zinc-400">
+                Gagal Menghapus Transaksi
+              </p>
+              <p className="text-zinc-200 text-xs md:text-sm">{activeTxError}</p>
             </div>
             <button
               type="button"
-              onClick={() => setAiMessage(null)}
-              className="text-slate-400 hover:text-white text-xs px-2.5 py-1.5 min-h-[36px] rounded-lg hover:bg-slate-800/40 flex items-center"
+              onClick={handleDismissTxError}
+              aria-label="Tutup pesan kesalahan transaksi"
+              className="text-zinc-400 hover:text-white text-xs px-2.5 py-1 min-h-[32px] rounded-lg bg-transparent"
             >
               Tutup
             </button>
           </div>
         )}
 
-        {/* Analytics & Deep Insights */}
-        <ExpenseCharts refreshTrigger={refreshTrigger} />
+        {/* Active Dedicated View */}
+        {activeView === 'overview' && (
+          <OverviewView
+            summary={dashboard.summary}
+            vaults={dashboard.vaults}
+            accounts={dashboard.accounts}
+            isLoading={dashboard.isLoading}
+            refreshTrigger={dashboard.refreshTrigger}
+            onNavigateToVaults={() => setActiveView('vaults')}
+            onOpenCreateAccount={modals.openCreateAccount}
+            onOpenSimulateModal={modals.openSimulateModal}
+          />
+        )}
 
-        {/* Audit & Transaction History */}
-        <TransactionsTable
-          transactions={transactions}
-          onDelete={handleDeleteTransaction}
-          onEdit={(tx) => {
-            setSelectedTxForEdit(tx);
-            setIsEditModalOpen(true);
-          }}
-          isLoading={isDeleting}
-        />
+        {activeView === 'ledger' && (
+          <LedgerView
+            transactions={ledger.transactions}
+            accounts={dashboard.accounts}
+            categories={dashboard.categories}
+            total={ledger.pagination.total}
+            page={ledger.pagination.page}
+            pageSize={ledger.filters.page_size ?? 20}
+            totalPages={ledger.pagination.total_pages}
+            onParamsChange={ledger.handleParamsChange}
+            onPageChange={ledger.handlePageChange}
+            onDeleteTransaction={handleDeleteTransaction}
+            onEditTransaction={modals.openEditTx}
+            onOpenManualModal={modals.openManualModal}
+            onOpenSimulateModal={modals.openSimulateModal}
+            onOpenCategoryModal={modals.openCategoryModal}
+            isLoading={ledger.isDeleting}
+          />
+        )}
+
+        {activeView === 'vaults' && (
+          <VaultsView
+            vaults={dashboard.vaults}
+            isLoading={dashboard.isLoading}
+            errorMessage={dashboard.vaultErrorMessage}
+            onDismissError={dashboard.clearVaultError}
+            onToggleLock={dashboard.handleToggleVaultLock}
+            onEditVault={modals.openEditVault}
+            onDeleteVault={dashboard.handleDeleteVault}
+            onOpenCreateVault={modals.openVaultModal}
+          />
+        )}
       </main>
 
+      {/* Domain Modals */}
       <EditTransactionModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedTxForEdit(null);
-        }}
+        isOpen={modals.isEditTxModalOpen}
+        onClose={modals.closeEditTxModal}
         onSuccess={() => {
-          setIsEditModalOpen(false);
-          setSelectedTxForEdit(null);
-          triggerRefresh();
+          modals.closeEditTxModal();
+          refreshAllData();
         }}
-        transaction={selectedTxForEdit}
-        accounts={accounts}
-        categories={categories}
+        transaction={modals.selectedTxForEdit}
+        accounts={dashboard.accounts}
+        categories={dashboard.categories}
       />
 
       <AccountModal
-        isOpen={isAccountModalOpen}
-        onClose={() => setIsAccountModalOpen(false)}
+        isOpen={modals.isAccountModalOpen}
+        onClose={modals.closeAccountModal}
+        accountToEdit={modals.selectedAccountForEdit}
         onSuccess={() => {
-          loadData();
-          setRefreshTrigger((prev) => prev + 1);
+          refreshAllData();
         }}
       />
 
       <VaultModal
-        isOpen={isVaultModalOpen}
-        onClose={() => setIsVaultModalOpen(false)}
+        isOpen={modals.isVaultModalOpen}
+        onClose={modals.closeVaultModal}
         onSuccess={() => {
-          loadData();
-          setRefreshTrigger((prev) => prev + 1);
+          refreshAllData();
         }}
       />
 
+      <EditVaultModal
+        isOpen={modals.isEditVaultModalOpen}
+        onClose={modals.closeEditVaultModal}
+        onSuccess={() => {
+          modals.closeEditVaultModal();
+          refreshAllData();
+        }}
+        vault={modals.selectedVaultForEdit}
+      />
+
       <SimulatePurchaseModal
-        isOpen={isSimulateModalOpen}
-        onClose={() => setIsSimulateModalOpen(false)}
+        isOpen={modals.isSimulateModalOpen}
+        onClose={modals.closeSimulateModal}
       />
 
       <ManualTransactionModal
-        isOpen={isManualModalOpen}
-        onClose={() => setIsManualModalOpen(false)}
-        accounts={accounts}
+        isOpen={modals.isManualModalOpen}
+        onClose={modals.closeManualModal}
+        accounts={dashboard.accounts}
+        categories={dashboard.categories}
         onSuccess={() => {
-          loadData();
-          setRefreshTrigger((prev) => prev + 1);
+          refreshAllData();
         }}
       />
 
       <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        onSettingsUpdated={loadData}
+        isOpen={modals.isSettingsModalOpen}
+        onClose={modals.closeSettingsModal}
+        onSettingsUpdated={() => {
+          refreshAllData();
+        }}
       />
-    </div>
+
+      <CategoryManagerModal
+        isOpen={modals.isCategoryModalOpen}
+        onClose={modals.closeCategoryModal}
+        onSuccess={() => {
+          refreshAllData();
+        }}
+        categories={dashboard.categories}
+      />
+    </AppLayout>
   );
 };
