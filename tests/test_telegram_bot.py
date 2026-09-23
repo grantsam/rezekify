@@ -1,5 +1,6 @@
 """Tests for Telegram Gateway Bot service."""
 
+import time
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock
@@ -16,12 +17,12 @@ def test_telegram_start_command(db_session):
 
 
 def test_telegram_pairing_command(db_session, sample_user):
-    sample_user.telegram_pairing_code = "DK-9999"
+    sample_user.telegram_pairing_code = "DK-7X9K2M"
     sample_user.pairing_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     db_session.commit()
 
     gateway = TelegramGateway(db_session)
-    reply = gateway.process_text_message(chat_id=987654321, text="/link DK-9999")
+    reply = gateway.process_text_message(chat_id=987654321, text="/link DK-7X9K2M")
 
     db_session.refresh(sample_user)
     assert sample_user.telegram_chat_id == 987654321
@@ -260,9 +261,9 @@ def test_telegram_voice_message_oversized_audio(db_session, sample_user):
 
     gateway = TelegramGateway(db_session)
     reply = gateway.process_voice_message(
-        chat_id=123456, audio_bytes=b"x" * (25 * 1024 * 1024 + 1)
+        chat_id=123456, audio_bytes=b"x" * (10 * 1024 * 1024 + 1)
     )
-    assert "25MB" in reply
+    assert "10MB" in reply
 
 
 def test_telegram_voice_message_success(db_session, sample_user):
@@ -342,12 +343,12 @@ def test_telegram_handle_update_voice_missing_bytes(db_session):
 
 
 def test_start_with_pairing_code_links_account(db_session, sample_user):
-    sample_user.telegram_pairing_code = "DK-5678"
+    sample_user.telegram_pairing_code = "DK-5678AB"
     sample_user.pairing_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     db_session.commit()
 
     gateway = TelegramGateway(db_session)
-    reply = gateway.process_text_message(chat_id=11223344, text="/start DK-5678")
+    reply = gateway.process_text_message(chat_id=11223344, text="/start DK-5678AB")
 
     db_session.refresh(sample_user)
     assert sample_user.telegram_chat_id == 11223344
@@ -383,6 +384,64 @@ def test_telegram_command_token_boundary(db_session):
     reply = gateway.process_text_message(chat_id=990011, text="/starting tomorrow 50rb")
     assert "belum terhubung" in reply
     assert "Selamat datang di Bot Keuangan Rezekify" not in reply
+
+
+def test_telegram_pairing_lockout_after_five_failed_attempts(db_session):
+    gateway = TelegramGateway(db_session)
+    chat_id = 888999
+
+    # 5 failed attempts
+    for _ in range(5):
+        reply = gateway.process_text_message(chat_id=chat_id, text="/link DK-WRONG1")
+        assert "Gagal" in reply
+
+    # 6th attempt must be locked out
+    reply = gateway.process_text_message(chat_id=chat_id, text="/link DK-WRONG1")
+    assert reply == "❌ Terlalu banyak percobaan gagal. Silakan coba lagi dalam 15 menit."
+
+    # /start with code must also be locked out for the same chat_id
+    reply_start = gateway.process_text_message(chat_id=chat_id, text="/start DK-WRONG2")
+    assert reply_start == "❌ Terlalu banyak percobaan gagal. Silakan coba lagi dalam 15 menit."
+
+    # A different chat_id is not locked out
+    other_reply = gateway.process_text_message(chat_id=777111, text="/link DK-WRONG1")
+    assert "Gagal" in other_reply
+    assert "Terlalu banyak percobaan gagal" not in other_reply
+
+
+def test_telegram_pairing_success_clears_failed_history(db_session, sample_user):
+    sample_user.telegram_pairing_code = "DK-CLEAN1"
+    sample_user.pairing_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    db_session.commit()
+
+    gateway = TelegramGateway(db_session)
+    chat_id = 666777
+
+    # 3 failed attempts
+    for _ in range(3):
+        gateway.process_text_message(chat_id=chat_id, text="/link DK-WRONG")
+    assert len(gateway.failed_pairing_attempts[chat_id]) == 3
+
+    # Successful pairing clears attempts
+    reply = gateway.process_text_message(chat_id=chat_id, text="/link DK-CLEAN1")
+    assert "berhasil terhubung" in reply
+    assert chat_id not in gateway.failed_pairing_attempts
+
+
+def test_telegram_pairing_lockout_expires_after_15_minutes(db_session):
+    gateway = TelegramGateway(db_session)
+    chat_id = 555444
+
+    # Simulate 5 failed attempts older than 900 seconds (15 minutes)
+    expired_time = time.time() - 950
+    gateway.failed_pairing_attempts[chat_id] = [expired_time] * 5
+
+    # Should not be locked out because timestamps expired
+    reply = gateway.process_text_message(chat_id=chat_id, text="/link DK-WRONG")
+    assert "Gagal" in reply
+    assert "Terlalu banyak percobaan gagal" not in reply
+    # Failed list now contains only the fresh attempt
+    assert len(gateway.failed_pairing_attempts[chat_id]) == 1
 
 
 

@@ -33,11 +33,15 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
+@pytest.fixture
+def client():
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.pop(get_db, None)
 
 
-def test_full_system_e2e():
+def test_full_system_e2e(client):
     """Tests the complete end-to-end user financial lifecycle across all 3 tiers."""
     # 1. User Registration & JWT Authentication
     reg_res = client.post(
@@ -81,6 +85,7 @@ def test_full_system_e2e():
             "target_amount": 1000000.00,
             "allocated_amount": 600000.00,
             "target_date": due_date,
+            "is_locked": True,
         },
         headers=headers,
     )
@@ -226,7 +231,7 @@ def test_full_system_e2e():
         tg_db.close()
 
 
-def test_e2e_voice_note_ingestion_and_runway_update():
+def test_e2e_voice_note_ingestion_and_runway_update(client):
     """Validates Telegram voice note ingestion end-to-end: transcription -> ledger expense -> runway update."""
     db = TestingSessionLocal()
     try:
@@ -253,20 +258,17 @@ def test_e2e_voice_note_ingestion_and_runway_update():
         mock_downloader = MagicMock(return_value=b"fake_voice_ogg_bytes")
         gateway = TelegramGateway(db=db, voice_downloader=mock_downloader)
 
-        # Mock transcription on orchestrator's agent and entity extraction
+        # Mock process_audio on orchestrator's agent for 1-hop voice processing
         mock_agent = MagicMock()
-        mock_agent.transcribe_audio.return_value = "makan malam 50000 bca"
+        mock_agent.process_audio.return_value = {
+            "transcription": "makan malam 50000 bca",
+            "action": "expense",
+            "amount": 50000,
+            "account_name": "BCA",
+            "category_name": "Konsumsi",
+            "note": "makan malam",
+        }
         gateway.orchestrator.agent = mock_agent
-
-        gateway.orchestrator.extract_entities = MagicMock(
-            return_value={
-                "action": "expense",
-                "amount": 50000,
-                "account_name": "BCA",
-                "category_name": "Konsumsi",
-                "note": "makan malam",
-            }
-        )
 
         update_payload = {
             "update_id": 8801,
@@ -280,7 +282,7 @@ def test_e2e_voice_note_ingestion_and_runway_update():
 
         # Verify downloader was invoked with file_id
         mock_downloader.assert_called_once_with("telegram_voice_ogg_file_88")
-        mock_agent.transcribe_audio.assert_called_once_with(b"fake_voice_ogg_bytes")
+        mock_agent.process_audio.assert_called_once()
 
         # Assert transcription header and recorded expense amount in reply
         assert '🎙️ Transkripsi: "makan malam 50000 bca"' in reply

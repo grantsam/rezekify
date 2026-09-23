@@ -65,11 +65,12 @@ export const OmniInputHero: React.FC<Props> = ({ onSubmit, isLoading, onVoiceSub
       return;
     }
     setErrorMessage(null);
+    setFile(selectedFile);
     try {
       const processed = await compressImage(selectedFile);
       setFile(processed);
     } catch {
-      setFile(selectedFile);
+      // Keep original file if compression fails
     }
   };
 
