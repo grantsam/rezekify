@@ -68,9 +68,9 @@ export const OmniInputHero: React.FC<Props> = ({ onSubmit, isLoading, onVoiceSub
     setFile(selectedFile);
     try {
       const processed = await compressImage(selectedFile);
-      setFile(processed);
+      setFile((current) => (current === selectedFile ? processed : current));
     } catch {
-      // Keep original file if compression fails
+      // keep selectedFile
     }
   };
 
@@ -194,7 +194,7 @@ export const OmniInputHero: React.FC<Props> = ({ onSubmit, isLoading, onVoiceSub
         setRecordingDuration((prev) => {
           const next = prev + 1;
           if (next >= 60) {
-            handleStopRecording();
+            setTimeout(() => handleStopRecording(), 0);
           }
           return next;
         });
