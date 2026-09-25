@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tooltip, Progress, Button } from '@heroui/react';
+import { Tooltip, Progress, Button, Card, CardBody } from '@heroui/react';
 import { BarChart3, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { apiFetch } from '../services/apiClient';
@@ -48,8 +48,9 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
     : (monthlyData?.items && monthlyData.items.length > 0);
 
   return (
-    <div className="bg-[#141417] border border-zinc-800/80 rounded-2xl p-6 text-white shadow-lg">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <Card className="bg-[#141417] border border-zinc-800/80 rounded-2xl shadow-none text-white">
+      <CardBody className="p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-indigo-400" />
@@ -263,6 +264,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           ))}
         </div>
       ) : null}
-    </div>
+      </CardBody>
+    </Card>
   );
 };

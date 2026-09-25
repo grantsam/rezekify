@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Sparkles, Lock, Mail, User, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,7 +35,12 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] flex items-center justify-center p-4 relative overflow-hidden text-zinc-100">
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="min-h-screen bg-[#0c0c0e] flex items-center justify-center p-4 relative overflow-hidden text-zinc-100"
+    >
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -158,6 +164,6 @@ export const AuthPage: React.FC = () => {
           </button>
         </form>
       </div>
-    </div>
+    </motion.div>
   );
 };

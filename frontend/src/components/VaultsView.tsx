@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
 import { Plus, AlertCircle, PiggyBank } from 'lucide-react';
 import { Vault } from '../types/api';
@@ -38,7 +39,12 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
   const countSavings = vaults.filter((v) => v.vault_type === 'SAVINGS').length;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="space-y-6"
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -167,6 +173,6 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

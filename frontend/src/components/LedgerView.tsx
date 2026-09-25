@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
 import { PlusCircle, Calculator, Tag } from 'lucide-react';
 import { Transaction, Account, Category, TransactionFilterParams } from '../types/api';
@@ -40,7 +41,12 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   isLoading = false,
 }) => {
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="space-y-6"
+    >
       {/* Header with Title and Pro Actions */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -99,6 +105,6 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         onEdit={onEditTransaction}
         isLoading={isLoading}
       />
-    </div>
+    </motion.div>
   );
 };
