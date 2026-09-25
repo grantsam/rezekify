@@ -272,6 +272,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                   {(['EXPENSE', 'INCOME', 'TRANSFER'] as const).map((t) => (
                     <Button
                       key={t}
+                      role="radio"
                       aria-checked={type === t}
                       onPress={() => setType(t)}
                       className={`min-h-[38px] flex items-center justify-center py-2 rounded-lg font-medium transition-all ${

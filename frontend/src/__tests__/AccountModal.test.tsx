@@ -44,7 +44,7 @@ describe('AccountModal Component', () => {
     });
 
     // Switch account type to BANK (or click button)
-    const bankButton = screen.getByRole('button', { name: /Bank/i });
+    const bankButton = screen.getByRole('radio', { name: /Bank/i });
     fireEvent.click(bankButton);
 
     fireEvent.change(screen.getByLabelText(/Saldo Awal/i), {

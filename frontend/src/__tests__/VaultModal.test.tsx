@@ -21,8 +21,8 @@ describe('VaultModal Component', () => {
     expect(screen.getByText(/Tambah Komitmen & Vault/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Nama Tagihan \/ Komitmen/i)).toBeInTheDocument();
     expect(screen.getByText(/Tipe Pos/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Tagihan Tetap/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Tabungan/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Tagihan Tetap/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Tabungan/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Target Biaya/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Alokasi Terkunci/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Tanggal Jatuh Tempo/i)).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe('VaultModal Component', () => {
     });
 
     // Select Tabungan / SAVINGS
-    fireEvent.click(screen.getByRole('button', { name: /Tabungan/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /Tabungan/i }));
 
     fireEvent.change(screen.getByLabelText(/Target Biaya/i), {
       target: { value: '5000000' },

@@ -247,6 +247,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       {VAULT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
                         <Button
                           key={type}
+                          role="radio"
                           onPress={() => setVaultType(type)}
                           aria-checked={vaultType === type}
                           className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all min-h-[38px] ${

@@ -200,6 +200,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     {ACCOUNT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
                       <Button
                         key={type}
+                        role="radio"
                         onPress={() => setAccountType(type)}
                         aria-checked={accountType === type}
                         className={`flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium transition-all min-h-[38px] ${

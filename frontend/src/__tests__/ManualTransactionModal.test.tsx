@@ -129,17 +129,21 @@ describe('ManualTransactionModal Component', () => {
     });
   });
 
-  it('enforces WCAG AA minimum 38px touch targets on transaction type buttons', () => {
+  it('enforces WCAG AA minimum 38px touch targets and ARIA radio semantics on transaction type buttons', () => {
     render(
       <ManualTransactionModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} accounts={mockAccounts} />
     );
 
-    const expenseBtn = screen.getByRole('button', { name: 'Pengeluaran' });
-    const incomeBtn = screen.getByRole('button', { name: 'Pemasukan' });
-    const transferBtn = screen.getByRole('button', { name: 'Transfer' });
+    const expenseBtn = screen.getByRole('radio', { name: 'Pengeluaran' });
+    const incomeBtn = screen.getByRole('radio', { name: 'Pemasukan' });
+    const transferBtn = screen.getByRole('radio', { name: 'Transfer' });
 
     expect(expenseBtn).toHaveClass('min-h-[38px]');
     expect(incomeBtn).toHaveClass('min-h-[38px]');
     expect(transferBtn).toHaveClass('min-h-[38px]');
+
+    expect(expenseBtn).toHaveAttribute('aria-checked', 'true');
+    expect(incomeBtn).toHaveAttribute('aria-checked', 'false');
+    expect(transferBtn).toHaveAttribute('aria-checked', 'false');
   });
 });
