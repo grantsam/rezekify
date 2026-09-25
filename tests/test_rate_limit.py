@@ -176,3 +176,18 @@ def test_settings_ai_validate_rate_limit_exceeded():
         app.dependency_overrides.pop(get_current_user, None)
         ai_validate_limiter.reset()
 
+
+def test_rate_limiter_bounds_maximum_tracked_keys():
+    from fastapi import Request
+    limiter = RateLimiter(max_requests=5, window_seconds=60)
+    limiter.max_tracked_keys = 20
+
+    # Fill limiter with 30 unique IP requests
+    for i in range(30):
+        req = Request({"type": "http", "headers": [], "client": (f"10.0.0.{i}", 12345)})
+        limiter(req)
+
+    # Must be bounded around or below 20 keys
+    assert len(limiter._history) <= 25
+
+

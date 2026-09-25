@@ -13,10 +13,12 @@ class RateLimiter:
     """Sliding-window rate limiter utilizing time.monotonic and deques."""
     _instances: list["RateLimiter"] = []
 
-    def __init__(self, max_requests: int, window_seconds: int = 60):
+    def __init__(self, max_requests: int, window_seconds: int = 60, max_tracked_keys: int = 5000):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
+        self.max_tracked_keys = max_tracked_keys
         self._history: dict[str, deque[float]] = defaultdict(deque)
+        self._last_sweep: float = time.monotonic()
         RateLimiter._instances.append(self)
 
     @classmethod
@@ -26,6 +28,25 @@ class RateLimiter:
 
     def reset(self) -> None:
         self._history.clear()
+
+    def _sweep_expired(self, boundary: float) -> None:
+        """Evicts empty or expired buckets to prevent unbounded memory growth."""
+        keys_to_delete = []
+        for k, q in self._history.items():
+            while q and q[0] <= boundary:
+                q.popleft()
+            if not q:
+                keys_to_delete.append(k)
+        for k in keys_to_delete:
+            self._history.pop(k, None)
+
+        # Cap eviction: if still exceeding max_tracked_keys, evict oldest keys
+        if len(self._history) > self.max_tracked_keys:
+            excess = len(self._history) - self.max_tracked_keys
+            for k in list(self._history.keys())[:excess]:
+                self._history.pop(k, None)
+
+        self._last_sweep = time.monotonic()
 
     def __call__(self, request: Request) -> None:
         key = None
@@ -49,22 +70,14 @@ class RateLimiter:
         now = time.monotonic()
         boundary = now - self.window_seconds
 
-        # Prune expired keys across history to prevent unbounded memory leak
-        for k in list(self._history.keys()):
-            k_q = self._history[k]
-            while k_q and k_q[0] <= boundary:
-                k_q.popleft()
-            if not k_q and k in self._history:
-                del self._history[k]
+        # Amortized periodic sweep: run at most once per window or when capacity is exceeded
+        if len(self._history) > self.max_tracked_keys or (now - self._last_sweep > self.window_seconds):
+            self._sweep_expired(boundary)
 
+        # O(1) Pruning on current active key only
         q = self._history[key]
-
-        # Prune timestamps outside window
         while q and q[0] <= boundary:
             q.popleft()
-
-        if not q and key in self._history:
-            del self._history[key]
 
         if len(q) >= self.max_requests:
             oldest = q[0]
@@ -75,4 +88,4 @@ class RateLimiter:
                 headers={"Retry-After": str(retry_after)},
             )
 
-        self._history[key].append(now)
+        q.append(now)
