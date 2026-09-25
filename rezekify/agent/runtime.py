@@ -6,6 +6,8 @@ import re
 from typing import Any, Dict, Optional
 from uuid import UUID
 
+import httpx
+
 from rezekify.agent.key_pool import RotaryKeyPool
 
 SYSTEM_PROMPT = """Anda adalah asisten cerdas pencatatan keuangan Rezekify.
@@ -300,6 +302,271 @@ class ReActAgent:
                     return extraction
             except Exception:
                 pass
+
+        return {"action": "unknown", "transcription": ""}
+
+    async def _call_gemini_rest_async(
+        self,
+        api_key: str,
+        text: str,
+        image_bytes: Optional[bytes] = None,
+        mime_type: str = "image/jpeg",
+    ) -> Dict[str, Any]:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={api_key}"
+        parts = [{"text": SYSTEM_PROMPT}, {"text": f"Input pengguna: {text}"}]
+        if image_bytes:
+            b64_data = base64.b64encode(image_bytes).decode("utf-8")
+            parts.append({"inline_data": {"mime_type": mime_type, "data": b64_data}})
+
+        payload = {
+            "contents": [{"parts": parts}],
+            "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
+        }
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
+            if resp.status_code == 401:
+                raise ValueError("401 api_key_invalid")
+            if resp.status_code == 429:
+                raise ValueError("429 rate limit")
+            resp.raise_for_status()
+            data = resp.json()
+            candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
+            return self._clean_json_response(candidate_text)
+
+    async def _call_groq_vision_rest_async(
+        self, api_key: str, text: str, image_bytes: bytes, mime_type: str = "image/jpeg"
+    ) -> Dict[str, Any]:
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        b64_data = base64.b64encode(image_bytes).decode("utf-8")
+        data_url = f"data:{mime_type};base64,{b64_data}"
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": text or "Ekstrak informasi transaksi dari struk belanja ini."},
+                    {"type": "image_url", "image_url": {"url": data_url}},
+                ],
+            },
+        ]
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(
+                url,
+                json={"model": "meta-llama/llama-4-scout-17b-16e-instruct", "messages": messages, "temperature": 0.1},
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            )
+            if resp.status_code == 401:
+                raise ValueError("401 invalid api key")
+            if resp.status_code == 429:
+                raise ValueError("429 rate limit")
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"]
+            return self._clean_json_response(content)
+
+    async def _call_groq_chat_rest_async(self, api_key: str, text: str) -> Dict[str, Any]:
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": text},
+        ]
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(
+                url,
+                json={"model": self.groq_model, "messages": messages, "temperature": 0.1},
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            )
+            if resp.status_code == 401:
+                raise ValueError("401 invalid api key")
+            if resp.status_code == 429:
+                raise ValueError("429 rate limit")
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"]
+            return self._clean_json_response(content)
+
+    async def _call_groq_whisper_rest_async(
+        self, api_key: str, audio_bytes: bytes, filename: str = "voice.ogg"
+    ) -> str:
+        url = "https://api.groq.com/openai/v1/audio/transcriptions"
+        files = {"file": (filename, audio_bytes, "audio/ogg")}
+        data = {"model": "whisper-large-v3", "language": "id", "temperature": "0.0"}
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(
+                url,
+                files=files,
+                data=data,
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+            if resp.status_code == 401:
+                raise ValueError("401 invalid api key")
+            if resp.status_code == 429:
+                raise ValueError("429 rate limit")
+            resp.raise_for_status()
+            return (resp.json().get("text") or "").strip()
+
+    async def _call_gemini_audio_rest_async(
+        self,
+        api_key: str,
+        audio_bytes: bytes,
+        mime_type: str = "audio/webm",
+        text_context: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={api_key}"
+        b64_data = base64.b64encode(audio_bytes).decode("utf-8")
+        user_msg = "Ekstrak transaksi dari rekaman suara ini."
+        if text_context:
+            user_msg += f" Catatan teks tambahan: {text_context}"
+
+        parts = [
+            {"text": AUDIO_SYSTEM_PROMPT},
+            {"inline_data": {"mime_type": mime_type, "data": b64_data}},
+            {"text": user_msg},
+        ]
+        payload = {
+            "contents": [{"parts": parts}],
+            "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
+        }
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
+            if resp.status_code == 401:
+                raise ValueError("401 api_key_invalid")
+            if resp.status_code == 429:
+                raise ValueError("429 rate limit")
+            resp.raise_for_status()
+            data = resp.json()
+            candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
+            return self._clean_json_response(candidate_text)
+
+    async def aprocess_input(
+        self,
+        user_id: UUID,
+        text: str,
+        image_bytes: Optional[bytes] = None,
+        mime_type: str = "image/jpeg",
+    ) -> Dict[str, Any]:
+        """Asynchronously processes natural language text or receipt image into structured transaction entities."""
+        if self.gemini_pool and self.gemini_pool.keys:
+            for _ in range(len(self.gemini_pool.keys)):
+                key = self.gemini_pool.get_current_key()
+                try:
+                    return await self._call_gemini_rest_async(
+                        api_key=key, text=text, image_bytes=image_bytes, mime_type=mime_type
+                    )
+                except Exception as e:
+                    err_str = str(e).lower()
+                    if "401" in err_str or "unauthenticated" in err_str or "api_key_invalid" in err_str:
+                        if self.is_byok:
+                            return {"action": "byok_error", "status_code": 401}
+                        break
+                    if "429" in err_str or "resource_exhausted" in err_str or "rate limit" in err_str:
+                        self.gemini_pool.report_rate_limit(key)
+                        if self.is_byok:
+                            return {"action": "byok_error", "status_code": 429}
+                        continue
+                    break
+
+        if self.groq_pool and self.groq_pool.keys:
+            if image_bytes:
+                for _ in range(len(self.groq_pool.keys)):
+                    key = self.groq_pool.get_current_key()
+                    try:
+                        return await self._call_groq_vision_rest_async(
+                            api_key=key, text=text, image_bytes=image_bytes, mime_type=mime_type
+                        )
+                    except Exception as e:
+                        err_str = str(e).lower()
+                        if "401" in err_str or "invalid api key" in err_str:
+                            if self.is_byok:
+                                return {"action": "byok_error", "status_code": 401}
+                            break
+                        if "429" in err_str or "rate limit" in err_str:
+                            self.groq_pool.report_rate_limit(key)
+                            if self.is_byok:
+                                return {"action": "byok_error", "status_code": 429}
+                            continue
+                        break
+            else:
+                for _ in range(len(self.groq_pool.keys)):
+                    key = self.groq_pool.get_current_key()
+                    try:
+                        return await self._call_groq_chat_rest_async(api_key=key, text=text)
+                    except Exception as e:
+                        err_str = str(e).lower()
+                        if "401" in err_str or "invalid api key" in err_str:
+                            if self.is_byok:
+                                return {"action": "byok_error", "status_code": 401}
+                            break
+                        if "429" in err_str or "rate limit" in err_str:
+                            self.groq_pool.report_rate_limit(key)
+                            if self.is_byok:
+                                return {"action": "byok_error", "status_code": 429}
+                            continue
+                        break
+
+        return {"action": "unknown", "text": text}
+
+    async def aprocess_audio(
+        self,
+        audio_bytes: bytes,
+        mime_type: str = "audio/webm",
+        text_context: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Asynchronously processes audio bytes directly via 1-Hop Gemini or Groq Whisper fallback."""
+        if not audio_bytes:
+            return {"action": "unknown", "transcription": ""}
+
+        if len(audio_bytes) > 10 * 1024 * 1024:
+            raise ValueError("Ukuran file audio melebihi batas maksimal 10MB.")
+
+        # 1-Hop: Try Gemini native audio multimodal parsing first
+        if self.gemini_pool and self.gemini_pool.keys:
+            for _ in range(len(self.gemini_pool.keys)):
+                key = self.gemini_pool.get_current_key()
+                try:
+                    result = await self._call_gemini_audio_rest_async(
+                        api_key=key,
+                        audio_bytes=audio_bytes,
+                        mime_type=mime_type,
+                        text_context=text_context,
+                    )
+                    if result.get("action") != "unknown" or result.get("transcription"):
+                        return result
+                except Exception as e:
+                    err_str = str(e).lower()
+                    if "401" in err_str or "unauthenticated" in err_str or "api_key_invalid" in err_str:
+                        if self.is_byok:
+                            return {"action": "byok_error", "status_code": 401}
+                        break
+                    if "429" in err_str or "resource_exhausted" in err_str or "rate limit" in err_str:
+                        self.gemini_pool.report_rate_limit(key)
+                        if self.is_byok:
+                            return {"action": "byok_error", "status_code": 429}
+                        continue
+                    break
+
+        # 2-Hop Fallback: Groq Whisper STT -> Groq LLM extraction
+        if self.groq_pool and self.groq_pool.keys:
+            for _ in range(len(self.groq_pool.keys)):
+                key = self.groq_pool.get_current_key()
+                try:
+                    transcription = await self._call_groq_whisper_rest_async(
+                        api_key=key, audio_bytes=audio_bytes
+                    )
+                    if transcription:
+                        combined_text = transcription
+                        if text_context:
+                            combined_text += f" ({text_context})"
+                        extraction = await self.aprocess_input(
+                            user_id=UUID("00000000-0000-0000-0000-000000000000"),
+                            text=combined_text,
+                        )
+                        extraction["transcription"] = transcription
+                        return extraction
+                except Exception as e:
+                    err_str = str(e).lower()
+                    if "429" in err_str or "rate limit" in err_str:
+                        self.groq_pool.report_rate_limit(key)
+                        continue
+                    break
 
         return {"action": "unknown", "transcription": ""}
 

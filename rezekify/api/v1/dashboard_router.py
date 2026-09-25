@@ -150,7 +150,7 @@ def get_dashboard_summary(
 
 
 @dashboard_router.post("/ai-chat", response_model=ChatResponse, dependencies=[Depends(ai_chat_limiter)])
-def ai_chat_omni_input(
+async def ai_chat_omni_input(
     req: ChatRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -158,7 +158,7 @@ def ai_chat_omni_input(
 ):
     """Processes natural language omni-input into ledger mutations."""
     orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
-    reply = orchestrator.handle_message(user_id=current_user.id, text=req.message)
+    reply = await orchestrator.handle_message_async(user_id=current_user.id, text=req.message)
     return ChatResponse(reply=reply)
 
 
@@ -191,8 +191,7 @@ async def ai_receipt_upload(
 
     orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
     prompt_text = (message or "").strip() or "Foto struk kasir"
-    reply = await run_in_threadpool(
-        orchestrator.handle_message,
+    reply = await orchestrator.handle_message_async(
         user_id=current_user.id,
         text=prompt_text,
         image_bytes=content,
