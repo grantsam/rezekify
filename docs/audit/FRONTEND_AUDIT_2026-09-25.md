@@ -115,7 +115,9 @@ The frontend suffers from a critical **dual-palette schizophrenia**: the codebas
 
 Similarly, `index.css` base layer applies `bg-slate-950 text-slate-100` which conflicts with the zinc studio tokens.
 
-**Fix:** Update `App.tsx` and `index.css` to use `bg-[#0c0c0e] text-zinc-100`.
+Additionally, `frontend/index.html` line 9 (`<body class="bg-slate-950 text-slate-100 ...">`) is a critical root hydration flash source alongside `App.tsx` and `index.css`, flashing the blue-tinted slate background before JavaScript bundles even load and hydrate.
+
+**Fix:** Update `frontend/index.html`, `App.tsx`, and `index.css` to use `bg-[#0c0c0e] text-zinc-100`.
 
 ---
 
@@ -138,13 +140,17 @@ Similarly, `index.css` base layer applies `bg-slate-950 text-slate-100` which co
 
 ---
 
-### P1-2: OmniInputHero.tsx Is Dead Code (510 lines)
+### P1-2: OmniInputHero.tsx (510 lines) & VaultsSection.tsx (160 lines) Are Dead Code
 
-`OmniInputHero.tsx` is NOT imported or rendered anywhere in the active application. The dashboard exclusively uses `QuickCaptureBar.tsx`. Yet OmniInputHero contains 510 lines of duplicated logic (file upload, voice recording, drag-and-drop) that mirror QuickCaptureBar.
+`VaultsSection.tsx` (160 lines) and `OmniInputHero.tsx` (510 lines), along with their unit tests `VaultsSection.test.tsx` and `OmniInputHero.test.tsx`, are completely dead code replaced by `QuickCaptureBar.tsx`, `VaultsView.tsx`, and `OverviewView.tsx`.
 
-**Impact:** Dead code bloat. Risk of developers accidentally importing wrong component.
+Neither is imported or rendered anywhere in the active application. The dashboard exclusively uses `QuickCaptureBar.tsx` for ingestion and `VaultsView.tsx` / `OverviewView.tsx` for vaults management. OmniInputHero contains 510 lines of duplicated logic (file upload, voice recording, drag-and-drop) that mirror QuickCaptureBar, while VaultsSection contains 160 lines of legacy vault card grid logic.
 
-**Fix:** Delete `OmniInputHero.tsx`.
+*(Note: `frontend/src/utils/imageCompression.ts` is ACTIVE and retained, as it is actively used by `QuickCaptureBar.tsx`.)*
+
+**Impact:** Dead code bloat (~670 lines of component code plus test files). Risk of developers accidentally importing or maintaining wrong/obsolete components.
+
+**Fix:** Delete `OmniInputHero.tsx`, `VaultsSection.tsx`, `OmniInputHero.test.tsx`, and `VaultsSection.test.tsx`.
 
 ---
 
@@ -365,10 +371,10 @@ No component checks `prefers-reduced-motion` media query. All framer-motion anim
 
 ## RECOMMENDED FIX PRIORITY ORDER
 
-1. **P0-1 + P0-4:** Global slate-to-zinc migration (15 files + `index.css` + `App.tsx`)
+1. **P0-1 + P0-4:** Global slate-to-zinc migration (15 files + `frontend/index.html` + `index.css` + `App.tsx`)
 2. **P0-2:** onClick-to-onPress migration (31 instances across 14 files)
 3. **P0-3:** `rounded-3xl` to `rounded-2xl` normalization (3 files)
-4. **P1-2:** Delete dead `OmniInputHero.tsx`
+4. **P1-2:** Delete dead `OmniInputHero.tsx` and `VaultsSection.tsx` (along with unit tests)
 5. **P1-1:** Fix motion duration violations in `QuickCaptureBar.tsx`
 6. **P1-3 + P1-4:** Normalize CTA button colors across all modals
 7. **P1-6:** Remove continuous `animate-pulse` from brand elements
@@ -380,8 +386,9 @@ No component checks `prefers-reduced-motion` media query. All framer-motion anim
 
 ## APPENDIX: FILES REQUIRING CHANGES
 
-### Must-Touch (P0 — 19 files):
+### Must-Touch (P0 — 20 files):
 
+- `frontend/index.html`
 - `frontend/src/App.tsx`
 - `frontend/src/index.css`
 - `frontend/src/pages/AuthPage.tsx`
@@ -390,7 +397,7 @@ No component checks `prefers-reduced-motion` media query. All framer-motion anim
 - `frontend/src/components/ExpenseCharts.tsx`
 - `frontend/src/components/UpcomingBillsCard.tsx`
 - `frontend/src/components/VaultCard.tsx`
-- `frontend/src/components/VaultsSection.tsx`
+- `frontend/src/components/VaultsSection.tsx` (or delete per P1-2)
 - `frontend/src/components/TransactionsTable.tsx`
 - `frontend/src/components/AccountModal.tsx`
 - `frontend/src/components/VaultModal.tsx`
@@ -411,3 +418,8 @@ No component checks `prefers-reduced-motion` media query. All framer-motion anim
 ### Can Delete:
 
 - `frontend/src/components/OmniInputHero.tsx` (dead code, 510 lines)
+- `frontend/src/components/VaultsSection.tsx` (dead code, 160 lines)
+- `frontend/src/__tests__/OmniInputHero.test.tsx` (unit test for dead code)
+- `frontend/src/__tests__/VaultsSection.test.tsx` (unit test for dead code)
+
+*(Note: `frontend/src/utils/imageCompression.ts` is ACTIVE and retained — used by `QuickCaptureBar.tsx`.)*
