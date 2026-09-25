@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center gap-2.5 overflow-hidden">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700/80 shrink-0">
               <span className="font-mono font-bold text-white text-sm">R</span>
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400" />
             </div>
             {!isCollapsed && (
               <span className="font-semibold text-base tracking-tight text-white truncate">

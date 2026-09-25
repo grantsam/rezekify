@@ -247,7 +247,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                     transition={{
                       repeat: Infinity,
                       repeatType: 'reverse',
-                      duration: 0.4 + idx * 0.1,
+                      duration: 0.25,
                       ease: 'easeInOut',
                     }}
                     className="w-1 h-3.5 bg-rose-500 rounded-full origin-center"

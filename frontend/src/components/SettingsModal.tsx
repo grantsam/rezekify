@@ -298,7 +298,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <span className="text-xs text-zinc-400 block mb-1">Status Koneksi</span>
                       {settings?.telegram?.is_connected ? (
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                           <span className="text-sm font-semibold text-emerald-400">
                             Terhubung: ID {settings.telegram.telegram_chat_id}
                           </span>
