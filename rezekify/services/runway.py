@@ -93,7 +93,11 @@ class CategorySpendingBreakdownReport(NamedTuple):
 
 # In-memory TTL cache: (user_id, today) -> (RunwayReport, timestamp)
 _runway_cache: dict[tuple[UUID, date], tuple[RunwayReport, float]] = {}
+MAX_RUNWAY_CACHE: int = 5000
 RUNWAY_CACHE_TTL_SECONDS: float = 15.0
+SWEEP_INTERVAL_SECONDS: float = 60.0
+_last_runway_sweep: float = 0.0
+
 
 
 class RunwayService:
@@ -117,14 +121,32 @@ class RunwayService:
     ) -> RunwayReport:
         """Calculates liquid cash, locked reserves, operational free cash, days remaining,
         and safe daily spending threshold for a user."""
+        global _last_runway_sweep
         if today is None:
             today = date.today()
+
+        now = time.time()
+
+        # Lazy cache sweep
+        # ponytail: in-memory cache sweep runs amortized every 60s or when cache >= 5000; move to Redis cache at scale
+        if now - _last_runway_sweep > SWEEP_INTERVAL_SECONDS or len(_runway_cache) >= MAX_RUNWAY_CACHE:
+            expired_keys = [k for k, (_, ts) in _runway_cache.items() if now - ts > RUNWAY_CACHE_TTL_SECONDS]
+            for k in expired_keys:
+                _runway_cache.pop(k, None)
+
+            if len(_runway_cache) >= MAX_RUNWAY_CACHE:
+                sorted_keys = sorted(_runway_cache.keys(), key=lambda k: _runway_cache[k][1])
+                excess = len(_runway_cache) - int(MAX_RUNWAY_CACHE * 0.8)
+                for k in sorted_keys[:max(0, excess)]:
+                    _runway_cache.pop(k, None)
+
+            _last_runway_sweep = now
 
         if use_cache:
             cache_entry = _runway_cache.get((user_id, today))
             if cache_entry is not None:
                 cached_report, ts = cache_entry
-                if time.time() - ts < RUNWAY_CACHE_TTL_SECONDS:
+                if now - ts < RUNWAY_CACHE_TTL_SECONDS:
                     return cached_report
 
         user = self.db.query(User).filter_by(id=user_id).one()

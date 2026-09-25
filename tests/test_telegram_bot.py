@@ -444,4 +444,28 @@ def test_telegram_pairing_lockout_expires_after_15_minutes(db_session):
     assert len(gateway.failed_pairing_attempts[chat_id]) == 1
 
 
+def test_telegram_failed_pairing_cache_capped(db_session):
+    from rezekify.gateway.telegram_bot import (
+        MAX_FAILED_TRACKING,
+        PAIRING_FAIL_WINDOW_SECONDS,
+        TelegramGateway,
+    )
+
+    gateway = TelegramGateway(db=db_session)
+
+    # Pre-populate failed_pairing_attempts with 5,200 stale entries
+    old_time = time.time() - (PAIRING_FAIL_WINDOW_SECONDS + 50)
+    for i in range(5200):
+        gateway.failed_pairing_attempts[100000 + i] = [old_time]
+
+    assert len(gateway.failed_pairing_attempts) == 5200
+
+    # Trigger process_text_message with an invalid pairing command to activate eviction
+    gateway.process_text_message(999999, "/link INVALID_CODE")
+
+    # Stale entries must have been swept; size must be bounded under MAX_FAILED_TRACKING
+    assert len(gateway.failed_pairing_attempts) <= MAX_FAILED_TRACKING
+
+
+
 

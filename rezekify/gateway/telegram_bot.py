@@ -11,6 +11,10 @@ from rezekify.services.auth import AuthService
 # ponytail: in-memory dict dedup ceiling ~100k entries, upgrade to Redis TTL in multi-replica cluster
 _processed_update_ids: dict[int, float] = {}
 
+MAX_FAILED_TRACKING: int = 5000
+PAIRING_FAIL_WINDOW_SECONDS: float = 900.0
+
+
 
 def clear_dedup_cache() -> None:
     """Clear processed update ID deduplication cache (useful for testing)."""
@@ -44,9 +48,25 @@ class TelegramGateway:
             parts = cleaned_text.split()
             if len(parts) >= 2:
                 now = time.time()
-                cutoff = now - 900
+                cutoff = now - PAIRING_FAIL_WINDOW_SECONDS
                 attempts = [t for t in self.failed_pairing_attempts.get(chat_id, []) if t > cutoff]
                 self.failed_pairing_attempts[chat_id] = attempts
+
+                # Eviction sweep if cache exceeds MAX_FAILED_TRACKING
+                # ponytail: in-memory failed pairing tracking capped at 5000; switch to Redis ratelimit at scale
+                if len(self.failed_pairing_attempts) > MAX_FAILED_TRACKING:
+                    expired_keys = [
+                        k for k, att in self.failed_pairing_attempts.items()
+                        if (not att or att[-1] <= cutoff) and k != chat_id
+                    ]
+                    for k in expired_keys:
+                        self.failed_pairing_attempts.pop(k, None)
+
+                    if len(self.failed_pairing_attempts) > MAX_FAILED_TRACKING:
+                        keys_to_pop = [k for k in self.failed_pairing_attempts.keys() if k != chat_id][:int(MAX_FAILED_TRACKING * 0.2)]
+                        for k in keys_to_pop:
+                            self.failed_pairing_attempts.pop(k, None)
+
                 if len(attempts) >= 5:
                     return "❌ Terlalu banyak percobaan gagal. Silakan coba lagi dalam 15 menit."
 
@@ -59,7 +79,7 @@ class TelegramGateway:
                         "Mulai sekarang Anda cukup ketik pengeluaran atau kirim foto struk di sini."
                     )
                 except ValueError as e:
-                    self.failed_pairing_attempts[chat_id].append(now)
+                    self.failed_pairing_attempts.setdefault(chat_id, []).append(now)
                     return f"❌ Gagal: {str(e)}"
 
             if cmd == "/link":

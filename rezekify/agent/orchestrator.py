@@ -125,15 +125,19 @@ class AgentOrchestrator:
     def _resolve_or_create_category(
         self, user_id: UUID, category_name: Optional[str], cat_type: CategoryType
     ) -> Category:
-        """Resolves existing category or creates a new one scoped to user_id."""
-        name = category_name or ("Umum" if cat_type == CategoryType.EXPENSE else "Pemasukan Lain")
+        """Resolves existing category or creates a new one scoped to user_id with wildcard sanitization."""
+        # ponytail: strip SQL wildcard tokens (% and _) to avoid arbitrary matching; regex escaping if complex search needed
+        raw_name = category_name or ("Umum" if cat_type == CategoryType.EXPENSE else "Pemasukan Lain")
+        safe_name = raw_name.replace("%", "").replace("_", "").strip()[:100]
+        if not safe_name:
+            safe_name = "Umum" if cat_type == CategoryType.EXPENSE else "Pemasukan Lain"
         category = (
             self.db.query(Category)
-            .filter(Category.user_id == user_id, Category.name.ilike(f"%{name}%"))
+            .filter(Category.user_id == user_id, Category.name.ilike(f"%{safe_name}%"))
             .first()
         )
         if not category:
-            category = Category(user_id=user_id, name=name, category_type=cat_type)
+            category = Category(user_id=user_id, name=safe_name, category_type=cat_type)
             self.db.add(category)
             self.db.flush()
         return category

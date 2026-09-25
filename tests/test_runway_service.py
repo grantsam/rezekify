@@ -628,3 +628,57 @@ def test_calculate_runway_ttl_cache_and_clear_cache(db_session, sample_user):
         assert report_post_ledger.total_liquid_cash == Decimal("2500000.00")
 
 
+def test_runway_cache_sweep_and_fifo_cap(db_session):
+    import time
+    from uuid import uuid4
+    from rezekify.services.runway import (
+        MAX_RUNWAY_CACHE,
+        RunwayReport,
+        RunwayService,
+        _runway_cache,
+    )
+
+    user = User(
+        email=f"runway-cache-{uuid4().hex[:8]}@rezekify.local",
+        password_hash="dummyhash",
+        full_name="Runway Cache Tester",
+    )
+    db_session.add(user)
+    db_session.flush()
+
+    acc = Account(
+        user_id=user.id,
+        name="Kas",
+        account_type=AccountType.CASH,
+        current_balance=Decimal("1000000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = RunwayService(db=db_session)
+    RunwayService.clear_cache()
+
+    # Pre-populate cache with 5,100 dummy entries
+    dummy_report = RunwayReport(
+        total_liquid_cash=Decimal("1000000.00"),
+        vault_locked_cash=Decimal("0.00"),
+        operational_free_cash=Decimal("1000000.00"),
+        days_remaining=30,
+        daily_safe_runway=Decimal("33333.33"),
+        health_status="HEALTHY",
+        upcoming_bills=[],
+    )
+
+    old_ts = time.time() - 20.0  # Expired relative to 15s TTL
+    for i in range(5100):
+        fake_user_id = uuid4()
+        _runway_cache[(fake_user_id, date.today() - timedelta(days=i % 10))] = (dummy_report, old_ts)
+
+    assert len(_runway_cache) == 5100
+
+    # Calling calculate_runway should trigger lazy sweep and bounded cap
+    service.calculate_runway(user_id=user.id)
+    assert len(_runway_cache) <= MAX_RUNWAY_CACHE
+
+
+

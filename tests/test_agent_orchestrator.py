@@ -463,3 +463,48 @@ def test_handle_message_byok_429_error_feedback(db_session, sample_user):
     assert "Kuota kunci API AI kustom Anda telah habis" in reply
 
 
+def test_resolve_or_create_category_sanitizes_wildcards(db_session):
+    from uuid import uuid4
+    from rezekify.db.models import Category, CategoryType, User
+
+    user = User(
+        email=f"wildcard-{uuid4().hex[:8]}@rezekify.local",
+        password_hash="dummyhash",
+        full_name="Wildcard Tester",
+    )
+    db_session.add(user)
+    db_session.flush()
+
+    # Pre-seed an unrelated category for this user
+    existing_cat = Category(
+        user_id=user.id,
+        name="Makanan Ringan",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add(existing_cat)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+
+    # Input consisting only of wildcard characters '%'
+    resolved = orchestrator._resolve_or_create_category(
+        user_id=user.id,
+        category_name="%%%",
+        cat_type=CategoryType.EXPENSE,
+    )
+    # Must sanitize '%' away and fall back to default 'Umum' rather than matching 'Makanan Ringan'
+    assert resolved.name == "Umum"
+    assert resolved.id != existing_cat.id
+
+    # Input containing embedded wildcards: 'M%k_n'
+    resolved_embedded = orchestrator._resolve_or_create_category(
+        user_id=user.id,
+        category_name="M%k_n",
+        cat_type=CategoryType.EXPENSE,
+    )
+    # Must sanitize to 'Mkn' and not match 'Makanan Ringan' via SQL wildcard expansion
+    assert resolved_embedded.name == "Mkn"
+    assert resolved_embedded.id != existing_cat.id
+
+
+
