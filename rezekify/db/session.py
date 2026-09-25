@@ -15,7 +15,14 @@ def get_engine(database_url: str = settings.DATABASE_URL):
             connect_args={"check_same_thread": False},
             poolclass=StaticPool,
         )
-    return create_engine(database_url)
+    return create_engine(
+        database_url,
+        pool_size=3,
+        max_overflow=2,
+        pool_recycle=1800,
+        pool_pre_ping=True,
+        pool_timeout=10,
+    )
 
 
 engine = get_engine()
