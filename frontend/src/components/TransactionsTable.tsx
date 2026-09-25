@@ -392,10 +392,6 @@ export const TransactionsTable: React.FC<Props> = ({
                 const selected = Array.from(keys)[0] as string;
                 handleAccountChange(selected === 'ALL' ? '' : (selected || ''));
               }}
-              onChange={(e) => {
-                const val = e.target.value;
-                handleAccountChange(val === 'ALL' ? '' : (val || ''));
-              }}
               disallowEmptySelection
               className="w-full sm:w-44"
               classNames={{
@@ -439,10 +435,6 @@ export const TransactionsTable: React.FC<Props> = ({
               onSelectionChange={(keys) => {
                 const selected = Array.from(keys)[0] as string;
                 handleCategoryChange(selected === 'ALL' ? '' : (selected || ''));
-              }}
-              onChange={(e) => {
-                const val = e.target.value;
-                handleCategoryChange(val === 'ALL' ? '' : (val || ''));
               }}
               disallowEmptySelection
               className="w-full sm:w-44"

@@ -153,7 +153,6 @@ export const AuthPage: React.FC = () => {
 
           <Button
             type="submit"
-            disabled={isSubmitting}
             isDisabled={isSubmitting}
             className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/30 disabled:opacity-50 active:scale-[0.99] min-h-[44px]"
           >

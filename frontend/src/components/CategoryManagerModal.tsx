@@ -383,13 +383,19 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   <label className="block text-xs font-medium text-zinc-400 mb-2">
                     Pilihan Ikon
                   </label>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  <div
+                    role="radiogroup"
+                    aria-label="Pilihan Ikon"
+                    className="grid grid-cols-4 sm:grid-cols-6 gap-2"
+                  >
                     {AVAILABLE_ICONS.map((item) => {
                       const IconComp = item.icon;
                       const isSelected = selectedIcon.toLowerCase() === item.key.toLowerCase();
                       return (
                         <Button
                           key={item.key}
+                          role="radio"
+                          aria-checked={isSelected}
                           aria-label={`Ikon ${item.label}`}
                           isDisabled={isSubmitting}
                           onPress={() => setSelectedIcon(item.key)}
