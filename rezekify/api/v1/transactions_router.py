@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.exc import NoResultFound
 
 from rezekify.api.deps import get_current_user, get_db
@@ -90,7 +90,11 @@ def list_transactions(
     db: Session = Depends(get_db),
 ):
     """Lists historical transactions with ledger entries, optional filtering, and pagination."""
-    query = db.query(Transaction).filter(Transaction.user_id == current_user.id)
+    query = (
+        db.query(Transaction)
+        .options(selectinload(Transaction.ledger_entries))
+        .filter(Transaction.user_id == current_user.id)
+    )
 
     if account_id is not None:
         query = query.filter(Transaction.ledger_entries.any(LedgerEntry.account_id == account_id))
