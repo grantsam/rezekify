@@ -155,7 +155,26 @@ describe('apiClient authentication headers and utilities', () => {
     await expect(fetchPromise).rejects.toThrow();
   });
 
-  it('apiFetch handles 401: clears token and redirects to / if not on /login', async () => {
+  it('apiFetch immediately aborts if caller signal is already aborted', async () => {
+    const callerController = new AbortController();
+    callerController.abort();
+
+    let receivedSignal: AbortSignal | undefined;
+    global.fetch = vi.fn().mockImplementation((_url, init) => {
+      receivedSignal = init?.signal;
+      if (receivedSignal?.aborted) {
+        return Promise.reject(new DOMException('Aborted', 'AbortError'));
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+
+    await expect(
+      apiFetch('/pre-aborted-check', { signal: callerController.signal })
+    ).rejects.toThrow();
+    expect(receivedSignal?.aborted).toBe(true);
+  });
+
+  it('apiFetch handles 401: clears token and redirects to / if not on /', async () => {
     setAuthToken('expired-token');
     const originalLocation = window.location;
     delete (window as any).location;
@@ -178,14 +197,14 @@ describe('apiClient authentication headers and utilities', () => {
     (window as any).location = originalLocation;
   });
 
-  it('apiFetch handles 401: clears token but does not redirect if already on /login', async () => {
+  it('apiFetch handles 401: clears token but does not redirect for auth endpoints', async () => {
     setAuthToken('expired-token');
     const originalLocation = window.location;
     delete (window as any).location;
     window.location = {
       ...originalLocation,
-      pathname: '/login',
-      href: 'http://localhost/login',
+      pathname: '/dashboard',
+      href: 'http://localhost/dashboard',
     } as any;
 
     global.fetch = vi.fn().mockResolvedValue({
@@ -194,9 +213,32 @@ describe('apiClient authentication headers and utilities', () => {
       json: async () => ({ detail: 'Invalid credentials' }),
     });
 
-    await expect(apiFetch('/login-endpoint')).rejects.toThrow('Invalid credentials');
+    await expect(apiFetch('/auth/login')).rejects.toThrow('Invalid credentials');
     expect(getAuthToken()).toBeNull();
-    expect(window.location.href).toBe('http://localhost/login');
+    expect(window.location.href).toBe('http://localhost/dashboard');
+
+    (window as any).location = originalLocation;
+  });
+
+  it('apiFetch handles 401: clears token but does not redirect if already on /', async () => {
+    setAuthToken('expired-token');
+    const originalLocation = window.location;
+    delete (window as any).location;
+    window.location = {
+      ...originalLocation,
+      pathname: '/',
+      href: 'http://localhost/',
+    } as any;
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: 'Unauthorized' }),
+    });
+
+    await expect(apiFetch('/protected')).rejects.toThrow('Unauthorized');
+    expect(getAuthToken()).toBeNull();
+    expect(window.location.href).toBe('http://localhost/');
 
     (window as any).location = originalLocation;
   });

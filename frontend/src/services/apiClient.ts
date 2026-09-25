@@ -67,7 +67,11 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
   // Link caller signal if provided
   if (options.signal) {
-    options.signal.addEventListener('abort', () => controller.abort());
+    if (options.signal.aborted) {
+      controller.abort();
+    } else {
+      options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
   }
 
   try {
@@ -80,7 +84,8 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
     if (response.status === 401) {
       clearAuthToken();
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+      const isAuthEndpoint = cleanEndpoint.startsWith('/auth/') || cleanEndpoint.startsWith('auth/');
+      if (typeof window !== 'undefined' && !isAuthEndpoint && window.location.pathname !== '/') {
         window.location.href = '/';
       }
     }

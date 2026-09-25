@@ -8,34 +8,20 @@ from sqlalchemy.orm import Session
 
 from rezekify.api.main import app
 from rezekify.api.deps import get_current_user, get_db
-from rezekify.db.models import User, Account, Category
+from rezekify.db.models import User, Account, AccountType, Category
 from rezekify.services.ledger import LedgerService
 
 
-# Compatibility shim for plan specification fixture and Account kwargs
+# Compatibility shim for plan specification fixture
 @pytest.fixture
 def test_db(db_session: Session) -> Session:
     return db_session
 
 
-_orig_account_init = Account.__init__
-
-
-def _account_init(self, *args, **kwargs):
-    if "balance" in kwargs:
-        kwargs["current_balance"] = kwargs.pop("balance")
-    if kwargs.get("account_type") == "ASSET":
-        kwargs["account_type"] = "BANK"
-    _orig_account_init(self, *args, **kwargs)
-
-
-Account.__init__ = _account_init
-
-
 def test_list_transactions_eager_loads_ledger_entries(test_db: Session):
     user = User(id=uuid4(), email="eager@test.com", password_hash="dummy", full_name="Eager Tester")
     test_db.add(user)
-    account = Account(id=uuid4(), user_id=user.id, name="Checking", account_type="ASSET", balance=Decimal("1000000"))
+    account = Account(id=uuid4(), user_id=user.id, name="Checking", account_type=AccountType.BANK, current_balance=Decimal("1000000"))
     category = Category(id=uuid4(), user_id=user.id, name="Food", category_type="EXPENSE")
     test_db.add_all([account, category])
     test_db.commit()
@@ -79,7 +65,7 @@ def test_list_transactions_emits_single_batched_query_for_ledger_entries(test_db
 
     user = User(id=uuid4(), email="batch@test.com", password_hash="dummy", full_name="Batch Tester")
     test_db.add(user)
-    account = Account(id=uuid4(), user_id=user.id, name="Checking", account_type="BANK", balance=Decimal("1000000"))
+    account = Account(id=uuid4(), user_id=user.id, name="Checking", account_type=AccountType.BANK, current_balance=Decimal("1000000"))
     category = Category(id=uuid4(), user_id=user.id, name="Food", category_type="EXPENSE")
     test_db.add_all([account, category])
     test_db.commit()
