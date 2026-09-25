@@ -47,6 +47,41 @@ export function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+export async function refreshAuthToken(): Promise<string | null> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  const promise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        return null;
+      }
+      const data = await res.json();
+      if (data && data.access_token) {
+        setAuthToken(data.access_token);
+        return data.access_token as string;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  refreshPromise = promise;
+  return promise;
+}
+
+export const executeTokenRefresh = refreshAuthToken;
+
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = API_BASE_URL;
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -75,18 +110,41 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
   }
 
   try {
-    const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+    let response = await fetch(`${baseUrl}${cleanEndpoint}`, {
       method: options.method,
+      credentials: 'include',
       ...options,
       headers,
       signal: controller.signal,
     });
 
+    const isAuthEndpoint = cleanEndpoint.startsWith('/auth/') || cleanEndpoint.startsWith('auth/');
+
     if (response.status === 401) {
-      clearAuthToken();
-      const isAuthEndpoint = cleanEndpoint.startsWith('/auth/') || cleanEndpoint.startsWith('auth/');
-      if (typeof window !== 'undefined' && !isAuthEndpoint && window.location.pathname !== '/') {
-        window.location.href = '/';
+      if (isAuthEndpoint) {
+        clearAuthToken();
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Request failed with status ${response.status}`);
+      }
+
+      const newToken = await executeTokenRefresh();
+      if (newToken) {
+        const retryHeaders = {
+          ...headers,
+          Authorization: `Bearer ${newToken}`,
+        };
+        response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+          method: options.method,
+          credentials: 'include',
+          ...options,
+          headers: retryHeaders,
+          signal: controller.signal,
+        });
+      } else {
+        clearAuthToken();
+        if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
       }
     }
 
@@ -264,6 +322,8 @@ export const apiClient = {
   getAuthToken,
   clearAuthToken,
   getAuthHeader,
+  refreshAuthToken,
+  executeTokenRefresh,
 };
 
 export default apiClient;

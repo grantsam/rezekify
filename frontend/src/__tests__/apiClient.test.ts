@@ -24,6 +24,8 @@ import {
   getTelegramPairingCode,
   updateUserProfile,
   submitVoice,
+  refreshAuthToken,
+  executeTokenRefresh,
 } from '../services/apiClient';
 import {
   Account,
@@ -241,6 +243,128 @@ describe('apiClient authentication headers and utilities', () => {
     expect(window.location.href).toBe('http://localhost/');
 
     (window as any).location = originalLocation;
+  });
+
+  it('apiFetch performs silent token refresh on 401 and retries original request', async () => {
+    setAuthToken('old-expired-token');
+
+    let callCount = 0;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      callCount++;
+      if (url.includes('/api/v1/auth/refresh')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ access_token: 'new-rotated-token' }),
+        });
+      }
+      if (callCount === 1) {
+        // First attempt fails with 401
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          json: async () => ({ detail: 'Token expired' }),
+        });
+      }
+      // Retried request succeeds
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+    });
+
+    const result = await apiFetch<{ success: boolean }>('/accounts');
+    expect(result.success).toBe(true);
+    expect(getAuthToken()).toBe('new-rotated-token');
+  });
+
+  it('apiFetch coalesces concurrent 401 requests into a single refresh request', async () => {
+    setAuthToken('old-expired-token');
+    let refreshCalls = 0;
+
+    global.fetch = vi.fn().mockImplementation((url, init) => {
+      if (url.includes('/api/v1/auth/refresh')) {
+        refreshCalls++;
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ access_token: 'coalesced-token' }),
+        });
+      }
+      if (url.includes('/accounts') || url.includes('/vaults')) {
+        const authHeader = (init as any)?.headers?.Authorization || (global.fetch as any).mock.calls.find((c: any) => c[0] === url)?.[1]?.headers?.Authorization;
+        if (authHeader === 'Bearer coalesced-token') {
+          return Promise.resolve({ ok: true, json: async () => ({ data: 'ok' }) });
+        }
+        return Promise.resolve({ ok: false, status: 401, json: async () => ({ detail: 'Unauthorized' }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    });
+
+    const [res1, res2] = await Promise.all([
+      apiFetch('/accounts'),
+      apiFetch('/vaults'),
+    ]);
+
+    expect(res1).toBeDefined();
+    expect(res2).toBeDefined();
+    expect(refreshCalls).toBe(1);
+    expect(getAuthToken()).toBe('coalesced-token');
+  });
+
+  it('refreshAuthToken returns token and updates localStorage on success', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ access_token: 'direct-refresh-token' }),
+    });
+
+    const token = await refreshAuthToken();
+    expect(token).toBe('direct-refresh-token');
+    expect(getAuthToken()).toBe('direct-refresh-token');
+    expect(executeTokenRefresh).toBe(refreshAuthToken);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/auth/refresh',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+      })
+    );
+  });
+
+  it('refreshAuthToken returns null when refresh fails or throws', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: 'Refresh expired' }),
+    });
+
+    const token = await refreshAuthToken();
+    expect(token).toBeNull();
+
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network offline'));
+    const tokenAfterError = await refreshAuthToken();
+    expect(tokenAfterError).toBeNull();
+  });
+
+  it('apiFetch throws and does not loop when retried request also fails', async () => {
+    setAuthToken('initial-token');
+    let attemptCount = 0;
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/api/v1/auth/refresh')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ access_token: 'retry-token' }),
+        });
+      }
+      attemptCount++;
+      return Promise.resolve({
+        ok: false,
+        status: 401,
+        json: async () => ({ detail: `Attempt ${attemptCount} failed` }),
+      });
+    });
+
+    await expect(apiFetch('/fail-twice')).rejects.toThrow('Attempt 2 failed');
+    expect(attemptCount).toBe(2);
   });
 
   it('apiFetch throws error with detail message on failed request', async () => {
