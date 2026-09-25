@@ -100,7 +100,7 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           }`}
         >
           <span>Semua</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-zinc-900 font-mono text-zinc-400">
+          <span className="text-[10px] py-0.5 px-2 rounded-md bg-zinc-900 font-mono text-zinc-400">
             {countAll}
           </span>
         </button>
@@ -115,7 +115,7 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           }`}
         >
           <span>Tagihan Tetap</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-zinc-900 font-mono text-zinc-400">
+          <span className="text-[10px] py-0.5 px-2 rounded-md bg-zinc-900 font-mono text-zinc-400">
             {countBills}
           </span>
         </button>
@@ -130,7 +130,7 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           }`}
         >
           <span>Tabungan</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-zinc-900 font-mono text-zinc-400">
+          <span className="text-[10px] py-0.5 px-2 rounded-md bg-zinc-900 font-mono text-zinc-400">
             {countSavings}
           </span>
         </button>

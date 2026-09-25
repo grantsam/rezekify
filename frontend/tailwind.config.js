@@ -5,7 +5,7 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@heroui/theme/dist/components/(button|modal|chip|progress|tooltip|card).js",
+    "./node_modules/@heroui/theme/dist/components/(button|modal|chip|progress|tooltip|card|select|popover|listbox).js",
   ],
   darkMode: 'class',
   theme: {
@@ -27,12 +27,6 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
-      },
-      boxShadow: {
-        'glow-indigo': '0 0 25px -5px rgba(99, 102, 241, 0.15)',
-        'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.15)',
-        'glow-amber': '0 0 25px -5px rgba(245, 158, 11, 0.15)',
-        'glow-rose': '0 0 25px -5px rgba(244, 63, 94, 0.15)',
       },
     },
   },

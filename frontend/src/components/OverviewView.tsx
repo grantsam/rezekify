@@ -224,7 +224,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono">
+                  <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono tabular-nums">
                     <span>Rp {vault.allocated_amount.toLocaleString('id-ID')}</span>
                     <span className="text-zinc-500">/ Rp {vault.target_amount.toLocaleString('id-ID')}</span>
                   </div>
