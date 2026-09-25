@@ -63,3 +63,21 @@ def test_mask_key():
     assert mask_key("abcd") == "...abcd"
     assert mask_key("") == ""
     assert mask_key("   ") == ""
+
+
+def test_decrypt_legacy_sha256_ciphertext_backward_compatibility(monkeypatch):
+    """Verifies that ciphertext encrypted with legacy single-pass SHA-256 can still be decrypted."""
+    import hashlib
+    from cryptography.fernet import Fernet
+    from rezekify.core.crypto import decrypt_key
+    from rezekify.core.config import settings
+
+    monkeypatch.setattr(settings, "ENCRYPTION_KEY", None)
+    legacy_digest = hashlib.sha256(settings.SECRET_KEY.encode("utf-8")).digest()
+    legacy_fernet = Fernet(base64.urlsafe_b64encode(legacy_digest))
+    secret_payload = "sk-legacy-gemini-key-12345"
+    legacy_ciphertext = legacy_fernet.encrypt(secret_payload.encode("utf-8")).decode("utf-8")
+
+    # decrypt_key must transparently decrypt legacy ciphertext via fallback
+    assert decrypt_key(legacy_ciphertext) == secret_payload
+
