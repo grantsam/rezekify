@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Loader2, Save, Calendar, Tag, CreditCard, FileText } from 'lucide-react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem } from '@heroui/react';
 import { Account, Category, Transaction, TransactionUpdateRequest } from '../types/api';
 import { apiFetch, updateTransaction } from '../services/apiClient';
 
@@ -329,23 +329,46 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         <CreditCard className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Pilih Akun <span className="sr-only">Rekening / Akun</span>*</span>
                       </label>
-                      <select
+                      <Select
                         id="account-select"
-                        aria-label="Rekening / Akun"
-                        value={accountId || accounts[0]?.id || ''}
-                        onChange={(e) => setAccountId(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none"
+                        name="account_id"
+                        role="combobox"
+                        aria-label="Pilih Akun"
+                        selectedKeys={accountId ? [accountId] : (accounts[0]?.id ? [accounts[0].id] : [])}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0] as string;
+                          if (selected) setAccountId(selected);
+                        }}
+                        onChange={(e) => {
+                          if (e.target.value) setAccountId(e.target.value);
+                        }}
+                        disallowEmptySelection={accounts.length > 0}
+                        isDisabled={accounts.length === 0}
+                        placeholder={accounts.length === 0 ? 'Belum ada akun' : 'Pilih Akun'}
+                        className="w-full"
+                        classNames={{
+                          trigger: 'bg-[#141417] border border-zinc-800 hover:border-zinc-700 data-[hover=true]:border-zinc-700 text-zinc-100 text-sm rounded-xl min-h-[40px]',
+                          popoverContent: 'bg-[#141417] border border-zinc-800 text-zinc-200',
+                          value: 'text-zinc-100 text-sm',
+                        }}
                       >
-                        {accounts.length === 0 ? (
-                          <option value="">Belum ada akun</option>
-                        ) : (
-                          accounts.map((acc) => (
-                            <option key={acc.id} value={acc.id}>
+                        {[
+                          ...(accountId && !accounts.some((a) => a.id === accountId) ? [
+                            <SelectItem key={accountId} textValue={accountId} className="text-zinc-200 hover:bg-zinc-800/80">
+                              {accountId}
+                            </SelectItem>
+                          ] : []),
+                          ...accounts.map((acc) => (
+                            <SelectItem
+                              key={acc.id}
+                              textValue={`${acc.name} (Rp ${Number(acc.current_balance).toLocaleString('id-ID')})`}
+                              className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                            >
                               {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
-                            </option>
-                          ))
-                        )}
-                      </select>
+                            </SelectItem>
+                          )),
+                        ]}
+                      </Select>
                     </div>
 
                     <div>
@@ -353,22 +376,50 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         <Tag className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Kategori (Opsional)</span>
                       </label>
-                      <select
+                      <Select
                         id="category-select"
+                        name="category_id"
+                        role="combobox"
                         aria-label="Kategori (Opsional)"
-                        value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none"
+                        selectedKeys={categoryId ? [categoryId] : ['none']}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0] as string;
+                          setCategoryId(selected === 'none' ? '' : (selected || ''));
+                        }}
+                        onChange={(e) => {
+                          setCategoryId(e.target.value === 'none' ? '' : (e.target.value || ''));
+                        }}
+                        disallowEmptySelection
+                        placeholder={`-- ${isEdit ? 'Tanpa Kategori' : 'Pilih Kategori'} --`}
+                        className="w-full"
+                        classNames={{
+                          trigger: 'bg-[#141417] border border-zinc-800 hover:border-zinc-700 data-[hover=true]:border-zinc-700 text-zinc-100 text-sm rounded-xl min-h-[40px]',
+                          popoverContent: 'bg-[#141417] border border-zinc-800 text-zinc-200',
+                          value: 'text-zinc-100 text-sm',
+                        }}
                       >
-                        <option value="">-- {isEdit ? 'Tanpa Kategori' : 'Pilih Kategori'} --</option>
-                        {categories
-                          .filter((c) => !c.category_type || c.category_type.toUpperCase() === type)
-                          .map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </option>
-                          ))}
-                      </select>
+                        {[
+                          <SelectItem key="none" textValue={isEdit ? 'Tanpa Kategori' : 'Pilih Kategori'} className="text-zinc-400 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80">
+                            -- {isEdit ? 'Tanpa Kategori' : 'Pilih Kategori'} --
+                          </SelectItem>,
+                          ...(categoryId && !categories.some((c) => (!c.category_type || c.category_type.toUpperCase() === type) && c.id === categoryId) ? [
+                            <SelectItem key={categoryId} textValue={categoryId} className="text-zinc-200 hover:bg-zinc-800/80">
+                              {categories.find((c) => c.id === categoryId)?.name || categoryId}
+                            </SelectItem>
+                          ] : []),
+                          ...categories
+                            .filter((c) => !c.category_type || c.category_type.toUpperCase() === type)
+                            .map((cat) => (
+                              <SelectItem
+                                key={cat.id}
+                                textValue={cat.name}
+                                className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                              >
+                                {cat.name}
+                              </SelectItem>
+                            )),
+                        ]}
+                      </Select>
                     </div>
                   </div>
                 ) : (
@@ -377,33 +428,91 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                       <label htmlFor="from-account-select" className="block text-xs font-medium text-zinc-400 mb-1">
                         Dari Rekening Asal <span className="sr-only">Dari Akun</span>*
                       </label>
-                      <select
+                      <Select
                         id="from-account-select"
+                        name="from_account_id"
+                        role="combobox"
                         aria-label="Dari Rekening Asal"
-                        value={fromAccountId || accounts[0]?.id || ''}
-                        onChange={(e) => setFromAccountId(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none text-white"
+                        selectedKeys={fromAccountId ? [fromAccountId] : (accounts[0]?.id ? [accounts[0].id] : [])}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0] as string;
+                          if (selected) setFromAccountId(selected);
+                        }}
+                        onChange={(e) => {
+                          if (e.target.value) setFromAccountId(e.target.value);
+                        }}
+                        disallowEmptySelection={accounts.length > 0}
+                        isDisabled={accounts.length === 0}
+                        placeholder="Pilih rekening asal"
+                        className="w-full"
+                        classNames={{
+                          trigger: 'bg-[#141417] border border-zinc-800 hover:border-zinc-700 data-[hover=true]:border-zinc-700 text-zinc-100 text-xs rounded-xl min-h-[38px]',
+                          popoverContent: 'bg-[#141417] border border-zinc-800 text-zinc-200',
+                          value: 'text-zinc-100 text-xs',
+                        }}
                       >
-                        {accounts.map((acc) => (
-                          <option key={acc.id} value={acc.id}>{acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})</option>
-                        ))}
-                      </select>
+                        {[
+                          ...(fromAccountId && !accounts.some((a) => a.id === fromAccountId) ? [
+                            <SelectItem key={fromAccountId} textValue={fromAccountId} className="text-zinc-200 hover:bg-zinc-800/80">
+                              {fromAccountId}
+                            </SelectItem>
+                          ] : []),
+                          ...accounts.map((acc) => (
+                            <SelectItem
+                              key={acc.id}
+                              textValue={`${acc.name} (Rp ${Number(acc.current_balance).toLocaleString('id-ID')})`}
+                              className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                            >
+                              {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
+                            </SelectItem>
+                          )),
+                        ]}
+                      </Select>
                     </div>
                     <div>
                       <label htmlFor="to-account-select" className="block text-xs font-medium text-zinc-400 mb-1">
                         Ke Rekening Tujuan <span className="sr-only">Ke Akun</span>*
                       </label>
-                      <select
+                      <Select
                         id="to-account-select"
+                        name="to_account_id"
+                        role="combobox"
                         aria-label="Ke Rekening Tujuan"
-                        value={toAccountId || accounts[1]?.id || ''}
-                        onChange={(e) => setToAccountId(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none text-white"
+                        selectedKeys={toAccountId ? [toAccountId] : (accounts[1]?.id ? [accounts[1].id] : accounts[0]?.id ? [accounts[0].id] : [])}
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(keys)[0] as string;
+                          if (selected) setToAccountId(selected);
+                        }}
+                        onChange={(e) => {
+                          if (e.target.value) setToAccountId(e.target.value);
+                        }}
+                        disallowEmptySelection={accounts.length > 0}
+                        isDisabled={accounts.length === 0}
+                        placeholder="Pilih rekening tujuan"
+                        className="w-full"
+                        classNames={{
+                          trigger: 'bg-[#141417] border border-zinc-800 hover:border-zinc-700 data-[hover=true]:border-zinc-700 text-zinc-100 text-xs rounded-xl min-h-[38px]',
+                          popoverContent: 'bg-[#141417] border border-zinc-800 text-zinc-200',
+                          value: 'text-zinc-100 text-xs',
+                        }}
                       >
-                        {accounts.map((acc) => (
-                          <option key={acc.id} value={acc.id}>{acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})</option>
-                        ))}
-                      </select>
+                        {[
+                          ...(toAccountId && !accounts.some((a) => a.id === toAccountId) ? [
+                            <SelectItem key={toAccountId} textValue={toAccountId} className="text-zinc-200 hover:bg-zinc-800/80">
+                              {toAccountId}
+                            </SelectItem>
+                          ] : []),
+                          ...accounts.map((acc) => (
+                            <SelectItem
+                              key={acc.id}
+                              textValue={`${acc.name} (Rp ${Number(acc.current_balance).toLocaleString('id-ID')})`}
+                              className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                            >
+                              {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
+                            </SelectItem>
+                          )),
+                        ]}
+                      </Select>
                     </div>
                   </div>
                 )}

@@ -159,10 +159,10 @@ describe('TransactionsTable Component', () => {
 
     expect(accountSelect).toBeInTheDocument();
     expect(categorySelect).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Semua Akun' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'BCA Utama' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Semua Kategori' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Makanan' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Semua Akun', hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'BCA Utama', hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Semua Kategori', hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Makanan', hidden: true })).toBeInTheDocument();
   });
 
   it('changing Account selector triggers onParamsChange', () => {
@@ -178,7 +178,9 @@ describe('TransactionsTable Component', () => {
     );
 
     const accountSelect = screen.getByRole('combobox', { name: /Filter Akun/i });
-    fireEvent.change(accountSelect, { target: { value: 'acc-1' } });
+    fireEvent.click(accountSelect);
+    const bcaOption = screen.getByRole('option', { name: 'BCA Utama' });
+    fireEvent.click(bcaOption);
 
     expect(handleParamsChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -201,7 +203,9 @@ describe('TransactionsTable Component', () => {
     );
 
     const categorySelect = screen.getByRole('combobox', { name: /Filter Kategori/i });
-    fireEvent.change(categorySelect, { target: { value: 'cat-2' } });
+    fireEvent.click(categorySelect);
+    const transportOption = screen.getByRole('option', { name: 'Transportasi' });
+    fireEvent.click(transportOption);
 
     expect(handleParamsChange).toHaveBeenCalledWith(
       expect.objectContaining({

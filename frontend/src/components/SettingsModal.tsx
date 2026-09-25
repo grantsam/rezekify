@@ -5,6 +5,8 @@ import {
   ModalHeader,
   ModalBody,
   Button,
+  Select,
+  SelectItem,
 } from '@heroui/react';
 import {
   Bot,
@@ -460,18 +462,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <label htmlFor="model-select" className="block text-xs font-medium text-zinc-400 mb-1.5">
                           Model AI
                         </label>
-                        <select
+                        <Select
                           id="model-select"
-                          value={model}
-                          onChange={(e) => setModel(e.target.value)}
-                          className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                          role="combobox"
+                          aria-label="Model AI"
+                          data-testid="model-select"
+                          selectedKeys={model ? [model] : []}
+                          onSelectionChange={(keys) => {
+                            const selected = Array.from(keys)[0] as string;
+                            if (selected) setModel(selected);
+                          }}
+                          onChange={(e) => {
+                            if (e.target.value) setModel(e.target.value);
+                          }}
+                          disallowEmptySelection
+                          className="w-full"
+                          classNames={{
+                            trigger: 'bg-[#141417] border border-zinc-800 hover:border-zinc-700 data-[hover=true]:border-zinc-700 text-zinc-100 text-xs rounded-xl min-h-[38px]',
+                            popoverContent: 'bg-[#141417] border border-zinc-800 text-zinc-200',
+                            value: 'text-zinc-100 text-xs',
+                          }}
                         >
-                          {availableModelsList.map((m) => (
-                            <option key={m} value={m}>
-                              {m}
-                            </option>
-                          ))}
-                        </select>
+                          {[
+                            ...(model && !availableModelsList.includes(model) ? [
+                              <SelectItem key={model} textValue={model} className="text-zinc-200 hover:bg-zinc-800/80">
+                                {model}
+                              </SelectItem>
+                            ] : []),
+                            ...availableModelsList.map((m) => (
+                              <SelectItem
+                                key={m}
+                                textValue={m}
+                                className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                              >
+                                {m}
+                              </SelectItem>
+                            )),
+                          ]}
+                        </Select>
                       </div>
 
                       {/* API Key Input */}

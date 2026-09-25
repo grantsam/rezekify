@@ -146,4 +146,57 @@ describe('ManualTransactionModal Component', () => {
     expect(incomeBtn).toHaveAttribute('aria-checked', 'false');
     expect(transferBtn).toHaveAttribute('aria-checked', 'false');
   });
+
+  it('allows changing account and category via HeroUI Select dropdowns', async () => {
+    const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({ id: 'tx-new-2' });
+    const handleSuccess = vi.fn();
+    const mockCategories = [
+      { id: 'cat-makan', name: 'Makanan & Minuman', category_type: 'EXPENSE' as const },
+    ];
+
+    render(
+      <ManualTransactionModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={handleSuccess}
+        accounts={mockAccounts}
+        categories={mockCategories}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Nominal/i), { target: { value: '25000' } });
+    fireEvent.change(screen.getByLabelText(/Deskripsi/i), { target: { value: 'Beli Jus' } });
+
+    // Open Account dropdown and select GoPay (acc-2)
+    const accountSelect = screen.getByRole('combobox', { name: /Pilih Akun/i });
+    fireEvent.click(accountSelect);
+    const gopayOption = screen.getByRole('option', { name: /GoPay/i });
+    fireEvent.click(gopayOption);
+
+    // Open Category dropdown and select Makanan & Minuman
+    const categorySelect = screen.getByRole('combobox', { name: /Kategori/i });
+    fireEvent.click(categorySelect);
+    const catOption = screen.getByRole('option', { name: /Makanan & Minuman/i });
+    fireEvent.click(catOption);
+
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Transaksi/i }));
+
+    await waitFor(() => {
+      expect(apiFetchSpy).toHaveBeenCalledWith(
+        '/transactions',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+      const callArgs = apiFetchSpy.mock.calls[0][1] as any;
+      const parsedBody = JSON.parse(callArgs.body);
+      expect(parsedBody).toMatchObject({
+        transaction_type: 'EXPENSE',
+        amount: 25000,
+        description: 'Beli Jus',
+        account_id: 'acc-2',
+        category_id: 'cat-makan',
+      });
+    });
+  });
 });

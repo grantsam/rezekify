@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Trash2, ArrowUpRight, ArrowDownLeft, Clock, Pencil, Search, X } from 'lucide-react';
-import { Chip, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
+import { Chip, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Select, SelectItem } from '@heroui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Account, Category, Transaction, TransactionFilterParams } from '../types/api';
 
@@ -383,35 +383,99 @@ export const TransactionsTable: React.FC<Props> = ({
           </div>
 
           {accounts !== undefined && (
-            <select
+            <Select
+              role="combobox"
               aria-label="Filter Akun"
-              value={selectedAccount}
-              onChange={(e) => handleAccountChange(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2 text-xs sm:text-sm focus:border-zinc-700 outline-none min-h-[38px] transition-colors cursor-pointer"
+              data-testid="filter-account-select"
+              selectedKeys={[selectedAccount || 'ALL']}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as string;
+                handleAccountChange(selected === 'ALL' ? '' : (selected || ''));
+              }}
+              onChange={(e) => {
+                const val = e.target.value;
+                handleAccountChange(val === 'ALL' ? '' : (val || ''));
+              }}
+              disallowEmptySelection
+              className="w-full sm:w-44"
+              classNames={{
+                trigger: 'bg-[#141417] border border-zinc-800 hover:border-zinc-700 data-[hover=true]:border-zinc-700 text-zinc-100 text-xs sm:text-sm rounded-xl min-h-[38px]',
+                popoverContent: 'bg-[#141417] border border-zinc-800 text-zinc-200',
+                value: 'text-zinc-100 text-xs sm:text-sm',
+              }}
             >
-              <option value="">Semua Akun</option>
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id} className="bg-zinc-900 text-white">
-                  {acc.name}
-                </option>
-              ))}
-            </select>
+              {[
+                <SelectItem
+                  key="ALL"
+                  textValue="Semua Akun"
+                  className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                >
+                  Semua Akun
+                </SelectItem>,
+                ...(selectedAccount && selectedAccount !== 'ALL' && !accounts.some((a) => a.id === selectedAccount) ? [
+                  <SelectItem key={selectedAccount} textValue={selectedAccount} className="text-zinc-200 hover:bg-zinc-800/80">
+                    {selectedAccount}
+                  </SelectItem>
+                ] : []),
+                ...accounts.map((acc) => (
+                  <SelectItem
+                    key={acc.id}
+                    textValue={acc.name}
+                    className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                  >
+                    {acc.name}
+                  </SelectItem>
+                )),
+              ]}
+            </Select>
           )}
 
           {categories !== undefined && (
-            <select
+            <Select
+              role="combobox"
               aria-label="Filter Kategori"
-              value={selectedCategory}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2 text-xs sm:text-sm focus:border-zinc-700 outline-none min-h-[38px] transition-colors cursor-pointer"
+              data-testid="filter-category-select"
+              selectedKeys={[selectedCategory || 'ALL']}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as string;
+                handleCategoryChange(selected === 'ALL' ? '' : (selected || ''));
+              }}
+              onChange={(e) => {
+                const val = e.target.value;
+                handleCategoryChange(val === 'ALL' ? '' : (val || ''));
+              }}
+              disallowEmptySelection
+              className="w-full sm:w-44"
+              classNames={{
+                trigger: 'bg-[#141417] border border-zinc-800 hover:border-zinc-700 data-[hover=true]:border-zinc-700 text-zinc-100 text-xs sm:text-sm rounded-xl min-h-[38px]',
+                popoverContent: 'bg-[#141417] border border-zinc-800 text-zinc-200',
+                value: 'text-zinc-100 text-xs sm:text-sm',
+              }}
             >
-              <option value="">Semua Kategori</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id} className="bg-zinc-900 text-white">
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              {[
+                <SelectItem
+                  key="ALL"
+                  textValue="Semua Kategori"
+                  className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                >
+                  Semua Kategori
+                </SelectItem>,
+                ...(selectedCategory && selectedCategory !== 'ALL' && !categories.some((c) => c.id === selectedCategory) ? [
+                  <SelectItem key={selectedCategory} textValue={selectedCategory} className="text-zinc-200 hover:bg-zinc-800/80">
+                    {selectedCategory}
+                  </SelectItem>
+                ] : []),
+                ...categories.map((cat) => (
+                  <SelectItem
+                    key={cat.id}
+                    textValue={cat.name}
+                    className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
+                  >
+                    {cat.name}
+                  </SelectItem>
+                )),
+              ]}
+            </Select>
           )}
         </div>
 

@@ -230,4 +230,45 @@ describe('SettingsModal Component', () => {
       expect(updateProfileSpy).not.toHaveBeenCalled();
     });
   });
+
+  it('allows changing AI model via HeroUI Select dropdown in BYOK tab', async () => {
+    const updateSpy = vi.spyOn(apiClient, 'updateAISettings').mockResolvedValue({
+      is_custom_ai_enabled: true,
+      provider: 'GEMINI',
+      model: 'gemini-2.5-pro',
+      has_api_key: true,
+      key_hint: '...9999',
+      available_models: mockSettings.ai.available_models,
+    });
+
+    render(<SettingsModal isOpen={true} onClose={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Model & Kunci AI \(BYOK\)/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Model & Kunci AI \(BYOK\)/i }));
+
+    const byokCard = screen.getByRole('button', { name: /Bring Your Own Key/i });
+    fireEvent.click(byokCard);
+
+    const modelSelect = screen.getByRole('combobox', { name: /Model AI/i });
+    expect(modelSelect).toBeInTheDocument();
+
+    fireEvent.click(modelSelect);
+    const proOption = screen.getByRole('option', { name: 'gemini-2.5-pro' });
+    fireEvent.click(proOption);
+
+    const saveBtn = screen.getByRole('button', { name: /Simpan Pengaturan/i });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith({
+        is_custom_ai_enabled: true,
+        provider: 'GEMINI',
+        model: 'gemini-2.5-pro',
+        api_key: undefined,
+      });
+    });
+  });
 });
