@@ -6,6 +6,21 @@ services:
     image: postgres:16-alpine
     container_name: rezekify_db
     restart: unless-stopped
+    command: >
+      postgres
+        -c shared_buffers=256MB
+        -c effective_cache_size=768MB
+        -c work_mem=4MB
+        -c maintenance_work_mem=64MB
+        -c max_connections=30
+        -c wal_buffers=8MB
+        -c random_page_cost=1.1
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_production_password}
@@ -33,6 +48,12 @@ services:
       dockerfile: Dockerfile.backend
     container_name: rezekify_backend
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 384M
     environment:
       ENVIRONMENT: production
       DEBUG: "false"
@@ -68,6 +89,12 @@ services:
       dockerfile: Dockerfile
     container_name: rezekify_frontend
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 32M
     ports:
       - "${APP_PORT:-80}:80"
     depends_on:
