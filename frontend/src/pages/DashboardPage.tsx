@@ -232,76 +232,92 @@ export const DashboardPage: React.FC = () => {
 
       {/* Domain Modals */}
       <React.Suspense fallback={null}>
-        <EditTransactionModal
-          isOpen={modals.isEditTxModalOpen}
-          onClose={modals.closeEditTxModal}
-          onSuccess={() => {
-            modals.closeEditTxModal();
-            refreshAllData();
-          }}
-          transaction={modals.selectedTxForEdit}
-          accounts={dashboard.accounts}
-          categories={dashboard.categories}
-        />
+        {modals.isEditTxModalOpen && (
+          <EditTransactionModal
+            isOpen={modals.isEditTxModalOpen}
+            onClose={modals.closeEditTxModal}
+            onSuccess={() => {
+              modals.closeEditTxModal();
+              refreshAllData();
+            }}
+            transaction={modals.selectedTxForEdit}
+            accounts={dashboard.accounts}
+            categories={dashboard.categories}
+          />
+        )}
 
-        <AccountModal
-          isOpen={modals.isAccountModalOpen}
-          onClose={modals.closeAccountModal}
-          accountToEdit={modals.selectedAccountForEdit}
-          onSuccess={() => {
-            refreshAllData();
-          }}
-        />
+        {modals.isAccountModalOpen && (
+          <AccountModal
+            isOpen={modals.isAccountModalOpen}
+            onClose={modals.closeAccountModal}
+            accountToEdit={modals.selectedAccountForEdit}
+            onSuccess={() => {
+              refreshAllData();
+            }}
+          />
+        )}
 
-        <VaultModal
-          isOpen={modals.isVaultModalOpen}
-          onClose={modals.closeVaultModal}
-          onSuccess={() => {
-            refreshAllData();
-          }}
-        />
+        {modals.isVaultModalOpen && (
+          <VaultModal
+            isOpen={modals.isVaultModalOpen}
+            onClose={modals.closeVaultModal}
+            onSuccess={() => {
+              refreshAllData();
+            }}
+          />
+        )}
 
-        <EditVaultModal
-          isOpen={modals.isEditVaultModalOpen}
-          onClose={modals.closeEditVaultModal}
-          onSuccess={() => {
-            modals.closeEditVaultModal();
-            refreshAllData();
-          }}
-          vault={modals.selectedVaultForEdit}
-        />
+        {modals.isEditVaultModalOpen && modals.selectedVaultForEdit && (
+          <EditVaultModal
+            isOpen={modals.isEditVaultModalOpen}
+            onClose={modals.closeEditVaultModal}
+            onSuccess={() => {
+              modals.closeEditVaultModal();
+              refreshAllData();
+            }}
+            vault={modals.selectedVaultForEdit}
+          />
+        )}
 
-        <SimulatePurchaseModal
-          isOpen={modals.isSimulateModalOpen}
-          onClose={modals.closeSimulateModal}
-        />
+        {modals.isSimulateModalOpen && (
+          <SimulatePurchaseModal
+            isOpen={modals.isSimulateModalOpen}
+            onClose={modals.closeSimulateModal}
+          />
+        )}
 
-        <ManualTransactionModal
-          isOpen={modals.isManualModalOpen}
-          onClose={modals.closeManualModal}
-          accounts={dashboard.accounts}
-          categories={dashboard.categories}
-          onSuccess={() => {
-            refreshAllData();
-          }}
-        />
+        {modals.isManualModalOpen && (
+          <ManualTransactionModal
+            isOpen={modals.isManualModalOpen}
+            onClose={modals.closeManualModal}
+            accounts={dashboard.accounts}
+            categories={dashboard.categories}
+            onSuccess={() => {
+              refreshAllData();
+            }}
+          />
+        )}
 
-        <SettingsModal
-          isOpen={modals.isSettingsModalOpen}
-          onClose={modals.closeSettingsModal}
-          onSettingsUpdated={() => {
-            refreshAllData();
-          }}
-        />
+        {modals.isSettingsModalOpen && (
+          <SettingsModal
+            isOpen={modals.isSettingsModalOpen}
+            onClose={modals.closeSettingsModal}
+            onSettingsUpdated={() => {
+              refreshAllData();
+            }}
+          />
+        )}
 
-        <CategoryManagerModal
-          isOpen={modals.isCategoryModalOpen}
-          onClose={modals.closeCategoryModal}
-          onSuccess={() => {
-            refreshAllData();
-          }}
-          categories={dashboard.categories}
-        />
+        {modals.isCategoryModalOpen && (
+          <CategoryManagerModal
+            isOpen={modals.isCategoryModalOpen}
+            onClose={modals.closeCategoryModal}
+            onSuccess={() => {
+              refreshAllData();
+            }}
+            categories={dashboard.categories}
+          />
+        )}
       </React.Suspense>
     </AppLayout>
   );
