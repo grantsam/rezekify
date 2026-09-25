@@ -37,7 +37,7 @@ All 23 design system, accessibility, motion, and component foundation findings i
   - **P1-4 (CTA Style Mismatch):** Pruned legacy `VaultsSection.tsx` emerald CTA and standardized `VaultsView.tsx` / `LedgerView.tsx` on Modern Zinc monochrome white CTA (Commits `74e0777`, `c12dacf`).
   - **P1-5 (View Entry Transitions):** Added smooth 200ms `easeOut` layout entry transitions to `LedgerView.tsx`, `VaultsView.tsx`, and `AuthPage.tsx` (Commit `6b79ed9`).
   - **P1-6 (Continuous Pulse):** Removed continuous decorative `animate-pulse` from static indicators in `Sidebar.tsx` and `SettingsModal.tsx` (Commit `45c0698`).
-  - **P1-7 (tabular-nums):** Added `tabular-nums` class to financial amount typography in `OverviewView.tsx` (Commit `9b1808e`).
+  - **P1-7 (tabular-nums):** Added `tabular-nums` class to financial amount typography in `OverviewView.tsx` (Commit `9b1808e`), and enforced `tabular-nums` on `ExpenseCharts.tsx` threshold/diff badges and `SettingsModal.tsx` preview threshold (Commit `f6149c4`).
   - **P1-8 (HeroUI Card Foundations):** Migrated raw container `<div>` elements to HeroUI `<Card>` and `<CardBody>` across `OverviewView.tsx`, `ExpenseCharts.tsx`, and `RunwayMetricCard.tsx` (Commit `6b79ed9`).
   - **P2-1 (HeroUI Select):** Expanded Tailwind content scanning to include HeroUI select/popover/listbox styles (Commit `9b1808e`) and migrated all raw `<select>` elements in `ManualTransactionModal.tsx`, `TransactionsTable.tsx`, and `SettingsModal.tsx` to HeroUI `<Select>` and `<SelectItem>` (Commit `123193d`).
   - **P2-2 (Scrollbar color):** Updated scrollbar track background in `index.css` from `#020617` to `#0c0c0e` (Commit `c12dacf`).
@@ -45,11 +45,12 @@ All 23 design system, accessibility, motion, and component foundation findings i
   - **P2-4 (Decorative blurs):** Pruned alongside obsolete `OmniInputHero.tsx` (Commits `c12dacf`, `74e0777`).
   - **P2-5 (Font token unification):** Replaced legacy `text-slate-400` with `text-zinc-400` across all components (Commit `c12dacf`).
   - **P2-6 (transition-all overuse):** Targeted transitions to specific `transition-colors` / `transition-transform` and removed unused glow shadow tokens (Commits `9b1808e`, `08b2370`, `d35be7e`, `935c134`).
-  - **P3-1 (disabled vs isDisabled):** Standardized on HeroUI's `isDisabled` prop and removed redundant native `disabled` attributes (Commits `935c134`, `123193d`).
+  - **P3-1 (disabled vs isDisabled):** Standardized on HeroUI's `isDisabled` prop and removed redundant native `disabled` attributes across components (Commits `935c134`, `123193d`), and eliminated residual `disabled={isLoading}` on `SimulatePurchaseModal.tsx:161` (Commit `f6149c4`).
   - **P3-2 (py-0.2 typo fix):** Fixed non-existent Tailwind class `py-0.2` to `py-0.5 px-2` in `VaultsView.tsx` and `Sidebar.tsx` (Commit `9b1808e`).
-  - **P3-3 (type="button" cleanup):** Removed redundant `type="button"` attributes across HeroUI buttons, retaining explicit `type="submit"` solely on form submission buttons (Commits `d35be7e`, `935c134`).
+  - **P3-3 (type="button" cleanup):** Removed redundant `type="button"` attributes across HeroUI buttons, retaining explicit `type="submit"` solely on form submission buttons (Commits `d35be7e`, `935c134`), and completed final codebase sweep stripping 27 redundant `type="button"` attributes across 9 files (Commit `f6149c4`).
   - **P3-4 (Unused shadow tokens):** Pruned unused `shadow-glow-*` token definitions from `tailwind.config.js` (Commit `9b1808e`).
   - **P3-5 (prefers-reduced-motion):** Enforced motion restraint with transitions capped at <= 250ms and eliminated continuous decorative pulses, ensuring accessible rendering (Commits `45c0698`, `6b79ed9`).
+  - **Web Typography & Google Fonts:** Injected preconnect and Google Fonts stylesheet for Inter and Plus Jakarta Sans in `frontend/index.html` to eliminate ghost fonts (Commit `f6149c4`).
 - **Remaining Open:** 0
 
 ---
@@ -277,15 +278,17 @@ Neither is imported or rendered anywhere in the active application. The dashboar
 
 ### P1-7: Missing tabular-nums on Financial Amounts
 
-> **Status: 🟢 RESOLVED (Commit 9b1808e)**
+> **Status: 🟢 RESOLVED (Commits `9b1808e`, `f6149c4`)**
 
 **DESIGN.md Mandate:** Always enforce `tabular-nums` for deterministic column alignment.
 
-**Violation Resolved:**
+**Violations Resolved:**
 
 - `OverviewView.tsx` — Mini-vault progress amounts have explicit `font-mono tabular-nums` classes added in commit `9b1808e`.
+- `ExpenseCharts.tsx` — Safe Runway Threshold baseline badge (`tabular-nums`) and delta difference badge (`tabular-nums`) enforced in commit `f6149c4`.
+- `SettingsModal.tsx` — Dynamic preview threshold amount badge has `font-mono tabular-nums` enforced in commit `f6149c4`.
 
-All financial amount figures across tables, cards, and views now enforce `tabular-nums`.
+All financial amount figures across tables, cards, charts, and modal previews strictly enforce `tabular-nums`.
 
 ---
 
@@ -344,11 +347,12 @@ Dead code, but if resurrected: three `<motion.div>` blobs with `blur-3xl` at 150
 
 ---
 
-### P2-5: Font Token Inconsistency (slate-400 vs zinc-400)
+### P2-5: Font Token Inconsistency & Web Typography (Google Fonts)
 
-> **Status: 🟢 RESOLVED (Commit c12dacf)**
+> **Status: 🟢 RESOLVED (Commits `c12dacf`, `f6149c4`)**
 
-Components mix `text-slate-400` and `text-zinc-400` for the same semantic purpose. `slate-400 (#94a3b8)` has a cooler blue tone vs `zinc-400 (#a1a1aa)` which is warmer gray.
+1. **Color Token Unification:** Components mix `text-slate-400` and `text-zinc-400` for the same semantic purpose. `slate-400 (#94a3b8)` has a cooler blue tone vs `zinc-400 (#a1a1aa)` which is warmer gray. All 15 files were migrated to `text-zinc-400` in commit `c12dacf`.
+2. **Ghost Fonts Remediation:** Design system font families configured in `tailwind.config.js` (`font-sans: ['Inter', ...]` and `font-heading: ['Plus Jakarta Sans', ...]`) were not being fetched from network endpoints, risking Flash of Invisible Text (FOIT) and system fallback inconsistencies. In commit `f6149c4`, resource preconnection (`fonts.googleapis.com`, `fonts.gstatic.com`) and Google Fonts stylesheet links (`Inter:wght@400;500;600;700` and `Plus+Jakarta+Sans:wght@500;600;700;800`) were injected into `frontend/index.html`.
 
 ---
 
@@ -364,9 +368,11 @@ Replaced generalized `transition-all` utility classes with targeted `transition-
 
 ### P3-1: Mixed disabled + isDisabled Props on HeroUI Buttons
 
-> **Status: 🟢 RESOLVED (Commits 935c134, 123193d)**
+> **Status: 🟢 RESOLVED (Commits `935c134`, `123193d`, `f6149c4`)**
 
-Standardized on HeroUI's `isDisabled` prop and removed redundant native `disabled` attributes across `VaultCard.tsx`, `TransactionsTable.tsx`, `AccountModal.tsx`, `VaultModal.tsx`, `ManualTransactionModal.tsx`, `SettingsModal.tsx`, and `CategoryManagerModal.tsx`.
+Standardized on HeroUI's `isDisabled` prop and removed redundant native `disabled` attributes across `VaultCard.tsx`, `TransactionsTable.tsx`, `AccountModal.tsx`, `VaultModal.tsx`, `ManualTransactionModal.tsx`, `SettingsModal.tsx`, and `CategoryManagerModal.tsx` (Commits `935c134`, `123193d`).
+
+In commit `f6149c4`, the residual `disabled={isLoading}` attribute on line 161 of `SimulatePurchaseModal.tsx` was stripped, preserving HeroUI's built-in `isLoading` state handling without conflicting native HTML attributes.
 
 ---
 
@@ -380,9 +386,20 @@ Replaced non-existent Tailwind utility class `py-0.2` with valid `py-0.5 px-2` c
 
 ### P3-3: Duplicate type="button" on HeroUI Button
 
-> **Status: 🟢 RESOLVED (Commits d35be7e, 935c134)**
+> **Status: 🟢 RESOLVED (Commits `d35be7e`, `935c134`, `f6149c4`)**
 
-Stripped redundant `type="button"` attributes across modal cancel/close buttons, filter tabs, and action triggers where HeroUI `<Button>` defaults to `type="button"`, retaining `type="submit"` explicitly only on actual form submission triggers.
+Stripped redundant `type="button"` attributes across modal cancel/close buttons, filter tabs, and action triggers where HeroUI `<Button>` defaults to `type="button"`, retaining `type="submit"` explicitly only on actual form submission triggers (Commits `d35be7e`, `935c134`).
+
+In commit `f6149c4`, a comprehensive audit sweep eliminated the remaining 27 redundant `type="button"` instances across 9 files:
+- `frontend/src/components/BottomDock.tsx` (5 instances)
+- `frontend/src/components/QuickCaptureBar.tsx` (6 instances)
+- `frontend/src/components/VaultsView.tsx` (4 instances)
+- `frontend/src/components/Sidebar.tsx` (4 instances)
+- `frontend/src/components/OverviewView.tsx` (3 instances)
+- `frontend/src/pages/AuthPage.tsx` (2 instances)
+- `frontend/src/components/RunwayMetricCard.tsx` (1 instance)
+- `frontend/src/components/SimulatePurchaseModal.tsx` (1 instance)
+- `frontend/src/pages/DashboardPage.tsx` (1 instance)
 
 ---
 
@@ -418,14 +435,14 @@ Enforced motion restraint guidelines across all animations: all framer-motion tr
 | `VaultsSection.tsx` | Pruned (dead code) | Pruned | Pruned | Pruned | Resolved (P1-2 pruned in 74e0777) |
 | `VaultCard.tsx` | zinc (Resolved c12dacf) | Button, Chip | motion.div | isDisabled normalized (Resolved 935c134) | Resolved |
 | `RunwayMetricCard.tsx` | zinc (Resolved c12dacf) | Card, CardBody, Chip, Progress (Resolved 6b79ed9) | None | Button onPress (Resolved d35be7e) | Resolved |
-| `ExpenseCharts.tsx` | zinc (Resolved c12dacf) | Card, CardBody, Tooltip, Button, Progress (Resolved 6b79ed9) | motion.div | Correct | Resolved |
+| `ExpenseCharts.tsx` | zinc (Resolved c12dacf) | Card, CardBody, Tooltip, Button, Progress (Resolved 6b79ed9) | motion.div | tabular-nums enforced (Resolved f6149c4) | Resolved |
 | `UpcomingBillsCard.tsx` | zinc (Resolved c12dacf) | Card, Chip | motion.div | None | Resolved |
 | `TransactionsTable.tsx` | zinc (Resolved c12dacf) | Select, Button, Chip, Modal (Resolved 123193d) | AnimatePresence | Button onPress (Resolved 935c134) | Resolved |
 | `OmniInputHero.tsx` | Pruned (dead code) | Pruned | Pruned | Pruned | Resolved (P1-2 pruned in 74e0777) |
 | `AccountModal.tsx` | zinc (Resolved c12dacf) | Modal, Button, Radio (Resolved 935c134/ae91d5a) | None | Button onPress, Indigo CTA (Resolved 08b2370) | Resolved |
 | `VaultModal.tsx` | zinc (Resolved c12dacf) | Modal, Button, Radio (Resolved 935c134/ae91d5a) | None | Button onPress, Indigo CTA (Resolved 08b2370) | Resolved |
 | `ManualTransactionModal.tsx` | zinc (Resolved c12dacf) | Modal, Button, Select, Radio (Resolved 935c134/123193d) | None | Button onPress, Indigo CTA (Resolved 08b2370) | Resolved |
-| `SimulatePurchaseModal.tsx` | zinc (Resolved c12dacf) | Modal, Button | None | Button onPress, Indigo CTA | Resolved |
+| `SimulatePurchaseModal.tsx` | zinc (Resolved c12dacf) | Modal, Button | None | Button onPress, Indigo CTA, disabled pruned (Resolved f6149c4) | Resolved |
 | `SettingsModal.tsx` | zinc (Resolved c12dacf) | Modal, Button, Select, Radio (Resolved 935c134/123193d) | None | Button onPress, Static dot (Resolved 45c0698) | Resolved |
 | `CategoryManagerModal.tsx` | zinc (Resolved c12dacf) | Modal, Button, Radio (Resolved 935c134) | None | Button onPress, Indigo CTA (Resolved 08b2370) | Resolved |
 | `DashboardPage.tsx` | zinc (correct) | Button onPress (Resolved d35be7e) | None | Button onPress (Resolved d35be7e) | Resolved |
