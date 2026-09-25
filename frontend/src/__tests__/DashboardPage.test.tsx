@@ -181,12 +181,16 @@ describe('DashboardPage Component', () => {
     const openBtn = screen.getByRole('button', { name: /\+ Rekening/i });
     fireEvent.click(openBtn);
 
-    expect(screen.getByText('Tambah Akun Baru')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Tambah Akun Baru')).toBeInTheDocument();
+    });
 
     const closeBtn = screen.getByRole('button', { name: /Tutup modal/i });
     fireEvent.click(closeBtn);
 
-    expect(screen.queryByText('Tambah Akun Baru')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('Tambah Akun Baru')).not.toBeInTheDocument();
+    });
   });
 
   it('opens SettingsModal from sidebar Pengaturan button', async () => {

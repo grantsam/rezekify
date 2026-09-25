@@ -10,14 +10,14 @@ import { QuickCaptureBar } from '../components/QuickCaptureBar';
 import { OverviewView } from '../components/OverviewView';
 import { LedgerView } from '../components/LedgerView';
 import { VaultsView } from '../components/VaultsView';
-import { ManualTransactionModal } from '../components/ManualTransactionModal';
-import { AccountModal } from '../components/AccountModal';
-import { VaultModal } from '../components/VaultModal';
-import { SimulatePurchaseModal } from '../components/SimulatePurchaseModal';
-import { EditTransactionModal } from '../components/EditTransactionModal';
-import { EditVaultModal } from '../components/EditVaultModal';
-import { SettingsModal } from '../components/SettingsModal';
-import { CategoryManagerModal } from '../components/CategoryManagerModal';
+const ManualTransactionModal = React.lazy(() => import('../components/ManualTransactionModal').then(m => ({ default: m.ManualTransactionModal })));
+const AccountModal = React.lazy(() => import('../components/AccountModal').then(m => ({ default: m.AccountModal })));
+const VaultModal = React.lazy(() => import('../components/VaultModal').then(m => ({ default: m.VaultModal })));
+const SimulatePurchaseModal = React.lazy(() => import('../components/SimulatePurchaseModal').then(m => ({ default: m.SimulatePurchaseModal })));
+const EditTransactionModal = React.lazy(() => import('../components/EditTransactionModal').then(m => ({ default: m.EditTransactionModal })));
+const EditVaultModal = React.lazy(() => import('../components/EditVaultModal').then(m => ({ default: m.EditVaultModal })));
+const SettingsModal = React.lazy(() => import('../components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const CategoryManagerModal = React.lazy(() => import('../components/CategoryManagerModal').then(m => ({ default: m.CategoryManagerModal })));
 
 export const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
@@ -231,76 +231,78 @@ export const DashboardPage: React.FC = () => {
       </main>
 
       {/* Domain Modals */}
-      <EditTransactionModal
-        isOpen={modals.isEditTxModalOpen}
-        onClose={modals.closeEditTxModal}
-        onSuccess={() => {
-          modals.closeEditTxModal();
-          refreshAllData();
-        }}
-        transaction={modals.selectedTxForEdit}
-        accounts={dashboard.accounts}
-        categories={dashboard.categories}
-      />
+      <React.Suspense fallback={null}>
+        <EditTransactionModal
+          isOpen={modals.isEditTxModalOpen}
+          onClose={modals.closeEditTxModal}
+          onSuccess={() => {
+            modals.closeEditTxModal();
+            refreshAllData();
+          }}
+          transaction={modals.selectedTxForEdit}
+          accounts={dashboard.accounts}
+          categories={dashboard.categories}
+        />
 
-      <AccountModal
-        isOpen={modals.isAccountModalOpen}
-        onClose={modals.closeAccountModal}
-        accountToEdit={modals.selectedAccountForEdit}
-        onSuccess={() => {
-          refreshAllData();
-        }}
-      />
+        <AccountModal
+          isOpen={modals.isAccountModalOpen}
+          onClose={modals.closeAccountModal}
+          accountToEdit={modals.selectedAccountForEdit}
+          onSuccess={() => {
+            refreshAllData();
+          }}
+        />
 
-      <VaultModal
-        isOpen={modals.isVaultModalOpen}
-        onClose={modals.closeVaultModal}
-        onSuccess={() => {
-          refreshAllData();
-        }}
-      />
+        <VaultModal
+          isOpen={modals.isVaultModalOpen}
+          onClose={modals.closeVaultModal}
+          onSuccess={() => {
+            refreshAllData();
+          }}
+        />
 
-      <EditVaultModal
-        isOpen={modals.isEditVaultModalOpen}
-        onClose={modals.closeEditVaultModal}
-        onSuccess={() => {
-          modals.closeEditVaultModal();
-          refreshAllData();
-        }}
-        vault={modals.selectedVaultForEdit}
-      />
+        <EditVaultModal
+          isOpen={modals.isEditVaultModalOpen}
+          onClose={modals.closeEditVaultModal}
+          onSuccess={() => {
+            modals.closeEditVaultModal();
+            refreshAllData();
+          }}
+          vault={modals.selectedVaultForEdit}
+        />
 
-      <SimulatePurchaseModal
-        isOpen={modals.isSimulateModalOpen}
-        onClose={modals.closeSimulateModal}
-      />
+        <SimulatePurchaseModal
+          isOpen={modals.isSimulateModalOpen}
+          onClose={modals.closeSimulateModal}
+        />
 
-      <ManualTransactionModal
-        isOpen={modals.isManualModalOpen}
-        onClose={modals.closeManualModal}
-        accounts={dashboard.accounts}
-        categories={dashboard.categories}
-        onSuccess={() => {
-          refreshAllData();
-        }}
-      />
+        <ManualTransactionModal
+          isOpen={modals.isManualModalOpen}
+          onClose={modals.closeManualModal}
+          accounts={dashboard.accounts}
+          categories={dashboard.categories}
+          onSuccess={() => {
+            refreshAllData();
+          }}
+        />
 
-      <SettingsModal
-        isOpen={modals.isSettingsModalOpen}
-        onClose={modals.closeSettingsModal}
-        onSettingsUpdated={() => {
-          refreshAllData();
-        }}
-      />
+        <SettingsModal
+          isOpen={modals.isSettingsModalOpen}
+          onClose={modals.closeSettingsModal}
+          onSettingsUpdated={() => {
+            refreshAllData();
+          }}
+        />
 
-      <CategoryManagerModal
-        isOpen={modals.isCategoryModalOpen}
-        onClose={modals.closeCategoryModal}
-        onSuccess={() => {
-          refreshAllData();
-        }}
-        categories={dashboard.categories}
-      />
+        <CategoryManagerModal
+          isOpen={modals.isCategoryModalOpen}
+          onClose={modals.closeCategoryModal}
+          onSuccess={() => {
+            refreshAllData();
+          }}
+          categories={dashboard.categories}
+        />
+      </React.Suspense>
     </AppLayout>
   );
 };
