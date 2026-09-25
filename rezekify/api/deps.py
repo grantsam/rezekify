@@ -47,10 +47,19 @@ def get_current_user(
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
+        token_type = payload.get("type")
+        if token_type != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type for access",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         user_id_str: str = payload.get("sub")
         if user_id_str is None:
             raise credentials_exception
         user_id = UUID(user_id_str)
+    except HTTPException:
+        raise
     except (JWTError, ValueError):
         raise credentials_exception
 

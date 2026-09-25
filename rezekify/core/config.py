@@ -21,7 +21,10 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = DEFAULT_DEV_SECRET
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # Ephemeral 30 minutes
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7     # 7 days rotation cycle
+    COOKIE_SECURE: bool = False            # True in production (HTTPS)
+    COOKIE_SAMESITE: str = "lax"
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",

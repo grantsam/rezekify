@@ -2,7 +2,7 @@
 
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import bcrypt
 from jose import jwt
@@ -26,11 +26,19 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
-    """Creates a JWT access token containing subject and expiration."""
-    to_encode = data.copy()
+def create_access_token(data: Union[Dict[str, Any], Any], expires_delta: Optional[timedelta] = None) -> str:
+    """Creates a short-lived JWT access token containing subject, type claim, and expiration."""
+    to_encode = data.copy() if isinstance(data, dict) else {"sub": str(data)}
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def create_refresh_token(data: Union[Dict[str, Any], Any], expires_delta: Optional[timedelta] = None) -> str:
+    """Creates a long-lived JWT refresh token containing subject, type claim, and expiration."""
+    to_encode = data.copy() if isinstance(data, dict) else {"sub": str(data)}
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS))
+    to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
