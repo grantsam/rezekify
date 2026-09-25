@@ -422,7 +422,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="min-h-[38px] px-4 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md shadow-indigo-600/30"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-sm"
                   >
                     {isSubmitting ? (
                       <div className="flex items-center gap-2">
