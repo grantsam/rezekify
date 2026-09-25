@@ -106,11 +106,13 @@ class AgentOrchestrator:
         """Finds account by name match or falls back to the user's highest balance account."""
         account = None
         if account_name:
-            account = (
-                self.db.query(Account)
-                .filter(Account.user_id == user_id, Account.name.ilike(f"%{account_name}%"))
-                .first()
-            )
+            safe_name = account_name.replace("%", "").replace("_", "").strip()[:100]
+            if safe_name:
+                account = (
+                    self.db.query(Account)
+                    .filter(Account.user_id == user_id, Account.name.ilike(f"%{safe_name}%"))
+                    .first()
+                )
         if not account:
             account = (
                 self.db.query(Account)

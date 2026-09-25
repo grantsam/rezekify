@@ -149,6 +149,13 @@ class TelegramGateway:
             for uid in expired:
                 del _processed_update_ids[uid]
 
+            MAX_DEDUP_CACHE = 10_000
+            if len(_processed_update_ids) > MAX_DEDUP_CACHE:
+                # Evict oldest half
+                oldest_keys = sorted(_processed_update_ids.keys(), key=lambda k: _processed_update_ids[k])[:MAX_DEDUP_CACHE // 2]
+                for uid in oldest_keys:
+                    _processed_update_ids.pop(uid, None)
+
         message = update_dict.get("message") or update_dict.get("edited_message", {})
         chat = message.get("chat", {})
         chat_id = chat.get("id")

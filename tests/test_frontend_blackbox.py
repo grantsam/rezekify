@@ -22,6 +22,20 @@ import requests
 BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:80")
 
 
+def _is_server_reachable() -> bool:
+    try:
+        res = requests.get(f"{BASE_URL}/healthz", timeout=1)
+        return res.status_code == 200
+    except Exception:
+        return False
+
+
+pytestmark = pytest.mark.skipif(
+    not _is_server_reachable(),
+    reason="Live frontend/nginx container on port 80 is not reachable (blackbox integration test)",
+)
+
+
 def test_frontend_server_availability_and_security_headers():
     """Validates root endpoint availability and presence of mandatory security headers."""
     response = requests.get(f"{BASE_URL}/", timeout=10)
