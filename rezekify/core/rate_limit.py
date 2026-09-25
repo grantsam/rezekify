@@ -32,7 +32,7 @@ class RateLimiter:
     def _sweep_expired(self, boundary: float) -> None:
         """Evicts empty or expired buckets to prevent unbounded memory growth."""
         keys_to_delete = []
-        for k, q in self._history.items():
+        for k, q in list(self._history.items()):
             while q and q[0] <= boundary:
                 q.popleft()
             if not q:
@@ -40,9 +40,10 @@ class RateLimiter:
         for k in keys_to_delete:
             self._history.pop(k, None)
 
-        # Cap eviction: if still exceeding max_tracked_keys, evict oldest keys
+        # Cap eviction: if still exceeding max_tracked_keys, evict oldest keys with batch margin
         if len(self._history) > self.max_tracked_keys:
-            excess = len(self._history) - self.max_tracked_keys
+            batch_margin = max(1, int(self.max_tracked_keys * 0.1))
+            excess = (len(self._history) - self.max_tracked_keys) + batch_margin
             for k in list(self._history.keys())[:excess]:
                 self._history.pop(k, None)
 
