@@ -467,5 +467,22 @@ def test_telegram_failed_pairing_cache_capped(db_session):
     assert len(gateway.failed_pairing_attempts) <= MAX_FAILED_TRACKING
 
 
+def test_telegram_failed_pairing_cache_fifo_eviction_when_unexpired(db_session):
+    from rezekify.gateway.telegram_bot import (
+        MAX_FAILED_TRACKING,
+        PAIRING_FAIL_WINDOW_SECONDS,
+        TelegramGateway,
+    )
+
+    gateway = TelegramGateway(db=db_session)
+    now = time.time()
+    for i in range(MAX_FAILED_TRACKING + 100):
+        gateway.failed_pairing_attempts[100000 + i] = [now - 10.0 + (i * 0.001)]
+
+    assert len(gateway.failed_pairing_attempts) == MAX_FAILED_TRACKING + 100
+    gateway.process_text_message(999999, "/link INVALID_CODE")
+    assert len(gateway.failed_pairing_attempts) <= MAX_FAILED_TRACKING
+
+
 
 

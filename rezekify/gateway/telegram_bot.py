@@ -55,16 +55,26 @@ class TelegramGateway:
                 # Eviction sweep if cache exceeds MAX_FAILED_TRACKING
                 # ponytail: in-memory failed pairing tracking capped at 5000; switch to Redis ratelimit at scale
                 if len(self.failed_pairing_attempts) > MAX_FAILED_TRACKING:
+                    items_snapshot = list(self.failed_pairing_attempts.items())
                     expired_keys = [
-                        k for k, att in self.failed_pairing_attempts.items()
+                        k for k, att in items_snapshot
                         if (not att or att[-1] <= cutoff) and k != chat_id
                     ]
                     for k in expired_keys:
                         self.failed_pairing_attempts.pop(k, None)
 
                     if len(self.failed_pairing_attempts) > MAX_FAILED_TRACKING:
-                        keys_to_pop = [k for k in self.failed_pairing_attempts.keys() if k != chat_id][:int(MAX_FAILED_TRACKING * 0.2)]
-                        for k in keys_to_pop:
+                        expired_set = set(expired_keys)
+                        remaining_items = [
+                            item for item in items_snapshot
+                            if item[0] != chat_id and item[0] not in expired_set
+                        ]
+                        sorted_items = sorted(
+                            remaining_items,
+                            key=lambda item: item[1][-1] if item[1] else 0.0,
+                        )
+                        excess = len(self.failed_pairing_attempts) - int(MAX_FAILED_TRACKING * 0.8)
+                        for k, _ in sorted_items[:max(0, excess)]:
                             self.failed_pairing_attempts.pop(k, None)
 
                 if len(attempts) >= 5:

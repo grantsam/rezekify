@@ -110,7 +110,7 @@ class RunwayService:
     def clear_cache(cls, user_id: Optional[UUID] = None) -> None:
         """Clears in-memory runway cache for a specific user or entirely."""
         if user_id is not None:
-            keys_to_delete = [k for k in _runway_cache if k[0] == user_id]
+            keys_to_delete = [k for k in list(_runway_cache.keys()) if k[0] == user_id]
             for k in keys_to_delete:
                 _runway_cache.pop(k, None)
         else:
@@ -130,14 +130,17 @@ class RunwayService:
         # Lazy cache sweep
         # ponytail: in-memory cache sweep runs amortized every 60s or when cache >= 5000; move to Redis cache at scale
         if now - _last_runway_sweep > SWEEP_INTERVAL_SECONDS or len(_runway_cache) >= MAX_RUNWAY_CACHE:
-            expired_keys = [k for k, (_, ts) in _runway_cache.items() if now - ts > RUNWAY_CACHE_TTL_SECONDS]
+            items_snapshot = list(_runway_cache.items())
+            expired_keys = [k for k, (_, ts) in items_snapshot if now - ts > RUNWAY_CACHE_TTL_SECONDS]
             for k in expired_keys:
                 _runway_cache.pop(k, None)
 
             if len(_runway_cache) >= MAX_RUNWAY_CACHE:
-                sorted_keys = sorted(_runway_cache.keys(), key=lambda k: _runway_cache[k][1])
+                expired_set = set(expired_keys)
+                remaining_items = [item for item in items_snapshot if item[0] not in expired_set]
+                sorted_items = sorted(remaining_items, key=lambda item: item[1][1])
                 excess = len(_runway_cache) - int(MAX_RUNWAY_CACHE * 0.8)
-                for k in sorted_keys[:max(0, excess)]:
+                for k, _ in sorted_items[:max(0, excess)]:
                     _runway_cache.pop(k, None)
 
             _last_runway_sweep = now

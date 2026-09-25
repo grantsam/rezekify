@@ -681,4 +681,54 @@ def test_runway_cache_sweep_and_fifo_cap(db_session):
     assert len(_runway_cache) <= MAX_RUNWAY_CACHE
 
 
+def test_runway_cache_fifo_eviction_when_unexpired(db_session):
+    import time
+    from uuid import uuid4
+    from rezekify.services.runway import (
+        MAX_RUNWAY_CACHE,
+        RunwayReport,
+        RunwayService,
+        _runway_cache,
+    )
+
+    user = User(
+        email=f"runway-fifo-{uuid4().hex[:8]}@rezekify.local",
+        password_hash="dummyhash",
+        full_name="Runway FIFO Tester",
+    )
+    db_session.add(user)
+    db_session.flush()
+
+    acc = Account(
+        user_id=user.id,
+        name="Kas",
+        account_type=AccountType.CASH,
+        current_balance=Decimal("1000000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = RunwayService(db=db_session)
+    RunwayService.clear_cache()
+
+    dummy_report = RunwayReport(
+        total_liquid_cash=Decimal("1000000.00"),
+        vault_locked_cash=Decimal("0.00"),
+        operational_free_cash=Decimal("1000000.00"),
+        days_remaining=30,
+        daily_safe_runway=Decimal("33333.33"),
+        health_status="HEALTHY",
+        upcoming_bills=[],
+    )
+
+    now = time.time()
+    for i in range(MAX_RUNWAY_CACHE + 50):
+        fake_user_id = uuid4()
+        _runway_cache[(fake_user_id, date(2026, 1, 1))] = (dummy_report, now - 2.0 + (i * 0.0001))
+
+    assert len(_runway_cache) == MAX_RUNWAY_CACHE + 50
+    service.calculate_runway(user_id=user.id)
+    assert len(_runway_cache) <= MAX_RUNWAY_CACHE
+
+
 
