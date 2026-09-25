@@ -44,7 +44,7 @@ def test_frontend_nginx_configuration():
     content = nginx_path.read_text(encoding="utf-8")
 
     # Receipt upload payload limit (20 Megabytes)
-    assert "client_max_body_size 20M;" in content, "Nginx must allow 20M receipt uploads"
+    assert "client_max_body_size 10M;" in content, "Nginx must allow 10M receipt uploads aligned with backend"
 
     # Reverse proxy directives
     assert "proxy_pass http://backend:8000/api/;" in content
