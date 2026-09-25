@@ -1,5 +1,5 @@
 import React from 'react';
-import { Chip, Progress, Card, CardBody } from '@heroui/react';
+import { Chip, Progress, Card, CardBody, Button } from '@heroui/react';
 import { Gauge, ShieldCheck, AlertCircle, AlertTriangle, Lock, Wallet } from 'lucide-react';
 import { DashboardSummaryResponse } from '../types/api';
 
@@ -26,13 +26,13 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
                 Masuk atau daftarkan akun Anda untuk mengaktifkan telemetri batas belanja harian bebas risiko dan pemantauan kas.
               </p>
             </div>
-            <button
+            <Button
               type="button"
-              onClick={onOpenAuth}
+              onPress={onOpenAuth}
               className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/30 w-fit active:scale-95 min-h-[40px]"
             >
               Masuk / Buat Akun
-            </button>
+            </Button>
           </CardBody>
         </Card>
       );

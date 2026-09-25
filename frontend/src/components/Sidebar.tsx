@@ -99,20 +99,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             const Icon = item.icon;
             const isActive = activeView === item.id;
             return (
-              <button
+              <Button
                 key={item.id}
                 type="button"
-                onClick={() => {
+                variant="light"
+                onPress={() => {
                   if (item.id === 'settings' && onOpenSettings) {
                     onOpenSettings();
                   }
                   onViewChange(item.id);
                 }}
                 title={item.label}
-                className={`flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors min-h-[38px] ${
+                className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors min-h-[38px] h-auto ${
                   isActive
                     ? 'bg-zinc-800/90 text-white border border-zinc-700/80 font-semibold'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 bg-transparent'
                 }`}
               >
                 <div className="flex items-center gap-2.5 truncate">
@@ -124,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {item.badge}
                   </span>
                 )}
-              </button>
+              </Button>
             );
           })}
         </nav>

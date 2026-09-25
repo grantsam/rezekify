@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Button } from '@heroui/react';
 import { Sparkles, Lock, Mail, User, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -57,30 +58,32 @@ export const AuthPage: React.FC = () => {
 
         {/* Tab Switcher */}
         <div className="flex bg-[#0c0c0e]/80 p-1.5 rounded-xl border border-zinc-800 mb-6">
-          <button
+          <Button
             type="button"
-            onClick={() => {
+            variant="light"
+            onPress={() => {
               setTab('login');
               setErrorMessage(null);
             }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              tab === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-white'
+              tab === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-white bg-transparent'
             }`}
           >
             Masuk (Login)
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            onClick={() => {
+            variant="light"
+            onPress={() => {
               setTab('register');
               setErrorMessage(null);
             }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-white'
+              tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-white bg-transparent'
             }`}
           >
             Daftar Akun
-          </button>
+          </Button>
         </div>
 
         {errorMessage && (
@@ -148,10 +151,11 @@ export const AuthPage: React.FC = () => {
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/30 disabled:opacity-50 active:scale-[0.99]"
+            isDisabled={isSubmitting}
+            className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/30 disabled:opacity-50 active:scale-[0.99] min-h-[44px]"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -161,7 +165,7 @@ export const AuthPage: React.FC = () => {
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
-          </button>
+          </Button>
         </form>
       </div>
     </motion.div>

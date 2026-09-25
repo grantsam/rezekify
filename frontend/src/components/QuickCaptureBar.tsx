@@ -288,17 +288,20 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
             {file && (
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-300 shrink-0 max-w-[140px] sm:max-w-[200px] truncate">
                 <span className="truncate">{file.name}</span>
-                <button
+                <Button
                   type="button"
-                  onClick={() => {
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  onPress={() => {
                     setFile(null);
                     if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
                   aria-label="Hapus struk"
-                  className="text-zinc-400 hover:text-white ml-0.5"
+                  className="text-zinc-400 hover:text-white ml-0.5 min-w-[20px] w-5 h-5 p-0 bg-transparent"
                 >
                   <X className="w-3 h-3" />
-                </button>
+                </Button>
               </div>
             )}
 
@@ -385,14 +388,17 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
               <p className="text-zinc-200 whitespace-pre-line">{toastMessage.text}</p>
             </div>
             {onDismissToast && (
-              <button
+              <Button
                 type="button"
-                onClick={onDismissToast}
+                isIconOnly
+                size="sm"
+                variant="light"
+                onPress={onDismissToast}
                 aria-label="Tutup notifikasi"
-                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800/40"
+                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800/40 min-w-[28px] w-7 h-7 bg-transparent"
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             )}
           </motion.div>
         )}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button } from '@heroui/react';
 import { apiFetch, submitVoice } from '../services/apiClient';
 import { useAuth } from '../context/AuthContext';
 import { ChatResponse } from '../types/api';
@@ -171,14 +172,16 @@ export const DashboardPage: React.FC = () => {
               </p>
               <p className="text-zinc-200 text-xs md:text-sm">{activeTxError}</p>
             </div>
-            <button
+            <Button
               type="button"
-              onClick={handleDismissTxError}
+              size="sm"
+              variant="light"
+              onPress={handleDismissTxError}
               aria-label="Tutup pesan kesalahan transaksi"
               className="text-zinc-400 hover:text-white text-xs px-2.5 py-1 min-h-[32px] rounded-lg bg-transparent"
             >
               Tutup
-            </button>
+            </Button>
           </div>
         )}
 

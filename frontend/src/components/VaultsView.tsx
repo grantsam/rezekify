@@ -96,50 +96,56 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
 
       {/* Filter Tabs Toolbar */}
       <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-3">
-        <button
+        <Button
           type="button"
-          onClick={() => setActiveTab('ALL')}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
+          size="sm"
+          variant="light"
+          onPress={() => setActiveTab('ALL')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] h-auto ${
             activeTab === 'ALL'
               ? 'bg-zinc-800 text-white border border-zinc-700/80 font-semibold'
-              : 'text-zinc-400 hover:text-zinc-200'
+              : 'text-zinc-400 hover:text-zinc-200 bg-transparent'
           }`}
         >
           <span>Semua</span>
           <span className="text-[10px] py-0.5 px-2 rounded-md bg-zinc-900 font-mono text-zinc-400">
             {countAll}
           </span>
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
-          onClick={() => setActiveTab('FIXED_BILL')}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
+          size="sm"
+          variant="light"
+          onPress={() => setActiveTab('FIXED_BILL')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] h-auto ${
             activeTab === 'FIXED_BILL'
               ? 'bg-zinc-800 text-white border border-zinc-700/80 font-semibold'
-              : 'text-zinc-400 hover:text-zinc-200'
+              : 'text-zinc-400 hover:text-zinc-200 bg-transparent'
           }`}
         >
           <span>Tagihan Tetap</span>
           <span className="text-[10px] py-0.5 px-2 rounded-md bg-zinc-900 font-mono text-zinc-400">
             {countBills}
           </span>
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
-          onClick={() => setActiveTab('SAVINGS')}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
+          size="sm"
+          variant="light"
+          onPress={() => setActiveTab('SAVINGS')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[36px] h-auto ${
             activeTab === 'SAVINGS'
               ? 'bg-zinc-800 text-white border border-zinc-700/80 font-semibold'
-              : 'text-zinc-400 hover:text-zinc-200'
+              : 'text-zinc-400 hover:text-zinc-200 bg-transparent'
           }`}
         >
           <span>Tabungan</span>
           <span className="text-[10px] py-0.5 px-2 rounded-md bg-zinc-900 font-mono text-zinc-400">
             {countSavings}
           </span>
-        </button>
+        </Button>
       </div>
 
       {/* Bento Grid */}
