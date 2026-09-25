@@ -84,6 +84,123 @@ describe('apiClient authentication headers and utilities', () => {
     );
   });
 
+  it('apiFetch attaches an AbortSignal and cleans up timeout on success', async () => {
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    await apiFetch('/timeout-check');
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/timeout-check',
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      })
+    );
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+  });
+
+  it('apiFetch cleans up timeout on failure in finally block', async () => {
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network failure'));
+
+    await expect(apiFetch('/fail-check')).rejects.toThrow('Network failure');
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+  });
+
+  it('apiFetch aborts controller signal when 90s timeout expires', async () => {
+    vi.useFakeTimers();
+    try {
+      let fetchSignal: AbortSignal | undefined;
+      global.fetch = vi.fn().mockImplementation((_url, init) => {
+        fetchSignal = init?.signal;
+        return new Promise((_resolve, reject) => {
+          fetchSignal?.addEventListener('abort', () => {
+            reject(new DOMException('Timeout aborted', 'AbortError'));
+          });
+        });
+      });
+
+      const fetchPromise = apiFetch('/slow-endpoint');
+      expect(fetchSignal?.aborted).toBe(false);
+
+      vi.advanceTimersByTime(90_000);
+      expect(fetchSignal?.aborted).toBe(true);
+
+      await expect(fetchPromise).rejects.toThrow();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('apiFetch links caller abort signal', async () => {
+    const callerController = new AbortController();
+    let receivedSignal: AbortSignal | undefined;
+    global.fetch = vi.fn().mockImplementation((_url, init) => {
+      receivedSignal = init?.signal;
+      return new Promise((_resolve, reject) => {
+        if (receivedSignal) {
+          receivedSignal.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        }
+      });
+    });
+
+    const fetchPromise = apiFetch('/caller-signal-check', { signal: callerController.signal });
+    expect(receivedSignal?.aborted).toBe(false);
+    callerController.abort();
+    expect(receivedSignal?.aborted).toBe(true);
+    await expect(fetchPromise).rejects.toThrow();
+  });
+
+  it('apiFetch handles 401: clears token and redirects to / if not on /login', async () => {
+    setAuthToken('expired-token');
+    const originalLocation = window.location;
+    delete (window as any).location;
+    window.location = {
+      ...originalLocation,
+      pathname: '/dashboard',
+      href: 'http://localhost/dashboard',
+    } as any;
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: 'Unauthorized' }),
+    });
+
+    await expect(apiFetch('/protected')).rejects.toThrow('Unauthorized');
+    expect(getAuthToken()).toBeNull();
+    expect(window.location.href).toBe('/');
+
+    (window as any).location = originalLocation;
+  });
+
+  it('apiFetch handles 401: clears token but does not redirect if already on /login', async () => {
+    setAuthToken('expired-token');
+    const originalLocation = window.location;
+    delete (window as any).location;
+    window.location = {
+      ...originalLocation,
+      pathname: '/login',
+      href: 'http://localhost/login',
+    } as any;
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: 'Invalid credentials' }),
+    });
+
+    await expect(apiFetch('/login-endpoint')).rejects.toThrow('Invalid credentials');
+    expect(getAuthToken()).toBeNull();
+    expect(window.location.href).toBe('http://localhost/login');
+
+    (window as any).location = originalLocation;
+  });
+
   it('apiFetch throws error with detail message on failed request', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,

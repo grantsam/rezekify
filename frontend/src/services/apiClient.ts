@@ -61,18 +61,39 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
-    method: options.method,
-    ...options,
-    headers,
-  });
+  // 90s timeout controller for LLM OCR and long requests
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90_000);
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Request failed with status ${response.status}`);
+  // Link caller signal if provided
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => controller.abort());
   }
 
-  return response.json();
+  try {
+    const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+      method: options.method,
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    if (response.status === 401) {
+      clearAuthToken();
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        window.location.href = '/';
+      }
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Request failed with status ${response.status}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function updateTransaction(
