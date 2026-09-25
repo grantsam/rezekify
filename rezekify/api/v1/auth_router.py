@@ -2,15 +2,10 @@
 
 from typing import Optional
 from uuid import UUID
-import email_validator
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from jose import JWTError, jwt
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.orm import Session
-
-# Allow .local addresses (e.g. rezekify.local) in development and testing environments
-if "local" in email_validator.SPECIAL_USE_DOMAIN_NAMES:
-    email_validator.SPECIAL_USE_DOMAIN_NAMES.remove("local")
 
 from rezekify.api.deps import get_current_user, get_db
 from rezekify.core.config import settings
@@ -119,7 +114,7 @@ def login(req: LoginRequest, response: Response, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
 
-@auth_router.post("/refresh", response_model=TokenResponse)
+@auth_router.post("/refresh", response_model=TokenResponse, dependencies=[Depends(auth_limiter)])
 def refresh_token_endpoint(request: Request, response: Response, db: Session = Depends(get_db)):
     """Rotates access token and refresh token cookie."""
     token = request.cookies.get("refresh_token")
@@ -131,12 +126,12 @@ def refresh_token_endpoint(request: Request, response: Response, db: Session = D
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
         user_id_str = payload.get("sub")
-        if not user_id_str:
+        if not isinstance(user_id_str, str) or not user_id_str:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject")
         user_id = UUID(user_id_str)
     except HTTPException:
         raise
-    except (JWTError, ValueError):
+    except (JWTError, ValueError, TypeError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
 
     user = db.query(User).filter_by(id=user_id).first()

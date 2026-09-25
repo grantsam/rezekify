@@ -22,7 +22,7 @@ def clean_client_cookies():
 
 
 def test_register_and_login_sets_httponly_refresh_cookie():
-    email = f"auth-cookie-{uuid4().hex[:8]}@rezekify.local"
+    email = f"auth-cookie-{uuid4().hex[:8]}@example.com"
     password = "StrongPassword123"
 
     # 1. Register sets cookie
@@ -51,7 +51,7 @@ def test_register_and_login_sets_httponly_refresh_cookie():
 
 
 def test_auth_refresh_endpoint_rotates_tokens():
-    email = f"rotate-{uuid4().hex[:8]}@rezekify.local"
+    email = f"rotate-{uuid4().hex[:8]}@example.com"
     password = "StrongPassword123"
 
     reg_resp = client.post(
@@ -63,10 +63,8 @@ def test_auth_refresh_endpoint_rotates_tokens():
     assert initial_cookie is not None
 
     # Call /refresh with cookie
-    refresh_resp = client.post(
-        "/api/v1/auth/refresh",
-        cookies={"refresh_token": initial_cookie},
-    )
+    client.cookies.set("refresh_token", initial_cookie)
+    refresh_resp = client.post("/api/v1/auth/refresh")
     assert refresh_resp.status_code == 200
     new_data = refresh_resp.json()
     assert "access_token" in new_data
@@ -76,7 +74,7 @@ def test_auth_refresh_endpoint_rotates_tokens():
 
 def test_refresh_token_cannot_access_protected_endpoint():
     # An access endpoint must reject a refresh token with 401
-    refresh_token = create_refresh_token({"sub": str(uuid4()), "email": "test@test.local"})
+    refresh_token = create_refresh_token({"sub": str(uuid4()), "email": "test@example.com"})
     resp = client.get(
         "/api/v1/auth/me",
         headers={"Authorization": f"Bearer {refresh_token}"},
@@ -87,18 +85,60 @@ def test_refresh_token_cannot_access_protected_endpoint():
 
 def test_refresh_endpoint_rejects_missing_or_forged_cookie():
     # Missing cookie
+    client.cookies.clear()
     resp = client.post("/api/v1/auth/refresh")
     assert resp.status_code == 401
 
     # Forged signature
     forged_token = jwt.encode({"sub": str(uuid4()), "type": "refresh"}, "wrong-secret", algorithm="HS256")
-    resp_forged = client.post("/api/v1/auth/refresh", cookies={"refresh_token": forged_token})
+    client.cookies.set("refresh_token", forged_token)
+    resp_forged = client.post("/api/v1/auth/refresh")
     assert resp_forged.status_code == 401
 
     # Invalid token type (e.g. passing an access token in the refresh cookie)
-    access_token = create_access_token({"sub": str(uuid4()), "email": "test@test.local"})
-    resp_invalid_type = client.post("/api/v1/auth/refresh", cookies={"refresh_token": access_token})
+    access_token = create_access_token({"sub": str(uuid4()), "email": "test@example.com"})
+    client.cookies.set("refresh_token", access_token)
+    resp_invalid_type = client.post("/api/v1/auth/refresh")
     assert resp_invalid_type.status_code == 401
+
+
+def test_refresh_endpoint_rejects_invalid_sub_claims():
+    # Non-string sub claim (e.g. integer)
+    int_sub_token = jwt.encode({"sub": 12345, "type": "refresh"}, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    client.cookies.set("refresh_token", int_sub_token)
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 401
+
+    # Missing sub claim (omitted)
+    no_sub_token = jwt.encode({"type": "refresh"}, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    client.cookies.set("refresh_token", no_sub_token)
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 401
+    assert "Invalid token subject" in resp.json().get("detail", "")
+
+    # Empty string sub claim
+    empty_sub_token = jwt.encode({"sub": "", "type": "refresh"}, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    client.cookies.set("refresh_token", empty_sub_token)
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 401
+    assert "Invalid token subject" in resp.json().get("detail", "")
+
+    # Malformed UUID string
+    bad_uuid_token = jwt.encode({"sub": "invalid-uuid-format", "type": "refresh"}, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    client.cookies.set("refresh_token", bad_uuid_token)
+    resp = client.post("/api/v1/auth/refresh")
+    assert resp.status_code == 401
+
+
+def test_refresh_endpoint_rate_limited():
+    client.cookies.clear()
+    for _ in range(10):
+        resp = client.post("/api/v1/auth/refresh")
+        assert resp.status_code == 401
+
+    resp_exceeded = client.post("/api/v1/auth/refresh")
+    assert resp_exceeded.status_code == 429
+    assert "Retry-After" in resp_exceeded.headers
 
 
 def test_auth_logout_clears_cookie():
