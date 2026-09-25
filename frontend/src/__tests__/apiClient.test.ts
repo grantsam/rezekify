@@ -356,7 +356,7 @@ describe('apiClient authentication headers and utilities', () => {
       'http://localhost:8000/api/v1/auth/refresh',
       expect.objectContaining({
         method: 'POST',
-        credentials: 'same-origin',
+        credentials: 'include',
         signal: expect.any(AbortSignal),
       })
     );

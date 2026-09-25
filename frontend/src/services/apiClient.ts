@@ -60,7 +60,7 @@ export async function refreshAuthToken(): Promise<string | null> {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
-        credentials: 'same-origin',
+        credentials: 'include',
         signal: refreshController.signal,
       });
       if (!res.ok) {
