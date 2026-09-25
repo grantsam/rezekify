@@ -273,7 +273,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 variant="light"
                 onPress={handleCancelRecording}
                 aria-label="Batalkan rekaman"
-                className="p-1 min-w-[32px] min-h-[32px] text-zinc-400 hover:text-white bg-transparent"
+                className="p-1 min-w-[38px] min-h-[38px] text-zinc-400 hover:text-white bg-transparent flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -283,7 +283,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 size="sm"
                 onPress={handleStopRecording}
                 aria-label="Selesai dan kirim pesan suara"
-                className="min-w-[32px] min-h-[32px] bg-rose-600 hover:bg-rose-500 text-white rounded-lg flex items-center justify-center"
+                className="min-w-[38px] min-h-[38px] bg-rose-600 hover:bg-rose-500 text-white rounded-lg flex items-center justify-center"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
               </Button>
@@ -341,7 +341,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 onPress={() => fileInputRef.current?.click()}
                 isDisabled={isLoading}
                 aria-label="Pilih struk belanja"
-                className="p-1 min-w-[34px] min-h-[34px] text-zinc-400 hover:text-zinc-200 bg-transparent rounded-lg"
+                className="p-1 min-w-[38px] min-h-[38px] text-zinc-400 hover:text-zinc-200 bg-transparent rounded-lg flex items-center justify-center"
               >
                 <Camera className="w-4 h-4" />
               </Button>
@@ -354,7 +354,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 onPress={handleStartRecording}
                 isDisabled={isLoading}
                 aria-label="Rekam pesan suara"
-                className="p-1 min-w-[34px] min-h-[34px] text-zinc-400 hover:text-zinc-200 bg-transparent rounded-lg"
+                className="p-1 min-w-[38px] min-h-[38px] text-zinc-400 hover:text-zinc-200 bg-transparent rounded-lg flex items-center justify-center"
               >
                 <Mic className="w-4 h-4" />
               </Button>
