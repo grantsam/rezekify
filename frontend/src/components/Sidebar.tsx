@@ -80,7 +80,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           {onToggleCollapse && (
             <Button
-              type="button"
               isIconOnly
               size="sm"
               variant="light"
@@ -101,7 +100,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <Button
                 key={item.id}
-                type="button"
                 variant="light"
                 onPress={() => {
                   if (item.id === 'settings' && onOpenSettings) {
@@ -138,7 +136,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 Rekening Kas
               </span>
               <Button
-                type="button"
                 size="sm"
                 variant="light"
                 onPress={onOpenCreateAccount}
@@ -203,7 +200,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
           <Button
-            type="button"
             isIconOnly
             size="sm"
             variant="light"

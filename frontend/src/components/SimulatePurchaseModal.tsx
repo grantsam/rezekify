@@ -113,7 +113,6 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                   </div>
                 </div>
                 <Button
-                  type="button"
                   variant="light"
                   isIconOnly
                   onPress={handleClose}
@@ -158,7 +157,6 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                   type="submit"
                   color="primary"
                   isLoading={isLoading}
-                  disabled={isLoading}
                   className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 active:scale-[0.99]"
                 >
                   {isLoading ? (

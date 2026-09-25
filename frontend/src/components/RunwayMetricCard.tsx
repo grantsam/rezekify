@@ -27,7 +27,6 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
               </p>
             </div>
             <Button
-              type="button"
               onPress={onOpenAuth}
               className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/30 w-fit active:scale-95 min-h-[40px]"
             >

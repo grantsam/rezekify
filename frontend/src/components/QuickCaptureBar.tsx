@@ -267,7 +267,6 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
 
             <div className="flex items-center gap-1.5">
               <Button
-                type="button"
                 isIconOnly
                 size="sm"
                 variant="light"
@@ -278,7 +277,6 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 <X className="w-4 h-4" />
               </Button>
               <Button
-                type="button"
                 isIconOnly
                 size="sm"
                 onPress={handleStopRecording}
@@ -298,7 +296,6 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-300 shrink-0 max-w-[140px] sm:max-w-[200px] truncate">
                 <span className="truncate">{file.name}</span>
                 <Button
-                  type="button"
                   isIconOnly
                   size="sm"
                   variant="light"
@@ -334,7 +331,6 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
               />
 
               <Button
-                type="button"
                 isIconOnly
                 size="sm"
                 variant="light"
@@ -347,7 +343,6 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
               </Button>
 
               <Button
-                type="button"
                 isIconOnly
                 size="sm"
                 variant="light"
@@ -398,7 +393,6 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
             </div>
             {onDismissToast && (
               <Button
-                type="button"
                 isIconOnly
                 size="sm"
                 variant="light"

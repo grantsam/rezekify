@@ -19,7 +19,6 @@ export const BottomDock: React.FC<BottomDockProps> = ({
       aria-label="Navigasi Bawah"
     >
       <Button
-        type="button"
         variant="light"
         onPress={() => onViewChange('overview')}
         aria-label="Ringkasan"
@@ -32,7 +31,6 @@ export const BottomDock: React.FC<BottomDockProps> = ({
       </Button>
 
       <Button
-        type="button"
         variant="light"
         onPress={() => onViewChange('ledger')}
         aria-label="Buku Besar"
@@ -47,7 +45,6 @@ export const BottomDock: React.FC<BottomDockProps> = ({
       {/* Elevated center quick capture button */}
       <div className="relative -top-3">
         <Button
-          type="button"
           isIconOnly
           onPress={onQuickCapturePress}
           aria-label="Quick Capture"
@@ -58,7 +55,6 @@ export const BottomDock: React.FC<BottomDockProps> = ({
       </div>
 
       <Button
-        type="button"
         variant="light"
         onPress={() => onViewChange('vaults')}
         aria-label="Vaults"
@@ -71,7 +67,6 @@ export const BottomDock: React.FC<BottomDockProps> = ({
       </Button>
 
       <Button
-        type="button"
         variant="light"
         onPress={() => onViewChange('settings')}
         aria-label="Pengaturan"

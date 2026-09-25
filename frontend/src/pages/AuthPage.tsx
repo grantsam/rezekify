@@ -59,7 +59,6 @@ export const AuthPage: React.FC = () => {
         {/* Tab Switcher */}
         <div className="flex bg-[#0c0c0e]/80 p-1.5 rounded-xl border border-zinc-800 mb-6">
           <Button
-            type="button"
             variant="light"
             onPress={() => {
               setTab('login');
@@ -72,7 +71,6 @@ export const AuthPage: React.FC = () => {
             Masuk (Login)
           </Button>
           <Button
-            type="button"
             variant="light"
             onPress={() => {
               setTab('register');

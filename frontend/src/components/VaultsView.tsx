@@ -82,7 +82,6 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
             </div>
           </div>
           <Button
-            type="button"
             size="sm"
             variant="light"
             onPress={onDismissError}
@@ -97,7 +96,6 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
       {/* Filter Tabs Toolbar */}
       <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-3">
         <Button
-          type="button"
           size="sm"
           variant="light"
           onPress={() => setActiveTab('ALL')}
@@ -114,7 +112,6 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
         </Button>
 
         <Button
-          type="button"
           size="sm"
           variant="light"
           onPress={() => setActiveTab('FIXED_BILL')}
@@ -131,7 +128,6 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
         </Button>
 
         <Button
-          type="button"
           size="sm"
           variant="light"
           onPress={() => setActiveTab('SAVINGS')}

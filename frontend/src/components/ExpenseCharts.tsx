@@ -156,7 +156,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               className="absolute inset-x-0 pointer-events-none z-10 border-t border-dashed border-amber-400/70 flex items-center justify-end"
               style={{ bottom: `${thresholdPct}%` }}
             >
-              <span className="text-[10px] font-medium tracking-tight text-amber-300 bg-[#141417]/90 px-1.5 py-0.5 rounded border border-amber-400/40 shadow-sm -translate-y-1/2 select-none">
+              <span className="text-[10px] font-medium tracking-tight text-amber-300 bg-[#141417]/90 px-1.5 py-0.5 rounded border border-amber-400/40 shadow-sm -translate-y-1/2 select-none tabular-nums">
                 Batas Aman: Rp {threshold.toLocaleString('id-ID')}
               </span>
             </div>
@@ -180,7 +180,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                         Rp {item.amount.toLocaleString('id-ID')}
                       </p>
                       <span
-                        className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full mt-1 ${
+                        className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full mt-1 tabular-nums ${
                           isOver
                             ? 'text-rose-400 bg-rose-950/70 border border-rose-800/60'
                             : 'text-emerald-400 bg-emerald-950/70 border border-emerald-800/60'

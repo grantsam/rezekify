@@ -131,4 +131,16 @@ describe('ExpenseCharts Component', () => {
       expect(monthlyBtn).toHaveClass('min-h-[38px]');
     });
   });
+
+  it('enforces tabular-nums on safe runway threshold badge and tooltip', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
+
+    const { container } = render(<ExpenseCharts />);
+
+    await waitFor(() => {
+      const badge = container.querySelector('.border-amber-400\\/40');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.className).toContain('tabular-nums');
+    });
+  });
 });

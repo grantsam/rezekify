@@ -140,4 +140,16 @@ describe('SimulatePurchaseModal Component', () => {
     fireEvent.keyDown(dialog, { key: 'Escape' });
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('does not apply raw HTML disabled attribute alongside HeroUI isLoading on submit button', () => {
+    render(
+      <SimulatePurchaseModal
+        isOpen={true}
+        onClose={vi.fn()}
+      />
+    );
+    const submitBtn = screen.getByRole('button', { name: /Hitung Dampak Belanja/i });
+    expect(submitBtn.getAttribute('type')).toBe('submit');
+    expect(submitBtn.getAttribute('disabled')).toBeNull();
+  });
 });

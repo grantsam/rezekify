@@ -71,7 +71,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </div>
             </div>
             <Button
-              type="button"
               color="primary"
               onPress={onOpenCreateAccount}
               startContent={<Building2 className="w-4 h-4" />}
@@ -139,7 +138,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 CADANGAN TERKUNCI (VAULTS)
               </span>
               <Button
-                type="button"
                 size="sm"
                 variant="flat"
                 onPress={onOpenSimulateModal}
@@ -184,7 +182,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               <h3 className="text-sm font-semibold text-white">Komitmen & Vaults Prioritas</h3>
             </div>
             <Button
-              type="button"
               size="sm"
               variant="light"
               onPress={onNavigateToVaults}

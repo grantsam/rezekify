@@ -173,7 +173,6 @@ export const DashboardPage: React.FC = () => {
               <p className="text-zinc-200 text-xs md:text-sm">{activeTxError}</p>
             </div>
             <Button
-              type="button"
               size="sm"
               variant="light"
               onPress={handleDismissTxError}

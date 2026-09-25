@@ -643,7 +643,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-zinc-400 bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800/50">
                           <span>Preview Ambang Batas:</span>
-                          <span className="font-semibold text-emerald-400">
+                          <span className="font-semibold text-emerald-400 font-mono tabular-nums">
                             Rp {Number(safeRunwayThreshold || 0).toLocaleString('id-ID')} / hari
                           </span>
                         </div>
