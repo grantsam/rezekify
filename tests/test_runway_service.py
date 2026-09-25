@@ -2,6 +2,7 @@
 
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from unittest.mock import patch
 
 from rezekify.db.models import (
     Account,
@@ -123,6 +124,7 @@ def test_runway_health_status_thresholds(db_session, sample_user):
     # Balance: 0 -> CRITICAL
     acc.current_balance = Decimal("0.00")
     db_session.commit()
+    RunwayService.clear_cache(user_id=sample_user.id)
     report_critical = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 18))
     assert report_critical.health_status == "CRITICAL"
     assert report_critical.daily_safe_runway == Decimal("0.00")
@@ -559,4 +561,70 @@ def test_simulate_purchase_uses_custom_safe_threshold(db_session, sample_user):
     assert sim.projected_daily_runway == Decimal("42857.14")
     assert sim.is_safe is False
     assert "Peringatan" in sim.advice
+
+
+def test_calculate_runway_ttl_cache_and_clear_cache(db_session, sample_user):
+    """Verifies that calculate_runway caches results within 15s TTL and clear_cache invalidates it."""
+    from rezekify.services.ledger import LedgerService
+
+    RunwayService.clear_cache()
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    today = date(2026, 9, 18)
+
+    t0 = 1000.0
+    with patch("time.time", return_value=t0):
+        report1 = service.calculate_runway(user_id=sample_user.id, today=today)
+        assert report1.total_liquid_cash == Decimal("1000000.00")
+
+    # Directly mutate balance in DB
+    acc.current_balance = Decimal("2000000.00")
+    db_session.commit()
+
+    # Within 15s TTL (t0 + 10s): returns cached report
+    with patch("time.time", return_value=t0 + 10.0):
+        report2 = service.calculate_runway(user_id=sample_user.id, today=today)
+        assert report2.total_liquid_cash == Decimal("1000000.00")
+
+    # Bypassing cache via use_cache=False returns fresh DB data
+    with patch("time.time", return_value=t0 + 10.0):
+        report_nocache = service.calculate_runway(user_id=sample_user.id, today=today, use_cache=False)
+        assert report_nocache.total_liquid_cash == Decimal("2000000.00")
+
+    # Beyond 15s TTL (t0 + 26s vs last cache update at t0 + 10s): cache expires and returns fresh DB data
+    acc.current_balance = Decimal("2500000.00")
+    db_session.commit()
+    with patch("time.time", return_value=t0 + 26.0):
+        report_expired = service.calculate_runway(user_id=sample_user.id, today=today)
+        assert report_expired.total_liquid_cash == Decimal("2500000.00")
+
+    # Mutate DB again and verify clear_cache(user_id) invalidates
+    acc.current_balance = Decimal("3000000.00")
+    db_session.commit()
+    RunwayService.clear_cache(user_id=sample_user.id)
+    with patch("time.time", return_value=t0 + 27.0):
+        report_after_clear = service.calculate_runway(user_id=sample_user.id, today=today)
+        assert report_after_clear.total_liquid_cash == Decimal("3000000.00")
+
+    # Ledger mutation invalidates cache immediately
+    ledger = LedgerService(db_session)
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("500000.00"),
+        description="Jajan",
+    )
+    with patch("time.time", return_value=t0 + 28.0):
+        report_post_ledger = service.calculate_runway(user_id=sample_user.id, today=today)
+        assert report_post_ledger.total_liquid_cash == Decimal("2500000.00")
+
 

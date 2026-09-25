@@ -3,6 +3,7 @@
 from calendar import monthrange
 from datetime import date, timedelta
 from decimal import Decimal
+import time
 from typing import Dict, List, NamedTuple, Optional
 from uuid import UUID
 
@@ -90,17 +91,41 @@ class CategorySpendingBreakdownReport(NamedTuple):
     items: List[CategoryBreakdownItem]
 
 
+# In-memory TTL cache: (user_id, today) -> (RunwayReport, timestamp)
+_runway_cache: dict[tuple[UUID, date], tuple[RunwayReport, float]] = {}
+RUNWAY_CACHE_TTL_SECONDS: float = 15.0
+
+
 class RunwayService:
     """Computes deterministic daily safe runway and simulates purchase impact."""
 
     def __init__(self, db: Session):
         self.db = db
 
-    def calculate_runway(self, user_id: UUID, today: Optional[date] = None) -> RunwayReport:
+    @classmethod
+    def clear_cache(cls, user_id: Optional[UUID] = None) -> None:
+        """Clears in-memory runway cache for a specific user or entirely."""
+        if user_id is not None:
+            keys_to_delete = [k for k in _runway_cache if k[0] == user_id]
+            for k in keys_to_delete:
+                _runway_cache.pop(k, None)
+        else:
+            _runway_cache.clear()
+
+    def calculate_runway(
+        self, user_id: UUID, today: Optional[date] = None, use_cache: bool = True
+    ) -> RunwayReport:
         """Calculates liquid cash, locked reserves, operational free cash, days remaining,
         and safe daily spending threshold for a user."""
         if today is None:
             today = date.today()
+
+        if use_cache:
+            cache_entry = _runway_cache.get((user_id, today))
+            if cache_entry is not None:
+                cached_report, ts = cache_entry
+                if time.time() - ts < RUNWAY_CACHE_TTL_SECONDS:
+                    return cached_report
 
         user = self.db.query(User).filter_by(id=user_id).one()
 
@@ -156,7 +181,7 @@ class RunwayService:
 
         upcoming_bills = self.get_upcoming_bills(user_id=user_id, today=today)
 
-        return RunwayReport(
+        report = RunwayReport(
             total_liquid_cash=liquid_sum,
             vault_locked_cash=vault_sum,
             operational_free_cash=operational_free,
@@ -165,6 +190,8 @@ class RunwayService:
             health_status=status,
             upcoming_bills=upcoming_bills,
         )
+        _runway_cache[(user_id, today)] = (report, time.time())
+        return report
 
     def get_upcoming_bills(self, user_id: UUID, today: Optional[date] = None) -> List[UpcomingBill]:
         """Retrieves fixed commitments (FIXED_BILL) with due date within 7 days and unmet target."""

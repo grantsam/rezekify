@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from rezekify.db.models import Account, Category, EntryType, LedgerEntry, Transaction
+from rezekify.services.runway import RunwayService
 
 
 class LedgerService:
@@ -86,6 +87,7 @@ class LedgerService:
         self._maybe_commit()
         if self.auto_commit:
             self.db.refresh(tx)
+        RunwayService.clear_cache(user_id=user_id)
         return tx
 
     def record_income(
@@ -148,6 +150,7 @@ class LedgerService:
         self._maybe_commit()
         if self.auto_commit:
             self.db.refresh(tx)
+        RunwayService.clear_cache(user_id=user_id)
         return tx
 
     def record_transfer(
@@ -217,6 +220,7 @@ class LedgerService:
         self._maybe_commit()
         if self.auto_commit:
             self.db.refresh(tx)
+        RunwayService.clear_cache(user_id=user_id)
         return tx
 
     def delete_transaction(self, user_id: UUID, transaction_id: UUID) -> bool:
@@ -243,6 +247,7 @@ class LedgerService:
         self.db.delete(tx)
         self.db.flush()
         self._maybe_commit()
+        RunwayService.clear_cache(user_id=user_id)
         return True
 
     def update_transaction(
@@ -465,4 +470,5 @@ class LedgerService:
         self._maybe_commit()
         if self.auto_commit:
             self.db.refresh(tx)
+        RunwayService.clear_cache(user_id=user_id)
         return tx
