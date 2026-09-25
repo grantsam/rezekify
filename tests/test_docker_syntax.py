@@ -142,3 +142,17 @@ def test_env_docker_example_completeness():
         assert f"{var}=" in content, f"Missing required env variable: {var}"
 
 
+def test_docker_entrypoint_syntax_and_permissions():
+    """Verifies backend docker entrypoint syntax, line endings, and concurrency limits."""
+    entrypoint_path = Path("docker/backend/docker-entrypoint.sh")
+    assert entrypoint_path.exists(), "docker-entrypoint.sh must exist"
+    raw_bytes = entrypoint_path.read_bytes()
+    assert b"\r\n" not in raw_bytes, "docker-entrypoint.sh must use UNIX LF line endings"
+
+    content = raw_bytes.decode("utf-8")
+    assert content.startswith("#!/usr/bin/env bash")
+    assert "set -eo pipefail" in content
+    assert "--limit-concurrency 30" in content, "Must configure uvicorn limit-concurrency to 30"
+
+
+
