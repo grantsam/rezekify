@@ -218,9 +218,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-slate-900 border border-slate-800 text-white max-w-2xl max-h-[90vh] overflow-y-auto',
+        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100 max-w-2xl max-h-[90vh] overflow-y-auto',
         backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
       }}
     >
       <ModalContent>
@@ -229,8 +229,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <ModalHeader>
               <div className="flex items-center justify-between w-full pr-6">
                 <div>
-                  <h3 className="font-semibold text-lg text-slate-100">Pengaturan Akun & Sistem</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Kelola integrasi bot Telegram dan kuota AI kustom (BYOK)</p>
+                  <h3 className="font-semibold text-lg text-zinc-100">Pengaturan Akun & Sistem</h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">Kelola integrasi bot Telegram dan kuota AI kustom (BYOK)</p>
                 </div>
                 {isLoading && <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />}
               </div>
@@ -251,14 +251,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
 
               {/* Navigation Tabs */}
-              <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+              <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
                 <button
                   type="button"
                   onClick={() => setActiveTab('telegram')}
                   className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'telegram'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-zinc-400 hover:text-white'
                   }`}
                 >
                   <Send className="w-3.5 h-3.5" />
@@ -270,7 +270,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'ai'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-zinc-400 hover:text-white'
                   }`}
                 >
                   <Bot className="w-3.5 h-3.5" />
@@ -282,7 +282,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'profile'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-zinc-400 hover:text-white'
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
@@ -293,9 +293,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* TAB 1: TELEGRAM */}
               {activeTab === 'telegram' && (
                 <div className="space-y-4 pt-2">
-                  <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between">
+                  <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-slate-400 block mb-1">Status Koneksi</span>
+                      <span className="text-xs text-zinc-400 block mb-1">Status Koneksi</span>
                       {settings?.telegram?.is_connected ? (
                         <div className="flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -325,9 +325,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {!settings?.telegram?.is_connected ? (
-                    <div className="p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl space-y-4">
-                      <h4 className="text-xs font-semibold text-slate-200">Langkah Menghubungkan:</h4>
-                      <ol className="text-xs text-slate-400 space-y-2 list-decimal list-inside">
+                    <div className="p-4 bg-zinc-900/60 border border-zinc-800/80 rounded-xl space-y-4">
+                      <h4 className="text-xs font-semibold text-zinc-200">Langkah Menghubungkan:</h4>
+                      <ol className="text-xs text-zinc-400 space-y-2 list-decimal list-inside">
                         <li>Klik tombol <strong>Dapatkan Kode Pairing</strong> di bawah.</li>
                         <li>Klik tombol tautan instan 1-klik untuk membuka bot Telegram.</li>
                         <li>Tekan <strong>START</strong> di Telegram dan akun Anda langsung terhubung!</li>
@@ -346,17 +346,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className="p-4 bg-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-indigo-300 font-medium">Kode Pairing Anda:</span>
-                            <span className="text-[11px] text-slate-400">Berlaku 15 menit</span>
+                            <span className="text-[11px] text-zinc-400">Berlaku 15 menit</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl font-mono font-bold text-white tracking-wider bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 grow text-center">
+                            <span className="text-2xl font-mono font-bold text-white tracking-wider bg-zinc-900 px-4 py-2 rounded-xl border border-zinc-800 grow text-center">
                               {pairingCode}
                             </span>
                             <Button
                               size="sm"
                               variant="flat"
                               onPress={handleCopyCode}
-                              className="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl min-h-[44px]"
+                              className="bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-xl min-h-[44px]"
                             >
                               {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                             </Button>
@@ -374,7 +374,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div className="p-4 bg-slate-950/60 border border-slate-800/80 rounded-xl space-y-2 text-xs text-slate-400">
+                    <div className="p-4 bg-zinc-900/60 border border-zinc-800/80 rounded-xl space-y-2 text-xs text-zinc-400">
                       <p>✅ Bot Telegram aktif dan siap menerima pesan.</p>
                       <p>Anda dapat mencatat pengeluaran langsung via teks santai, foto struk belanja, atau pesan suara.</p>
                     </div>
@@ -393,14 +393,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       className={`p-3.5 rounded-xl border text-left transition-all ${
                         !isCustomAi
                           ? 'bg-indigo-600/10 border-indigo-500/50 shadow-md shadow-indigo-600/10'
-                          : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                          : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1.5">
-                        <Server className={`w-4 h-4 ${!isCustomAi ? 'text-indigo-400' : 'text-slate-400'}`} />
+                        <Server className={`w-4 h-4 ${!isCustomAi ? 'text-indigo-400' : 'text-zinc-400'}`} />
                         <span className="text-xs font-bold text-white">Shared Platform</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                      <p className="text-[11px] text-zinc-400 leading-relaxed">
                         Infrastruktur rotary pool bersama gratis dari Rezekify. Tanpa konfigurasi.
                       </p>
                     </button>
@@ -411,24 +411,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       className={`p-3.5 rounded-xl border text-left transition-all ${
                         isCustomAi
                           ? 'bg-indigo-600/10 border-indigo-500/50 shadow-md shadow-indigo-600/10'
-                          : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                          : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1.5">
-                        <Radio className={`w-4 h-4 ${isCustomAi ? 'text-indigo-400' : 'text-slate-400'}`} />
+                        <Radio className={`w-4 h-4 ${isCustomAi ? 'text-indigo-400' : 'text-zinc-400'}`} />
                         <span className="text-xs font-bold text-white">Bring Your Own Key</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                      <p className="text-[11px] text-zinc-400 leading-relaxed">
                         Gunakan kuota API pribadi Anda (Gemini/Groq) untuk kapasitas tak terbatas.
                       </p>
                     </button>
                   </div>
 
                   {isCustomAi && (
-                    <div className="space-y-4 p-4 bg-slate-950 border border-slate-800 rounded-xl">
+                    <div className="space-y-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
                       {/* Provider Selector */}
                       <div>
-                        <label className="block text-xs font-medium text-slate-400 mb-1.5">Provider AI</label>
+                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">Provider AI</label>
                         <div className="grid grid-cols-2 gap-2">
                           {(['GEMINI', 'GROQ'] as const).map((p) => (
                             <button
@@ -441,8 +441,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               }}
                               className={`py-2 rounded-xl text-xs font-semibold border transition-all ${
                                 provider === p
-                                  ? 'bg-slate-800 text-white border-indigo-500 shadow-sm'
-                                  : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white'
+                                  ? 'bg-zinc-800 text-white border-indigo-500 shadow-sm'
+                                  : 'bg-zinc-800/50 text-zinc-400 border-zinc-800 hover:text-white'
                               }`}
                             >
                               {p === 'GEMINI' ? 'Google Gemini' : 'Groq Cloud'}
@@ -453,14 +453,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                       {/* Model Selector */}
                       <div>
-                        <label htmlFor="model-select" className="block text-xs font-medium text-slate-400 mb-1.5">
+                        <label htmlFor="model-select" className="block text-xs font-medium text-zinc-400 mb-1.5">
                           Model AI
                         </label>
                         <select
                           id="model-select"
                           value={model}
                           onChange={(e) => setModel(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                          className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
                         >
                           {availableModelsList.map((m) => (
                             <option key={m} value={m}>
@@ -473,7 +473,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {/* API Key Input */}
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <label htmlFor="api-key-input" className="text-xs font-medium text-slate-400">
+                          <label htmlFor="api-key-input" className="text-xs font-medium text-zinc-400">
                             Kunci API {provider === 'GEMINI' ? 'Google Gemini' : 'Groq'}
                           </label>
                           {settings?.ai?.has_api_key && (
@@ -493,13 +493,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 ? 'Biarkan kosong jika tidak ingin mengubah'
                                 : 'Masukkan kunci API Anda'
                             }
-                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none pr-10"
+                            className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none pr-10"
                           />
                           <button
                             type="button"
                             onClick={() => setShowKey(!showKey)}
                             aria-label={showKey ? 'Sembunyikan API key' : 'Tampilkan API key'}
-                            className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                            className="absolute right-3 top-2.5 text-zinc-400 hover:text-white"
                           >
                             {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
@@ -541,7 +541,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           variant="flat"
                           onPress={handleValidateKey}
                           disabled={isValidating || !apiKey.trim()}
-                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold"
+                          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold"
                         >
                           {isValidating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Uji Koneksi'}
                         </Button>
@@ -565,12 +565,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* TAB 3: SIKLUS & AMBANG BATAS */}
               {activeTab === 'profile' && (
                 <div className="space-y-4 pt-2">
-                  <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-4">
+                  <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl space-y-4">
                     <div>
-                      <label htmlFor="monthly-cycle-day-input" className="block text-xs font-medium text-slate-300 mb-1">
+                      <label htmlFor="monthly-cycle-day-input" className="block text-xs font-medium text-zinc-300 mb-1">
                         Hari Siklus Finansial Bulanan
                       </label>
-                      <p className="text-[11px] text-slate-400 mb-2">
+                      <p className="text-[11px] text-zinc-400 mb-2">
                         Pilih tanggal antara 1 sampai 31 yang menandai awal bulan finansial atau tanggal gajian Anda.
                       </p>
                       <div className="flex items-center gap-3">
@@ -581,22 +581,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           max={31}
                           value={monthlyCycleDay}
                           onChange={(e) => setMonthlyCycleDay(parseInt(e.target.value, 10) || 1)}
-                          className="w-28 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                          className="w-28 bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none"
                         />
-                        <span className="text-xs text-slate-400">Tiap tanggal {monthlyCycleDay} per bulan</span>
+                        <span className="text-xs text-zinc-400">Tiap tanggal {monthlyCycleDay} per bulan</span>
                       </div>
                     </div>
 
-                    <div className="border-t border-slate-800/80 pt-4">
-                      <label htmlFor="safe-runway-threshold-input" className="block text-xs font-medium text-slate-300 mb-1">
+                    <div className="border-t border-zinc-800/80 pt-4">
+                      <label htmlFor="safe-runway-threshold-input" className="block text-xs font-medium text-zinc-300 mb-1">
                         Ambang Batas Jatah Harian Aman (IDR)
                       </label>
-                      <p className="text-[11px] text-slate-400 mb-2">
+                      <p className="text-[11px] text-zinc-400 mb-2">
                         Batas minimum pengeluaran harian aman. Bila jatah harian berada di bawah nominal ini, status runway menjadi WARNING.
                       </p>
                       <div className="space-y-2">
                         <div className="relative">
-                          <span className="absolute left-3.5 top-2.5 text-xs text-slate-500 font-medium">Rp</span>
+                          <span className="absolute left-3.5 top-2.5 text-xs text-zinc-500 font-medium">Rp</span>
                           <input
                             id="safe-runway-threshold-input"
                             type="number"
@@ -604,10 +604,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             step={1000}
                             value={safeRunwayThreshold}
                             onChange={(e) => setSafeRunwayThreshold(parseFloat(e.target.value) || 0)}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none"
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/50">
+                        <div className="flex items-center justify-between text-[11px] text-zinc-400 bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800/50">
                           <span>Preview Ambang Batas:</span>
                           <span className="font-semibold text-emerald-400">
                             Rp {Number(safeRunwayThreshold || 0).toLocaleString('id-ID')} / hari

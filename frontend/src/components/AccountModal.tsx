@@ -142,9 +142,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       onClose={handleClose}
       backdrop="blur"
       classNames={{
-        base: 'bg-slate-900 border border-slate-800 text-white',
+        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100',
         backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
       }}
     >
       <ModalContent>
@@ -157,7 +157,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           >
             <ModalHeader id="account-modal-title">
               <div className="flex items-center justify-between w-full pr-6">
-                <h3 id="account-modal-title" className="font-semibold text-lg text-slate-100">
+                <h3 id="account-modal-title" className="font-semibold text-lg text-zinc-100">
                   {isEditMode ? 'Edit Rekening' : 'Tambah Akun Baru'}
                 </h3>
                 <Button
@@ -181,7 +181,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="account-name" className="block text-xs font-medium text-slate-400 mb-1.5">
+                  <label htmlFor="account-name" className="block text-xs font-medium text-zinc-400 mb-1.5">
                     Nama Rekening / Akun
                   </label>
                   <input
@@ -191,13 +191,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: BCA Utama, GoPay, Dompet Tunai"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <span className="block text-xs font-medium text-slate-400 mb-1.5">Tipe Akun</span>
-                  <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                  <span className="block text-xs font-medium text-zinc-400 mb-1.5">Tipe Akun</span>
+                  <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
                     {ACCOUNT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
                       <button
                         key={type}
@@ -206,7 +206,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                         className={`flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium transition-all ${
                           accountType === type
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                            : 'text-slate-400 hover:text-white border border-transparent'
+                            : 'text-zinc-400 hover:text-white border border-transparent'
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" />
@@ -218,7 +218,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
                 {!accountToEdit ? (
                   <div>
-                    <label htmlFor="initial-balance" className="block text-xs font-medium text-slate-400 mb-1.5">
+                    <label htmlFor="initial-balance" className="block text-xs font-medium text-zinc-400 mb-1.5">
                       Saldo Awal (Rp)
                     </label>
                     <input
@@ -229,12 +229,12 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       value={initialBalance}
                       onChange={(e) => setInitialBalance(e.target.value)}
                       placeholder="0"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label htmlFor="edit-current-balance" className="block text-xs font-medium text-slate-400 mb-1.5">
+                    <label htmlFor="edit-current-balance" className="block text-xs font-medium text-zinc-400 mb-1.5">
                       Saldo Saat Ini (Rp)
                     </label>
                     <input
@@ -242,9 +242,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       type="text"
                       disabled
                       value={`Rp ${(accountToEdit.current_balance ?? 0).toLocaleString('id-ID')}`}
-                      className="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-400 cursor-not-allowed"
+                      className="w-full bg-zinc-900/60 border border-zinc-800/80 rounded-xl px-3.5 py-2.5 text-sm text-zinc-400 cursor-not-allowed"
                     />
-                    <p className="mt-1 text-[11px] text-slate-500">
+                    <p className="mt-1 text-[11px] text-zinc-500">
                       Saldo dikelola otomatis secara immutable melalui mutasi transaksi.
                     </p>
                   </div>
@@ -256,7 +256,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <AlertTriangle className="w-4 h-4 shrink-0" />
                       <span>Konfirmasi Penonaktifan Rekening</span>
                     </div>
-                    <p className="text-slate-300">
+                    <p className="text-zinc-300">
                       Rekening ini akan dinonaktifkan dan disembunyikan dari daftar akun aktif. Seluruh catatan transaksi dan mutasi tetap tersimpan secara aman di buku besar.
                     </p>
                     <div className="flex items-center gap-2 pt-1">
@@ -265,7 +265,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                         size="sm"
                         variant="light"
                         onPress={() => setIsConfirmingDeactivate(false)}
-                        className="text-xs text-slate-400 hover:text-white min-h-[38px] px-3 rounded-lg"
+                        className="text-xs text-zinc-400 hover:text-white min-h-[38px] px-3 rounded-lg"
                       >
                         Batal
                       </Button>
@@ -304,7 +304,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   type="button"
                   variant="light"
                   onPress={handleClose}
-                  className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors min-h-[38px]"
+                  className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors min-h-[38px]"
                 >
                   Batal
                 </Button>

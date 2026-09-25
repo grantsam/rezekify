@@ -12,10 +12,10 @@ export const AuthenticatedApp: React.FC = () => {
     return (
       <div
         data-testid="app-loading-spinner"
-        className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-100"
+        className="min-h-screen bg-[#0c0c0e] flex flex-col items-center justify-center text-zinc-100"
       >
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
-        <p className="text-xs text-slate-400 font-medium tracking-wide">Memuat sesi Rezekify...</p>
+        <p className="text-xs text-zinc-400 font-medium tracking-wide">Memuat sesi Rezekify...</p>
       </div>
     );
   }
@@ -25,7 +25,7 @@ export const AuthenticatedApp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 selection:bg-indigo-500/30">
       <DashboardPage />
     </div>
   );

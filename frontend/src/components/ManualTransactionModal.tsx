@@ -209,9 +209,9 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-slate-900 border border-slate-800 text-white max-w-lg',
+        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100 max-w-lg',
         backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
       }}
     >
       <ModalContent>
@@ -243,7 +243,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                     )}
                   </h3>
                   {isEdit && (
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-zinc-400 mt-0.5">
                       Perubahan nominal atau rekening akan merekonsiliasi saldo secara otomatis.
                     </p>
                   )}
@@ -269,7 +269,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
               )}
 
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs">
+                <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1.5 rounded-xl border border-zinc-800 text-xs">
                   {(['EXPENSE', 'INCOME', 'TRANSFER'] as const).map((t) => (
                     <button
                       key={t}
@@ -278,7 +278,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                       className={`min-h-[38px] flex items-center justify-center py-2 rounded-lg font-medium transition-all ${
                         type === t
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                          : 'text-slate-400 hover:text-white'
+                          : 'text-zinc-400 hover:text-white'
                       }`}
                     >
                       {t === 'EXPENSE' ? 'Pengeluaran' : t === 'INCOME' ? 'Pemasukan' : 'Transfer'}
@@ -287,7 +287,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="amount-input" className="block text-xs font-medium text-slate-400 mb-1">
+                  <label htmlFor="amount-input" className="block text-xs font-medium text-zinc-400 mb-1">
                     Nominal Transaksi (Rp) <span className="sr-only">Nominal</span>*
                   </label>
                   <input
@@ -300,13 +300,13 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Contoh: 25000"
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 tabular-nums placeholder-slate-400"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none tabular-nums placeholder-zinc-500"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="desc-input" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                  <label htmlFor="desc-input" className="block text-xs font-medium text-zinc-400 mb-1 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Keterangan Transaksi <span className="sr-only">Deskripsi</span>*</span>
                   </label>
                   <input
@@ -318,15 +318,15 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                     placeholder="Contoh: Makan Siang Nasi Padang"
                     required
                     maxLength={500}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 placeholder-slate-400"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none placeholder-zinc-500"
                   />
                 </div>
 
                 {type !== 'TRANSFER' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor="account-select" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-                        <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                      <label htmlFor="account-select" className="block text-xs font-medium text-zinc-400 mb-1 flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Pilih Akun <span className="sr-only">Rekening / Akun</span>*</span>
                       </label>
                       <select
@@ -334,7 +334,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         aria-label="Rekening / Akun"
                         value={accountId || accounts[0]?.id || ''}
                         onChange={(e) => setAccountId(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none"
                       >
                         {accounts.length === 0 ? (
                           <option value="">Belum ada akun</option>
@@ -349,8 +349,8 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                     </div>
 
                     <div>
-                      <label htmlFor="category-select" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 text-slate-400" />
+                      <label htmlFor="category-select" className="block text-xs font-medium text-zinc-400 mb-1 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Kategori (Opsional)</span>
                       </label>
                       <select
@@ -358,7 +358,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         aria-label="Kategori (Opsional)"
                         value={categoryId}
                         onChange={(e) => setCategoryId(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none"
                       >
                         <option value="">-- {isEdit ? 'Tanpa Kategori' : 'Pilih Kategori'} --</option>
                         {categories
@@ -374,7 +374,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor="from-account-select" className="block text-xs font-medium text-slate-400 mb-1">
+                      <label htmlFor="from-account-select" className="block text-xs font-medium text-zinc-400 mb-1">
                         Dari Rekening Asal <span className="sr-only">Dari Akun</span>*
                       </label>
                       <select
@@ -382,7 +382,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         aria-label="Dari Rekening Asal"
                         value={fromAccountId || accounts[0]?.id || ''}
                         onChange={(e) => setFromAccountId(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-white"
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none text-white"
                       >
                         {accounts.map((acc) => (
                           <option key={acc.id} value={acc.id}>{acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})</option>
@@ -390,7 +390,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="to-account-select" className="block text-xs font-medium text-slate-400 mb-1">
+                      <label htmlFor="to-account-select" className="block text-xs font-medium text-zinc-400 mb-1">
                         Ke Rekening Tujuan <span className="sr-only">Ke Akun</span>*
                       </label>
                       <select
@@ -398,7 +398,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         aria-label="Ke Rekening Tujuan"
                         value={toAccountId || accounts[1]?.id || ''}
                         onChange={(e) => setToAccountId(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-white"
+                        className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none text-white"
                       >
                         {accounts.map((acc) => (
                           <option key={acc.id} value={acc.id}>{acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})</option>
@@ -409,8 +409,8 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                 )}
 
                 <div>
-                  <label htmlFor="date-input" className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <label htmlFor="date-input" className="block text-xs font-medium text-zinc-400 mb-1 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Waktu Transaksi <span className="sr-only">Tanggal Transaksi</span></span>
                   </label>
                   <input
@@ -419,7 +419,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                     type="datetime-local"
                     value={transactionDate}
                     onChange={(e) => setTransactionDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -431,7 +431,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                 variant="light"
                 onPress={onClose}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-xl transition-colors min-h-[40px]"
+                className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-800/80 hover:bg-zinc-800 rounded-xl transition-colors min-h-[40px]"
               >
                 Batal
               </Button>

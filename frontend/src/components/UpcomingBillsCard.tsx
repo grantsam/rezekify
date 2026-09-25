@@ -18,12 +18,12 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
         className="bg-amber-950/20 border border-amber-500/20 rounded-2xl p-5 mb-6 animate-pulse"
       >
         <div className="flex items-center justify-between mb-3">
-          <div className="h-5 w-64 bg-slate-800 rounded" />
-          <div className="h-5 w-32 bg-slate-800 rounded-full" />
+          <div className="h-5 w-64 bg-zinc-800 rounded" />
+          <div className="h-5 w-32 bg-zinc-800 rounded-full" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="h-16 bg-slate-900/60 border border-slate-800 rounded-xl" />
-          <div className="h-16 bg-slate-900/60 border border-slate-800 rounded-xl" />
+          <div className="h-16 bg-zinc-900/60 border border-zinc-800/60 rounded-xl" />
+          <div className="h-16 bg-zinc-900/60 border border-zinc-800/60 rounded-xl" />
         </div>
       </div>
     );
@@ -64,8 +64,8 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
               return (
                 <div
                   key={bill.name}
-                  className={`bg-slate-900/90 border p-3.5 rounded-xl flex items-center justify-between gap-3 ${
-                    isUrgent ? 'border-rose-500/40' : 'border-amber-500/20'
+                  className={`bg-zinc-900/60 border p-3.5 rounded-xl flex items-center justify-between gap-3 ${
+                    isUrgent ? 'border-rose-500/40' : 'border-zinc-800/60'
                   }`}
                 >
                   <div>
@@ -97,7 +97,7 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
                         ? `Kurang Rp ${shortage.toLocaleString('id-ID')}`
                         : 'Teralokasi Penuh'}
                     </span>
-                    <span className="text-[11px] text-slate-400 tabular-nums block mt-0.5">
+                    <span className="text-[11px] text-zinc-400 tabular-nums block mt-0.5">
                       Target: Rp {bill.target_amount.toLocaleString('id-ID')}
                     </span>
                   </div>

@@ -48,14 +48,14 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
     : (monthlyData?.items && monthlyData.items.length > 0);
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 text-white shadow-lg">
+    <div className="bg-[#141417] border border-zinc-800/80 rounded-2xl p-6 text-white shadow-lg">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-indigo-400" />
             <h3 className="font-semibold text-base">Analitik Pengeluaran Terarah</h3>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-zinc-400 mt-1">
             {period === 'daily'
               ? 'Tren belanja 7 hari terakhir vs ambang batas Daily Safe Runway'
               : 'Distribusi pengeluaran per kategori pada siklus berjalan'}
@@ -64,7 +64,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
         <div
           role="tablist"
           aria-label="Pilih rentang waktu analitik"
-          className="flex bg-slate-800/90 p-1 rounded-xl text-xs self-start sm:self-auto border border-slate-700/60"
+          className="flex bg-zinc-800/90 p-1 rounded-xl text-xs self-start sm:self-auto border border-zinc-700/60"
         >
           <Button
             size="sm"
@@ -76,7 +76,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
             className={`min-h-[38px] px-3.5 py-1.5 rounded-lg transition-all ${
               period === 'daily'
                 ? 'bg-indigo-600 text-white font-medium shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             Harian (Daily)
@@ -91,7 +91,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
             className={`min-h-[38px] px-3.5 py-1.5 rounded-lg transition-all ${
               period === 'monthly'
                 ? 'bg-indigo-600 text-white font-medium shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white'
+                : 'text-zinc-400 hover:text-white'
             }`}
           >
             Bulanan (Monthly)
@@ -107,39 +107,39 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
         >
           <div className="h-32 flex items-end justify-between gap-2 sm:gap-3">
             {[45, 65, 25, 90, 50, 20, 75].map((heightPct, idx) => (
-              <div key={idx} className="flex-1 bg-slate-800/60 rounded-t-lg h-full flex items-end overflow-hidden">
+              <div key={idx} className="flex-1 bg-zinc-800/60 rounded-t-lg h-full flex items-end overflow-hidden">
                 <div
-                  className="w-full bg-slate-700/60 rounded-t-md"
+                  className="w-full bg-zinc-700/60 rounded-t-md"
                   style={{ height: `${heightPct}%` }}
                 />
               </div>
             ))}
           </div>
-          <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-slate-800/80 pb-2">
+          <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-zinc-800/80 pb-2">
             {[...Array(7)].map((_, idx) => (
               <div key={idx} className="flex-1 flex justify-center">
-                <div className="h-3 w-6 bg-slate-800/80 rounded" />
+                <div className="h-3 w-6 bg-zinc-800/80 rounded" />
               </div>
             ))}
           </div>
         </div>
       ) : error ? (
-        <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-800 rounded-xl">
+        <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-zinc-800 rounded-xl">
           <AlertCircle className="w-6 h-6 text-indigo-400 mb-2" />
-          <p className="font-semibold text-xs text-slate-300">
+          <p className="font-semibold text-xs text-zinc-300">
             {error.toLowerCase().includes('authenticated') ? 'Perlu Autentikasi' : 'Gagal Memuat Analitik'}
           </p>
-          <p className="text-[11px] text-slate-400 max-w-xs mt-1">
+          <p className="text-[11px] text-zinc-400 max-w-xs mt-1">
             {error.toLowerCase().includes('authenticated')
               ? 'Silakan masuk atau daftarkan akun Anda untuk memuat grafik analitik pengeluaran harian dan bulanan.'
               : error}
           </p>
         </div>
       ) : !hasExpenses ? (
-        <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-800 rounded-xl">
-          <BarChart3 className="w-8 h-8 text-slate-600 mb-2" />
-          <p className="font-semibold text-xs text-slate-300">Belum Ada Pengeluaran Tercatat</p>
-          <p className="text-[11px] text-slate-400 max-w-xs mt-0.5">
+        <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-zinc-800 rounded-xl">
+          <BarChart3 className="w-8 h-8 text-zinc-600 mb-2" />
+          <p className="font-semibold text-xs text-zinc-300">Belum Ada Pengeluaran Tercatat</p>
+          <p className="text-[11px] text-zinc-400 max-w-xs mt-0.5">
             Unggah struk atau ketik transaksi pada Omni-Input di atas untuk melihat analitik langsung.
           </p>
         </div>
@@ -155,7 +155,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               className="absolute inset-x-0 pointer-events-none z-10 border-t border-dashed border-amber-400/70 flex items-center justify-end"
               style={{ bottom: `${thresholdPct}%` }}
             >
-              <span className="text-[10px] font-medium tracking-tight text-amber-300 bg-slate-900/90 px-1.5 py-0.5 rounded border border-amber-400/40 shadow-sm -translate-y-1/2 select-none">
+              <span className="text-[10px] font-medium tracking-tight text-amber-300 bg-[#141417]/90 px-1.5 py-0.5 rounded border border-amber-400/40 shadow-sm -translate-y-1/2 select-none">
                 Batas Aman: Rp {threshold.toLocaleString('id-ID')}
               </span>
             </div>
@@ -172,7 +172,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   closeDelay={0}
                   content={
                     <div className="p-1.5 flex flex-col items-center">
-                      <p className="text-[11px] font-medium text-slate-400">
+                      <p className="text-[11px] font-medium text-zinc-400">
                         {item.day_label} · {item.date}
                       </p>
                       <p className="text-xs font-bold text-white tabular-nums my-0.5">
@@ -191,7 +191,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                       </span>
                     </div>
                   }
-                  className="bg-slate-950/95 border border-slate-700/80 rounded-xl shadow-2xl"
+                  className="bg-zinc-950/95 border border-zinc-700/80 rounded-xl shadow-2xl"
                 >
                   <div
                     tabIndex={0}
@@ -206,7 +206,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                     </span>
 
                     {/* Bar track */}
-                    <div className="w-full bg-slate-800/70 rounded-t-lg h-full relative flex items-end overflow-hidden">
+                    <div className="w-full bg-zinc-800/50 rounded-t-lg h-full relative flex items-end overflow-hidden">
                       <motion.div
                         style={{ originY: 1, height: '100%' }}
                         initial={{ scaleY: 0 }}
@@ -224,15 +224,15 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           </div>
 
           {/* Day Labels Row */}
-          <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-slate-800 pb-2">
+          <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-zinc-800/80 pb-2">
             {dailyData.items.map((item) => (
-              <div key={item.date} className="flex-1 text-center text-[11px] text-slate-400">
+              <div key={item.date} className="flex-1 text-center text-[11px] text-zinc-400">
                 {item.day_label}
               </div>
             ))}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-400 px-2">
+          <div className="flex items-center justify-between text-xs text-zinc-400 px-2">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Sesuai Jatah
             </span>
@@ -246,8 +246,8 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           {monthlyData.items.map((item) => (
             <div key={item.category_id || item.category_name} className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-300 font-medium">{item.category_name}</span>
-                <span className="text-slate-400 tabular-nums">
+                <span className="text-zinc-300 font-medium">{item.category_name}</span>
+                <span className="text-zinc-400 tabular-nums">
                   Rp {item.amount.toLocaleString('id-ID')} ({item.percentage}%)
                 </span>
               </div>

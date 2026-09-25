@@ -167,9 +167,9 @@ export const VaultModal: React.FC<VaultModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-slate-900 border border-slate-800 text-white',
+        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100',
         backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
       }}
     >
       <ModalContent>
@@ -193,7 +193,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       <Receipt className="w-4 h-4" />
                     )}
                   </div>
-                  <h3 id={titleId} className="font-semibold text-lg text-slate-100">
+                  <h3 id={titleId} className="font-semibold text-lg text-zinc-100">
                     {isEdit ? 'Edit Komitmen Vault' : 'Tambah Komitmen & Vault'}
                   </h3>
                 </div>
@@ -226,7 +226,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="vault-name" className="block text-xs font-medium text-slate-400 mb-1.5">
+                  <label htmlFor="vault-name" className="block text-xs font-medium text-zinc-400 mb-1.5">
                     Nama Tagihan / Komitmen
                     <span className="sr-only">Nama Komitmen</span>
                   </label>
@@ -237,14 +237,14 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: Sewa Kos, Listrik PLN, Tabungan Darurat"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
                   />
                 </div>
 
                 {!isEdit && (
                   <div>
-                    <span className="block text-xs font-medium text-slate-400 mb-1.5">Tipe Pos</span>
-                    <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                    <span className="block text-xs font-medium text-zinc-400 mb-1.5">Tipe Pos</span>
+                    <div className="grid grid-cols-2 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
                       {VAULT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
                         <button
                           key={type}
@@ -253,7 +253,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                           className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
                             vaultType === type
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                              : 'text-slate-400 hover:text-white border border-transparent'
+                              : 'text-zinc-400 hover:text-white border border-transparent'
                           }`}
                         >
                           <Icon className="w-4 h-4" />
@@ -266,7 +266,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="target-amount" className="block text-xs font-medium text-slate-400 mb-1.5">
+                    <label htmlFor="target-amount" className="block text-xs font-medium text-zinc-400 mb-1.5">
                       Target Biaya (Rp)
                       <span className="sr-only">Target Nominal</span>
                     </label>
@@ -279,12 +279,12 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       value={targetAmount}
                       onChange={(e) => setTargetAmount(e.target.value)}
                       placeholder="0"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="allocated-amount" className="block text-xs font-medium text-slate-400 mb-1.5">
+                    <label htmlFor="allocated-amount" className="block text-xs font-medium text-zinc-400 mb-1.5">
                       Alokasi Terkunci (Rp)
                     </label>
                     <input
@@ -295,13 +295,13 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       value={allocatedAmount}
                       onChange={(e) => setAllocatedAmount(e.target.value)}
                       placeholder={isEdit ? '0' : 'Sama dengan target'}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="target-date" className="block text-xs font-medium text-slate-400 mb-1.5">
+                  <label htmlFor="target-date" className="block text-xs font-medium text-zinc-400 mb-1.5">
                     Tanggal Jatuh Tempo
                   </label>
                   <input
@@ -309,19 +309,19 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                     type="date"
                     value={targetDate}
                     onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
                   />
                 </div>
 
                 {!isEdit && (
-                  <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="flex items-center justify-between p-3 bg-zinc-900/60 rounded-xl border border-zinc-800/80">
                     <div className="flex items-center gap-2.5">
-                      <Lock className={`w-4 h-4 ${isLocked ? 'text-amber-400' : 'text-slate-400'}`} />
+                      <Lock className={`w-4 h-4 ${isLocked ? 'text-amber-400' : 'text-zinc-400'}`} />
                       <div>
                         <label htmlFor="is_locked_toggle" className="text-sm font-medium text-white cursor-pointer">
                           Kunci Dana Komitmen
                         </label>
-                        <p className="text-xs text-slate-400">Cegah pengurangan alokasi dana secara tidak sengaja</p>
+                        <p className="text-xs text-zinc-400">Cegah pengurangan alokasi dana secara tidak sengaja</p>
                       </div>
                     </div>
                     <input
@@ -329,7 +329,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       id="is_locked_toggle"
                       checked={isLocked}
                       onChange={(e) => setIsLocked(e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-700 border-slate-600 cursor-pointer"
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-zinc-800 border-zinc-700 cursor-pointer"
                     />
                   </div>
                 )}
@@ -341,7 +341,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                 type="button"
                 variant="light"
                 onPress={handleClose}
-                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors"
               >
                 Batal
               </Button>

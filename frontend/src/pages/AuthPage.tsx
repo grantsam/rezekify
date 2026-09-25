@@ -34,11 +34,11 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden text-slate-100">
+    <div className="min-h-screen bg-[#0c0c0e] flex items-center justify-center p-4 relative overflow-hidden text-zinc-100">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-[#141417] border border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center p-3 bg-indigo-600/20 border border-indigo-500/30 rounded-2xl mb-3">
             <Sparkles className="w-7 h-7 text-indigo-400" />
@@ -46,11 +46,11 @@ export const AuthPage: React.FC = () => {
           <h1 className="text-2xl font-bold tracking-tight text-white">
             Rezekify
           </h1>
-          <p className="text-xs text-slate-400 mt-1">Autonomous Multi-Modal Runway Manager</p>
+          <p className="text-xs text-zinc-400 mt-1">Autonomous Multi-Modal Runway Manager</p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 mb-6">
+        <div className="flex bg-[#0c0c0e]/80 p-1.5 rounded-xl border border-zinc-800 mb-6">
           <button
             type="button"
             onClick={() => {
@@ -58,7 +58,7 @@ export const AuthPage: React.FC = () => {
               setErrorMessage(null);
             }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              tab === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              tab === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-white'
             }`}
           >
             Masuk (Login)
@@ -70,7 +70,7 @@ export const AuthPage: React.FC = () => {
               setErrorMessage(null);
             }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              tab === 'register' ? 'bg-indigo-600 text-white shadow-md' : 'text-zinc-400 hover:text-white'
             }`}
           >
             Daftar Akun
@@ -87,11 +87,11 @@ export const AuthPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {tab === 'register' && (
             <div>
-              <label htmlFor="auth-fullname" className="block text-xs font-medium text-slate-300 mb-1.5">
+              <label htmlFor="auth-fullname" className="block text-xs font-medium text-zinc-300 mb-1.5">
                 Nama Lengkap
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5 pointer-events-none" />
+                <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   id="auth-fullname"
                   type="text"
@@ -99,18 +99,18 @@ export const AuthPage: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Nama Lengkap Anda"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-500 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-zinc-500 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label htmlFor="auth-email" className="block text-xs font-medium text-slate-300 mb-1.5">
+            <label htmlFor="auth-email" className="block text-xs font-medium text-zinc-300 mb-1.5">
               Alamat Email
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5 pointer-events-none" />
+              <Mail className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5 pointer-events-none" />
               <input
                 id="auth-email"
                 type="email"
@@ -118,17 +118,17 @@ export const AuthPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nama@email.com"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-500 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-zinc-500 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="auth-password" className="block text-xs font-medium text-slate-300 mb-1.5">
+            <label htmlFor="auth-password" className="block text-xs font-medium text-zinc-300 mb-1.5">
               Kata Sandi
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5 pointer-events-none" />
+              <Lock className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5 pointer-events-none" />
               <input
                 id="auth-password"
                 type="password"
@@ -137,7 +137,7 @@ export const AuthPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-slate-500 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-zinc-500 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />
             </div>
           </div>

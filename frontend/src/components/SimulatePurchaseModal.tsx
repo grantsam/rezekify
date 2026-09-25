@@ -83,9 +83,9 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
       backdrop="blur"
       size="lg"
       classNames={{
-        base: 'bg-slate-900 border border-slate-800 text-white max-h-[90vh]',
+        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100 max-h-[90vh]',
         backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-slate-800 text-slate-400 hover:text-white',
+        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
       }}
     >
       <ModalContent>
@@ -97,17 +97,17 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
               el?.closest('[role="dialog"]')?.setAttribute('aria-labelledby', 'simulate-modal-title');
             }}
           >
-            <ModalHeader className="pb-4 border-b border-slate-800">
+            <ModalHeader className="pb-4 border-b border-zinc-800/80">
               <div className="flex items-center justify-between w-full pr-6">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
                     <Calculator className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 id="simulate-modal-title" className="font-semibold text-lg text-slate-100">
+                    <h3 id="simulate-modal-title" className="font-semibold text-lg text-zinc-100">
                       Simulasi Rencana Belanja
                     </h3>
-                    <p className="text-xs text-slate-400 font-normal">
+                    <p className="text-xs text-zinc-400 font-normal">
                       What-If Purchase & Runway Impact Simulator
                     </p>
                   </div>
@@ -133,11 +133,11 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="planned-amount" className="block text-xs font-medium text-slate-400 mb-1.5">
+                  <label htmlFor="planned-amount" className="block text-xs font-medium text-zinc-400 mb-1.5">
                     Nominal Rencana Belanja (Rp)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm font-semibold">
                       Rp
                     </span>
                     <input
@@ -149,7 +149,7 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                       value={plannedAmount}
                       onChange={(e) => setPlannedAmount(e.target.value)}
                       placeholder="Contoh: 500000"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
+                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
@@ -176,22 +176,22 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
               </div>
 
               {result && (
-                <div className="mt-6 pt-5 border-t border-slate-800 space-y-4">
-                  <h4 className="text-xs uppercase tracking-wider font-semibold text-slate-400">
+                <div className="mt-6 pt-5 border-t border-zinc-800/80 space-y-4">
+                  <h4 className="text-xs uppercase tracking-wider font-semibold text-zinc-400">
                     Hasil Proyeksi Runway
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl">
-                      <span className="text-[11px] text-slate-400 block mb-1">Jatah Saat Ini</span>
-                      <p className="text-sm font-bold text-slate-200 tabular-nums">
+                    <div className="bg-zinc-900/70 border border-zinc-800 p-3.5 rounded-xl">
+                      <span className="text-[11px] text-zinc-400 block mb-1">Jatah Saat Ini</span>
+                      <p className="text-sm font-bold text-zinc-200 tabular-nums">
                         Rp {result.current_daily_runway.toLocaleString('id-ID')}
                       </p>
-                      <span className="text-[10px] text-slate-400">/ hari</span>
+                      <span className="text-[10px] text-zinc-400">/ hari</span>
                     </div>
 
-                    <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl">
-                      <span className="text-[11px] text-slate-400 block mb-1">Proyeksi Setelah Belanja</span>
+                    <div className="bg-zinc-900/70 border border-zinc-800 p-3.5 rounded-xl">
+                      <span className="text-[11px] text-zinc-400 block mb-1">Proyeksi Setelah Belanja</span>
                       <p
                         className={`text-sm font-bold tabular-nums ${
                           result.is_safe ? 'text-emerald-400' : 'text-rose-400'
@@ -199,15 +199,15 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                       >
                         Rp {result.projected_daily_runway.toLocaleString('id-ID')}
                       </p>
-                      <span className="text-[10px] text-slate-400">/ hari</span>
+                      <span className="text-[10px] text-zinc-400">/ hari</span>
                     </div>
 
-                    <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl">
-                      <span className="text-[11px] text-slate-400 block mb-1">Penurunan Jatah Harian</span>
+                    <div className="bg-zinc-900/70 border border-zinc-800 p-3.5 rounded-xl">
+                      <span className="text-[11px] text-zinc-400 block mb-1">Penurunan Jatah Harian</span>
                       <p className="text-sm font-bold text-amber-400 tabular-nums">
                         -Rp {result.daily_drop_amount.toLocaleString('id-ID')}/hari
                       </p>
-                      <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                      <span className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
                         <TrendingDown className="w-3 h-3 text-amber-400" /> berkurang
                       </span>
                     </div>
@@ -229,7 +229,7 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                       <p className="font-semibold mb-1">
                         {result.is_safe ? 'Kalkulasi Aman' : 'Peringatan Risiko Pengeluaran'}
                       </p>
-                      <p className="text-slate-300">{result.advice}</p>
+                      <p className="text-zinc-300">{result.advice}</p>
                     </div>
                   </div>
                 </div>

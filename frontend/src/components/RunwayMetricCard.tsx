@@ -12,16 +12,16 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
   if (!summary) {
     if (onOpenAuth) {
       return (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[260px]">
+        <div className="bg-[#141417] border border-zinc-800/80 rounded-2xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[260px]">
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Gauge className="w-5 h-5 text-indigo-400" />
-              <h2 className="font-semibold text-sm text-slate-300">Batas Belanja Harian (Runway)</h2>
+              <h2 className="font-semibold text-sm text-zinc-300">Batas Belanja Harian (Runway)</h2>
             </div>
             <p className="text-xl sm:text-2xl font-bold text-white mt-3">
               Akses Telemetri Keuangan
             </p>
-            <p className="text-xs text-slate-400 mt-2 leading-relaxed max-w-md">
+            <p className="text-xs text-zinc-400 mt-2 leading-relaxed max-w-md">
               Masuk atau daftarkan akun Anda untuk mengaktifkan telemetri batas belanja harian bebas risiko dan pemantauan kas.
             </p>
           </div>
@@ -40,31 +40,31 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
       <div
         data-testid="runway-skeleton"
         aria-busy="true"
-        className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[260px] animate-pulse"
+        className="bg-[#141417] border border-zinc-800/80 rounded-2xl p-6 md:p-8 text-white shadow-xl flex flex-col justify-between min-h-[260px] animate-pulse"
       >
         <div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-slate-800 rounded-md" />
-              <div className="h-4 w-48 bg-slate-800 rounded" />
+              <div className="w-5 h-5 bg-zinc-800 rounded-md" />
+              <div className="h-4 w-48 bg-zinc-800 rounded" />
             </div>
-            <div className="h-6 w-32 bg-slate-800 rounded-full" />
+            <div className="h-6 w-32 bg-zinc-800 rounded-full" />
           </div>
 
           <div className="my-4 space-y-2">
-            <div className="h-10 sm:h-12 w-64 bg-slate-800 rounded" />
-            <div className="h-3 w-80 bg-slate-800/80 rounded" />
+            <div className="h-10 sm:h-12 w-64 bg-zinc-800 rounded" />
+            <div className="h-3 w-80 bg-zinc-800/80 rounded" />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 pt-5 border-t border-slate-800 mt-4">
+        <div className="grid grid-cols-2 gap-6 pt-5 border-t border-zinc-800/80 mt-4">
           <div className="space-y-1.5">
-            <div className="h-3 w-28 bg-slate-800 rounded" />
-            <div className="h-6 w-36 bg-slate-800 rounded" />
+            <div className="h-3 w-28 bg-zinc-800 rounded" />
+            <div className="h-6 w-36 bg-zinc-800 rounded" />
           </div>
-          <div className="space-y-1.5 border-l border-slate-800 pl-6">
-            <div className="h-3 w-32 bg-slate-800 rounded" />
-            <div className="h-6 w-36 bg-slate-800 rounded" />
+          <div className="space-y-1.5 border-l border-zinc-800/80 pl-6">
+            <div className="h-3 w-32 bg-zinc-800 rounded" />
+            <div className="h-6 w-36 bg-zinc-800 rounded" />
           </div>
         </div>
       </div>
@@ -95,12 +95,12 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className={`bg-slate-900/90 border ${statusConfig.glowStyle} rounded-3xl p-6 md:p-8 text-white relative overflow-hidden flex flex-col justify-between transition-all duration-300`}>
+    <div className={`bg-[#141417] border ${statusConfig.glowStyle} rounded-2xl p-6 md:p-8 text-white relative overflow-hidden flex flex-col justify-between transition-all duration-300`}>
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Gauge className="w-5 h-5 text-indigo-400" />
-            <h2 className="font-semibold text-sm text-slate-300">Batas Belanja Harian (Runway)</h2>
+            <h2 className="font-semibold text-sm text-zinc-300">Batas Belanja Harian (Runway)</h2>
           </div>
           <Chip
             color={statusConfig.color}
@@ -117,10 +117,10 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
         <div className="my-3">
           <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight tabular-nums font-mono text-white">
             Rp {summary.daily_safe_runway.toLocaleString('id-ID')}
-            <span className="text-base sm:text-lg md:text-xl font-normal text-slate-400 ml-1.5 font-sans">/ hari</span>
+            <span className="text-base sm:text-lg md:text-xl font-normal text-zinc-400 ml-1.5 font-sans">/ hari</span>
           </p>
-          <p className="text-xs text-slate-400 mt-2">
-            Jatah belanja bebas risiko untuk <strong className="font-semibold text-slate-200">{summary.days_remaining} hari ke depan</strong> hingga siklus inflow berikutnya.
+          <p className="text-xs text-zinc-400 mt-2">
+            Jatah belanja bebas risiko untuk <strong className="font-semibold text-zinc-200">{summary.days_remaining} hari ke depan</strong> hingga siklus inflow berikutnya.
           </p>
           <Progress
             size="sm"
@@ -134,17 +134,17 @@ export const RunwayMetricCard: React.FC<Props> = ({ summary, onOpenAuth }) => {
       </div>
 
       {/* Clean typographic stat columns with subtle dividers */}
-      <div className="grid grid-cols-2 gap-6 pt-5 border-t border-slate-800 mt-4">
+      <div className="grid grid-cols-2 gap-6 pt-5 border-t border-zinc-800/80 mt-4">
         <div>
-          <span className="text-xs text-slate-400 flex items-center gap-1.5 mb-1 font-medium">
+          <span className="text-xs text-zinc-400 flex items-center gap-1.5 mb-1 font-medium">
             <Wallet className="w-3.5 h-3.5 text-indigo-400" /> Kas Bebas Pakai
           </span>
           <p className="text-base sm:text-lg font-bold tabular-nums font-mono text-indigo-200">
             Rp {summary.operational_free_cash.toLocaleString('id-ID')}
           </p>
         </div>
-        <div className="border-l border-slate-800 pl-6">
-          <span className="text-xs text-slate-400 flex items-center gap-1.5 mb-1 font-medium">
+        <div className="border-l border-zinc-800/80 pl-6">
+          <span className="text-xs text-zinc-400 flex items-center gap-1.5 mb-1 font-medium">
             <Lock className="w-3.5 h-3.5 text-amber-400" /> Cadangan Terkunci
           </span>
           <p className="text-base sm:text-lg font-bold tabular-nums font-mono text-amber-300">
