@@ -277,6 +277,36 @@ describe('apiClient authentication headers and utilities', () => {
     expect(getAuthToken()).toBe('new-rotated-token');
   });
 
+  it('apiFetch performs silent token refresh on 401 for /auth/me and retries original request', async () => {
+    setAuthToken('old-expired-token');
+
+    let callCount = 0;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      callCount++;
+      if (url.includes('/api/v1/auth/refresh')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ access_token: 'new-auth-me-token' }),
+        });
+      }
+      if (callCount === 1) {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          json: async () => ({ detail: 'Token expired' }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ id: 'user-1', email: 'test@example.com' }),
+      });
+    });
+
+    const user = await apiFetch<{ id: string; email: string }>('/auth/me');
+    expect(user.id).toBe('user-1');
+    expect(getAuthToken()).toBe('new-auth-me-token');
+  });
+
   it('apiFetch coalesces concurrent 401 requests into a single refresh request', async () => {
     setAuthToken('old-expired-token');
     let refreshCalls = 0;
@@ -311,6 +341,7 @@ describe('apiClient authentication headers and utilities', () => {
   });
 
   it('refreshAuthToken returns token and updates localStorage on success', async () => {
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ access_token: 'direct-refresh-token' }),
@@ -320,13 +351,41 @@ describe('apiClient authentication headers and utilities', () => {
     expect(token).toBe('direct-refresh-token');
     expect(getAuthToken()).toBe('direct-refresh-token');
     expect(executeTokenRefresh).toBe(refreshAuthToken);
+    expect(clearTimeoutSpy).toHaveBeenCalled();
     expect(global.fetch).toHaveBeenCalledWith(
       'http://localhost:8000/api/v1/auth/refresh',
       expect.objectContaining({
         method: 'POST',
-        credentials: 'include',
+        credentials: 'same-origin',
+        signal: expect.any(AbortSignal),
       })
     );
+  });
+
+  it('refreshAuthToken attaches 15s timeout signal and returns null when timeout aborts', async () => {
+    vi.useFakeTimers();
+    try {
+      let refreshSignal: AbortSignal | undefined;
+      global.fetch = vi.fn().mockImplementation((_url, init) => {
+        refreshSignal = init?.signal;
+        return new Promise((_resolve, reject) => {
+          refreshSignal?.addEventListener('abort', () => {
+            reject(new DOMException('Timeout aborted', 'AbortError'));
+          });
+        });
+      });
+
+      const refreshPromise = refreshAuthToken();
+      expect(refreshSignal?.aborted).toBe(false);
+
+      vi.advanceTimersByTime(15_000);
+      expect(refreshSignal?.aborted).toBe(true);
+
+      const result = await refreshPromise;
+      expect(result).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('refreshAuthToken returns null when refresh fails or throws', async () => {

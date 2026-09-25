@@ -55,10 +55,13 @@ export async function refreshAuthToken(): Promise<string | null> {
   }
 
   const promise = (async () => {
+    const refreshController = new AbortController();
+    const refreshTimeout = setTimeout(() => refreshController.abort(), 15_000);
     try {
       const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
-        credentials: 'include',
+        credentials: 'same-origin',
+        signal: refreshController.signal,
       });
       if (!res.ok) {
         return null;
@@ -72,6 +75,7 @@ export async function refreshAuthToken(): Promise<string | null> {
     } catch {
       return null;
     } finally {
+      clearTimeout(refreshTimeout);
       refreshPromise = null;
     }
   })();
@@ -118,10 +122,11 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
       signal: controller.signal,
     });
 
-    const isAuthEndpoint = cleanEndpoint.startsWith('/auth/') || cleanEndpoint.startsWith('auth/');
+    const unrefreshableEndpoints = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
+    const isUnrefreshableAuth = unrefreshableEndpoints.some((ep) => cleanEndpoint === ep || cleanEndpoint === ep.slice(1));
 
     if (response.status === 401) {
-      if (isAuthEndpoint) {
+      if (isUnrefreshableAuth) {
         clearAuthToken();
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || `Request failed with status ${response.status}`);
