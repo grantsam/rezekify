@@ -1,6 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useDashboardData, clearDashboardCache } from '../hooks/useDashboardData';
 import * as apiClient from '../services/apiClient';
 import { DashboardSummaryResponse, Account, Vault, Category } from '../types/api';
 
@@ -36,6 +36,7 @@ describe('useDashboardData', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    clearDashboardCache();
   });
 
   it('loads summary, accounts, vaults, and categories on mount', async () => {
@@ -148,5 +149,40 @@ describe('useDashboardData', () => {
     });
 
     expect(result.current.vaultError).toBe('Gagal delete vault');
+  });
+
+  it('reuses cached data within 30s without making redundant network calls', async () => {
+    const fetchSpy = vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint === '/dashboard/summary') return mockSummary;
+      if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint === '/vaults') return mockVaults;
+      if (endpoint === '/categories') return mockCategories;
+      return null;
+    });
+
+    const { result: firstHook, unmount } = renderHook(() => useDashboardData());
+
+    await waitFor(() => {
+      expect(firstHook.current.isLoading).toBe(false);
+      expect(firstHook.current.summary).toEqual(mockSummary);
+    });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
+
+    unmount();
+
+    // Render a new instance of the hook within cache TTL
+    const { result: secondHook } = renderHook(() => useDashboardData());
+
+    await waitFor(() => {
+      expect(secondHook.current.isLoading).toBe(false);
+    });
+
+    expect(secondHook.current.summary).toEqual(mockSummary);
+    expect(secondHook.current.accounts).toEqual(mockAccounts);
+    expect(secondHook.current.categories).toEqual(mockCategories);
+    expect(secondHook.current.vaults).toEqual(mockVaults);
+    // Should NOT have made additional fetch calls
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
   });
 });

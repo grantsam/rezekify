@@ -6,6 +6,21 @@ export interface UseDashboardDataOptions {
   autoFetch?: boolean;
 }
 
+interface DashboardCache {
+  summary: DashboardSummaryResponse | null;
+  accounts: Account[];
+  categories: Category[];
+  vaults: Vault[];
+  timestamp: number;
+}
+
+let _dashboardCache: DashboardCache | null = null;
+const CACHE_TTL_MS = 30_000;
+
+export function clearDashboardCache(): void {
+  _dashboardCache = null;
+}
+
 /**
  * Encapsulates core dashboard domain data: summary metrics, accounts, vaults, categories,
  * and vault mutations.
@@ -23,7 +38,16 @@ export function useDashboardData(options: UseDashboardDataOptions = {}) {
   const [vaultError, setVaultError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState<number>(0);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (forceFresh = false) => {
+    const now = Date.now();
+    if (!forceFresh && _dashboardCache && (now - _dashboardCache.timestamp < CACHE_TTL_MS)) {
+      setSummary(_dashboardCache.summary);
+      setAccounts(_dashboardCache.accounts);
+      setCategories(_dashboardCache.categories);
+      setVaults(_dashboardCache.vaults);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
@@ -34,10 +58,22 @@ export function useDashboardData(options: UseDashboardDataOptions = {}) {
         apiFetch<Vault[]>('/vaults').catch(() => []),
       ]);
 
+      const accs = Array.isArray(accData) ? accData : [];
+      const cats = Array.isArray(catData) ? catData : [];
+      const vls = Array.isArray(vaultData) ? vaultData : [];
+
       if (sumData) setSummary(sumData);
-      setAccounts(Array.isArray(accData) ? accData : []);
-      setCategories(Array.isArray(catData) ? catData : []);
-      setVaults(Array.isArray(vaultData) ? vaultData : []);
+      setAccounts(accs);
+      setCategories(cats);
+      setVaults(vls);
+
+      _dashboardCache = {
+        summary: sumData,
+        accounts: accs,
+        categories: cats,
+        vaults: vls,
+        timestamp: Date.now(),
+      };
     } catch (err: any) {
       console.error('Failed to load dashboard data', err);
       setError(err?.message || 'Gagal memuat data dashboard.');
@@ -47,7 +83,8 @@ export function useDashboardData(options: UseDashboardDataOptions = {}) {
   }, []);
 
   const refreshAll = useCallback(async () => {
-    await loadData();
+    clearDashboardCache();
+    await loadData(true);
     setRefreshKey((k) => k + 1);
   }, [loadData]);
 
