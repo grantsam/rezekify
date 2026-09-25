@@ -555,11 +555,20 @@ class ReActAgent:
 
         # 2-Hop Fallback: Groq Whisper STT -> Groq LLM extraction
         if self.groq_pool and self.groq_pool.keys:
+            ext_map = {
+                "audio/webm": ".webm",
+                "audio/wav": ".wav",
+                "audio/mp3": ".mp3",
+                "audio/mpeg": ".mp3",
+                "audio/ogg": ".ogg",
+            }
+            ext = ext_map.get(mime_type, ".ogg")
+            filename = f"voice{ext}"
             for _ in range(len(self.groq_pool.keys)):
                 key = self.groq_pool.get_current_key()
                 try:
                     transcription = await self._call_groq_whisper_rest_async(
-                        api_key=key, audio_bytes=audio_bytes
+                        api_key=key, audio_bytes=audio_bytes, filename=filename
                     )
                     if transcription:
                         combined_text = transcription

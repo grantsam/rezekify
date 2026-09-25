@@ -251,14 +251,19 @@ async def test_aprocess_audio_falls_back_to_whisper():
     )
 
     call_counts = {"gemini": 0, "whisper": 0, "groq_chat": 0}
+    whisper_filename = None
 
     async def mock_post_side_effect(url, **kwargs):
+        nonlocal whisper_filename
         url_str = str(url)
         if "generativelanguage.googleapis.com" in url_str:
             call_counts["gemini"] += 1
             return mock_gemini_fail
         if "audio/transcriptions" in url_str:
             call_counts["whisper"] += 1
+            files = kwargs.get("files", {})
+            if "file" in files:
+                whisper_filename = files["file"][0]
             return mock_whisper_resp
         call_counts["groq_chat"] += 1
         return mock_groq_chat_resp
@@ -266,7 +271,7 @@ async def test_aprocess_audio_falls_back_to_whisper():
     with patch("httpx.AsyncClient.post", side_effect=mock_post_side_effect):
         result = await agent.aprocess_audio(
             audio_bytes=b"fake-audio-bytes",
-            mime_type="audio/ogg",
+            mime_type="audio/webm",
         )
         assert result["action"] == "expense"
         assert result["amount"] == 30000
@@ -274,6 +279,7 @@ async def test_aprocess_audio_falls_back_to_whisper():
         assert call_counts["gemini"] == 1  # Ensures 1-hop failure directly falls back to Groq without redundant Gemini call
         assert call_counts["whisper"] == 1
         assert call_counts["groq_chat"] == 1
+        assert whisper_filename == "voice.webm"
 
 
 @pytest.mark.asyncio

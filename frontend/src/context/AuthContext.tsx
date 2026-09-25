@@ -15,7 +15,7 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -114,10 +114,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = (): void => {
-    clearAuthToken();
-    setUser(null);
-    setToken(null);
+  const logout = async (): Promise<void> => {
+    try {
+      await apiFetch('/auth/logout', { method: 'POST' });
+    } catch {
+      // Proceed with local eviction even if network fails
+    } finally {
+      clearAuthToken();
+      setUser(null);
+      setToken(null);
+    }
   };
 
   const value: AuthContextType = {

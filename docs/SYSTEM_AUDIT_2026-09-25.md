@@ -153,7 +153,7 @@ app = FastAPI(title="rezekify Core API", **docs_kwargs)
 
 > **Status: ✅ RESOLVED (Commit `8104485`)**
 
-Telah diimplementasikan sanitasi karakter SQL wildcard (`%`, `_`) pada `_resolve_or_create_category` di `rezekify/agent/orchestrator.py` (`re.sub(r"[%_]", "", category_name).strip()[:50]`) sebelum melakukan evaluasi ILIKE terhadap database model, mencegah manipulasi pattern matching query dan wildcard-based performance degradation (DoS).
+Telah diimplementasikan sanitasi karakter SQL wildcard (`%`, `_`) pada `_resolve_or_create_category` di `rezekify/agent/orchestrator.py` (`raw_name.replace("%", "").replace("_", "").strip()[:100]`) sebelum melakukan evaluasi ILIKE terhadap database model, mencegah manipulasi pattern matching query dan wildcard-based performance degradation (DoS).
 
 **B-S6: Tambahkan maxlen pada dedup cache**
 

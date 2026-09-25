@@ -197,7 +197,7 @@ describe('AuthContext and useAuth hook', () => {
   it('logs out and clears all auth state and stored token', async () => {
     apiClient.setAuthToken('active-token');
 
-    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({
+    const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({
       id: 'usr-111',
       email: 'test@example.com',
       full_name: 'Test User',
@@ -214,10 +214,50 @@ describe('AuthContext and useAuth hook', () => {
       expect(result.current.isAuthenticated).toBe(true);
     });
 
-    act(() => {
-      result.current.logout();
+    await act(async () => {
+      await result.current.logout();
     });
 
+    expect(apiFetchSpy).toHaveBeenCalledWith('/auth/logout', { method: 'POST' });
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.token).toBeNull();
+    expect(result.current.user).toBeNull();
+    expect(apiClient.getAuthToken()).toBeNull();
+  });
+
+  it('logs out and clears auth state even if server logout request fails', async () => {
+    apiClient.setAuthToken('active-token');
+
+    const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint) => {
+      if (endpoint === '/auth/me') {
+        return {
+          id: 'usr-111',
+          email: 'test@example.com',
+          full_name: 'Test User',
+          telegram_chat_id: null,
+        } as any;
+      }
+      if (endpoint === '/auth/logout') {
+        throw new Error('Network error');
+      }
+      throw new Error(`Unexpected endpoint: ${endpoint}`);
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <AuthProvider>{children}</AuthProvider>
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isAuthenticated).toBe(true);
+    });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(apiFetchSpy).toHaveBeenCalledWith('/auth/logout', { method: 'POST' });
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.token).toBeNull();
     expect(result.current.user).toBeNull();
