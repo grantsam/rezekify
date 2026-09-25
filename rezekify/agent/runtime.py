@@ -436,6 +436,31 @@ class ReActAgent:
             candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
             return self._clean_json_response(candidate_text)
 
+    async def _afallback_groq(self, text: str) -> Dict[str, Any]:
+        """Executes fallback entity extraction using Groq rotary key pool asynchronously."""
+        if not self.groq_pool or not self.groq_pool.keys:
+            return {"action": "unknown", "text": text}
+
+        for _ in range(len(self.groq_pool.keys)):
+            key = self.groq_pool.get_current_key()
+            try:
+                return await self._call_groq_chat_rest_async(api_key=key, text=text)
+            except Exception as e:
+                err_str = str(e).lower()
+                if "401" in err_str or "invalid api key" in err_str:
+                    if self.is_byok:
+                        return {"action": "byok_error", "status_code": 401}
+                    break
+                if "429" in err_str or "rate limit" in err_str:
+                    if self.groq_pool:
+                        self.groq_pool.report_rate_limit(key)
+                    if self.is_byok:
+                        return {"action": "byok_error", "status_code": 429}
+                    continue
+                break
+
+        return {"action": "unknown", "text": text}
+
     async def aprocess_input(
         self,
         user_id: UUID,
@@ -485,22 +510,7 @@ class ReActAgent:
                             continue
                         break
             else:
-                for _ in range(len(self.groq_pool.keys)):
-                    key = self.groq_pool.get_current_key()
-                    try:
-                        return await self._call_groq_chat_rest_async(api_key=key, text=text)
-                    except Exception as e:
-                        err_str = str(e).lower()
-                        if "401" in err_str or "invalid api key" in err_str:
-                            if self.is_byok:
-                                return {"action": "byok_error", "status_code": 401}
-                            break
-                        if "429" in err_str or "rate limit" in err_str:
-                            self.groq_pool.report_rate_limit(key)
-                            if self.is_byok:
-                                return {"action": "byok_error", "status_code": 429}
-                            continue
-                        break
+                return await self._afallback_groq(text)
 
         return {"action": "unknown", "text": text}
 
@@ -555,10 +565,7 @@ class ReActAgent:
                         combined_text = transcription
                         if text_context:
                             combined_text += f" ({text_context})"
-                        extraction = await self.aprocess_input(
-                            user_id=UUID("00000000-0000-0000-0000-000000000000"),
-                            text=combined_text,
-                        )
+                        extraction = await self._afallback_groq(combined_text)
                         extraction["transcription"] = transcription
                         return extraction
                 except Exception as e:

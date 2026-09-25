@@ -13,7 +13,7 @@ Validates the complete end-to-end user lifecycle across all new integration endp
 from datetime import date, timedelta
 from decimal import Decimal
 import io
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -187,7 +187,7 @@ def test_full_stack_user_lifecycle_e2e(client: TestClient):
     # 8. Multimodal AI Receipt Upload
     mock_reply = "✅ Struk terverifikasi: Belanja Supermarket Rp 175.000 via Bank BCA Prioritas"
     fake_jpeg = io.BytesIO(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb")
-    with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message", return_value=mock_reply) as mock_ocr:
+    with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message_async", new_callable=AsyncMock, return_value=mock_reply) as mock_ocr:
         receipt_res = client.post(
             "/api/v1/dashboard/ai-receipt",
             headers=headers,

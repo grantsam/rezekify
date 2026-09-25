@@ -108,17 +108,21 @@ def test_full_system_e2e(client):
     with pytest.MonkeyPatch.context() as mp:
         from rezekify.agent.orchestrator import AgentOrchestrator
         # Mock entity extraction to test deterministic integration
+        mock_entities = {
+            "action": "expense",
+            "amount": 100000,
+            "account_name": "GoPay",
+            "category_name": "Pendidikan",
+            "note": "Beli Buku Referensi",
+        }
         mp.setattr(
             AgentOrchestrator,
             "extract_entities",
-            lambda self, text, image_bytes=None, user_id=None: {
-                "action": "expense",
-                "amount": 100000,
-                "account_name": "GoPay",
-                "category_name": "Pendidikan",
-                "note": "Beli Buku Referensi",
-            },
+            lambda self, text, image_bytes=None, user_id=None, mime_type=None: mock_entities,
         )
+        async def _mock_extract_async(self, text, image_bytes=None, user_id=None, mime_type=None):
+            return mock_entities
+        mp.setattr(AgentOrchestrator, "extract_entities_async", _mock_extract_async)
         chat_res = client.post(
             "/api/v1/dashboard/ai-chat",
             json={"message": "beli buku referensi 100rb gopay"},

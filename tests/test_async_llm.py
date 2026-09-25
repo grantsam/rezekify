@@ -250,12 +250,17 @@ async def test_aprocess_audio_falls_back_to_whisper():
         request=httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions"),
     )
 
+    call_counts = {"gemini": 0, "whisper": 0, "groq_chat": 0}
+
     async def mock_post_side_effect(url, **kwargs):
         url_str = str(url)
         if "generativelanguage.googleapis.com" in url_str:
+            call_counts["gemini"] += 1
             return mock_gemini_fail
         if "audio/transcriptions" in url_str:
+            call_counts["whisper"] += 1
             return mock_whisper_resp
+        call_counts["groq_chat"] += 1
         return mock_groq_chat_resp
 
     with patch("httpx.AsyncClient.post", side_effect=mock_post_side_effect):
@@ -266,6 +271,9 @@ async def test_aprocess_audio_falls_back_to_whisper():
         assert result["action"] == "expense"
         assert result["amount"] == 30000
         assert result["transcription"] == "makan siang tiga puluh ribu bayar tunai"
+        assert call_counts["gemini"] == 1  # Ensures 1-hop failure directly falls back to Groq without redundant Gemini call
+        assert call_counts["whisper"] == 1
+        assert call_counts["groq_chat"] == 1
 
 
 @pytest.mark.asyncio
@@ -371,3 +379,37 @@ def test_dashboard_ai_receipt_async_endpoint(sample_user, db_session):
             app.dependency_overrides[get_db] = old_override
         else:
             app.dependency_overrides.pop(get_db, None)
+
+
+def test_dashboard_ai_voice_async_endpoint(sample_user, db_session):
+    def _get_db():
+        yield db_session
+
+    old_override = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = _get_db
+    try:
+        client = TestClient(app)
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+        fake_audio = io.BytesIO(b"RIFF....WAVEfmt ....data....")
+
+        with patch(
+            "rezekify.agent.orchestrator.AgentOrchestrator.handle_voice_async",
+            new_callable=AsyncMock,
+            return_value={"reply": "✅ Audio async", "transcription": "kopi susu"},
+        ) as mock_voice:
+            res = client.post(
+                "/api/v1/dashboard/ai-voice",
+                files={"file": ("voice.webm", fake_audio, "audio/webm")},
+                data={"message": "Catatan"},
+                headers=headers,
+            )
+            assert res.status_code == 200
+            assert res.json() == {"reply": "✅ Audio async", "transcription": "kopi susu"}
+            assert mock_voice.called
+    finally:
+        if old_override is not None:
+            app.dependency_overrides[get_db] = old_override
+        else:
+            app.dependency_overrides.pop(get_db, None)
+

@@ -5,7 +5,7 @@ from decimal import Decimal
 import io
 import uuid
 from contextlib import contextmanager
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -488,7 +488,7 @@ def test_ai_receipt_upload_endpoint(sample_user, db_session):
 
         # 1. Valid JPEG with custom message
         fake_jpeg = io.BytesIO(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb")
-        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message", return_value="✅ Tercatat: Rp 50,000 via BCA") as mock_handle:
+        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message_async", new_callable=AsyncMock, return_value="✅ Tercatat: Rp 50,000 via BCA") as mock_handle:
             res = client.post(
                 "/api/v1/dashboard/ai-receipt",
                 files={"file": ("receipt.jpg", fake_jpeg, "image/jpeg")},
@@ -506,7 +506,7 @@ def test_ai_receipt_upload_endpoint(sample_user, db_session):
 
         # 2. Valid PNG with default message fallback
         fake_png = io.BytesIO(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
-        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message", return_value="✅ Tercatat dari Struk") as mock_handle:
+        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_message_async", new_callable=AsyncMock, return_value="✅ Tercatat dari Struk") as mock_handle:
             res_png = client.post(
                 "/api/v1/dashboard/ai-receipt",
                 files={"file": ("struk.png", fake_png, "image/png")},
@@ -598,7 +598,7 @@ def test_ai_voice_upload_success(sample_user, db_session):
         token = create_access_token({"sub": str(sample_user.id)})
         headers = {"Authorization": f"Bearer {token}"}
         fake_audio = io.BytesIO(b"RIFF....WAVEfmt ....data....")
-        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_voice", return_value={"transcription": "beli kopi 25rb", "reply": "Tercatat!", "success": True}) as mock_handle:
+        with patch("rezekify.agent.orchestrator.AgentOrchestrator.handle_voice_async", new_callable=AsyncMock, return_value={"transcription": "beli kopi 25rb", "reply": "Tercatat!", "success": True}) as mock_handle:
             res = client.post(
                 "/api/v1/dashboard/ai-voice",
                 files={"file": ("voice.webm", fake_audio, "audio/webm")},

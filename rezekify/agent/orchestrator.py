@@ -1,6 +1,5 @@
 """Agent Orchestrator translating natural language and receipts into ledger actions."""
 
-import inspect
 from decimal import Decimal
 from typing import Any, Dict, Optional
 from uuid import UUID
@@ -358,21 +357,6 @@ class AgentOrchestrator:
         mime_type: Optional[str] = "image/jpeg",
     ) -> Dict[str, Any]:
         """Asynchronously extracts structured financial transaction entities using ReActAgent runtime."""
-        # Backward compatibility if extract_entities was patched on class or instance
-        curr_extract = getattr(self.extract_entities, "__func__", self.extract_entities)
-        if curr_extract is not _ORIG_EXTRACT_ENTITIES or hasattr(self.extract_entities, "assert_called"):
-            try:
-                res = self.extract_entities(
-                    text=text, image_bytes=image_bytes, user_id=user_id, mime_type=mime_type
-                )
-            except TypeError:
-                res = self.extract_entities(
-                    text=text, image_bytes=image_bytes, user_id=user_id
-                )
-            if inspect.isawaitable(res):
-                return await res
-            return res
-
         lower = text.lower().strip()
         if lower in ("cek runway", "runway", "saldo", "cek saldo", "status", "cek status", "cek runway hari ini"):
             return {"action": "query_runway"}
@@ -401,16 +385,6 @@ class AgentOrchestrator:
         mime_type: Optional[str] = "image/jpeg",
     ) -> str:
         """Asynchronously processes message/receipt and executes double-entry mutations."""
-        # Backward compatibility for legacy tests mocking handle_message
-        curr_handle = getattr(self.handle_message, "__func__", self.handle_message)
-        if curr_handle is not _ORIG_HANDLE_MESSAGE or hasattr(self.handle_message, "assert_called"):
-            res = self.handle_message(
-                user_id=user_id, text=text, image_bytes=image_bytes, mime_type=mime_type
-            )
-            if inspect.isawaitable(res):
-                return await res
-            return res
-
         entities = await self.extract_entities_async(
             text=text, image_bytes=image_bytes, user_id=user_id, mime_type=mime_type
         )
@@ -424,13 +398,6 @@ class AgentOrchestrator:
         mime_type: Optional[str] = "audio/webm",
     ) -> Dict[str, Any]:
         """Asynchronously processes voice note audio directly via 1-Hop multimodal agent or Whisper fallback."""
-        curr_voice = getattr(self.handle_voice, "__func__", self.handle_voice)
-        if curr_voice is not _ORIG_HANDLE_VOICE or hasattr(self.handle_voice, "assert_called"):
-            res = self.handle_voice(user_id=user_id, audio_bytes=audio_bytes, caption=caption, mime_type=mime_type)
-            if inspect.isawaitable(res):
-                return await res
-            return res
-
         if not audio_bytes:
             return {
                 "transcription": "",
@@ -490,10 +457,6 @@ class AgentOrchestrator:
             "parsed_data": parsed_result,
         }
 
-
-_ORIG_EXTRACT_ENTITIES = AgentOrchestrator.extract_entities
-_ORIG_HANDLE_MESSAGE = AgentOrchestrator.handle_message
-_ORIG_HANDLE_VOICE = AgentOrchestrator.handle_voice
 
 
 

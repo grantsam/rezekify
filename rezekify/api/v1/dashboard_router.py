@@ -7,7 +7,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from starlette.concurrency import run_in_threadpool
 
 from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.orchestrator import AgentOrchestrator
@@ -221,8 +220,7 @@ async def ai_voice_endpoint(
         raise HTTPException(status_code=400, detail="Ukuran file audio melebihi batas maksimal 10MB.")
 
     orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
-    result = await run_in_threadpool(
-        orchestrator.handle_voice,
+    result = await orchestrator.handle_voice_async(
         user_id=current_user.id,
         audio_bytes=content,
         caption=(message or "").strip() or None,
