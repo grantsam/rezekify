@@ -9,6 +9,7 @@ export default defineConfig({
     port: 3000,
   },
   build: {
+    target: 'es2022',
     rollupOptions: {
       output: {
         manualChunks: {
