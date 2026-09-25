@@ -22,6 +22,9 @@ app = FastAPI(
     title="rezekify Core API",
     version="1.0.0",
     description="Deterministic Double-Entry Personal Finance & Runway Engine",
+    docs_url="/docs" if settings.SHOW_DOCS else None,
+    redoc_url=None,
+    openapi_url="/openapi.json" if settings.SHOW_DOCS else None,
 )
 
 app.add_middleware(
@@ -33,8 +36,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])

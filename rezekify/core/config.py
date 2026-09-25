@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "rezekify"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+    SHOW_DOCS: bool = False
 
     # Database
     DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/rezekify"
