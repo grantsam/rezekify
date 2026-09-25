@@ -21,9 +21,43 @@ The frontend suffers from a critical **dual-palette schizophrenia**: the codebas
 
 ---
 
+## AUDIT RESOLUTION STATUS (as of Commit d1ce300)
+
+**Resolution Progress:** 7 of 23 findings resolved (~30.4%). 16 findings remain open across interaction semantics, motion governance, micro-accessibility, and component foundation adoption.
+
+- **Total Findings:** 23
+- **Resolved (7):**
+  - **P0-1 (Dual Palette):** Migrated 15 files from legacy `slate-*` to `zinc-*` Modern Zinc Studio tokens.
+  - **P0-3 (rounded-3xl normalization):** Normalized all card containers and modals to `rounded-2xl`.
+  - **P0-4 (Root canvas flash):** Aligned `frontend/index.html`, `App.tsx`, and `index.css` to `#0c0c0e` and `text-zinc-100`.
+  - **P1-2 (Dead code pruning):** Removed obsolete `OmniInputHero.tsx` (510 lines), `VaultsSection.tsx` (160 lines), and associated test files.
+  - **P2-2 (Scrollbar color):** Updated scrollbar track background in `index.css` from `#020617` to `#0c0c0e`.
+  - **P2-4 (Decorative blurs):** Pruned alongside obsolete `OmniInputHero.tsx`.
+  - **P2-5 (Font token unification):** Replaced legacy `text-slate-400` with `text-zinc-400`.
+- **Remaining Open (16):**
+  - **P0-2:** onClick vs onPress (13 files still contain 26+ native `<button onClick>`).
+  - **P1-1:** Motion duration > 250ms in `QuickCaptureBar.tsx:250`.
+  - **P1-3 & P1-4:** Modal CTA color semantics (emerald vs indigo vs white).
+  - **P1-5:** Missing layout animations in `LedgerView.tsx`, `AuthPage.tsx`.
+  - **P1-6:** Continuous decorative `animate-pulse` in `Sidebar.tsx:73`.
+  - **P1-7:** Missing `tabular-nums` in `OverviewView.tsx:227`.
+  - **P1-8:** Raw `<div>` instead of HeroUI `<Card>` in metric containers.
+  - **P2-1:** Raw `<select>` in `TransactionsTable.tsx`, `SettingsModal.tsx`, `ManualTransactionModal.tsx`.
+  - **P2-3:** Missing `role="radio"` on custom radio pills.
+  - **P2-6:** Overuse of `transition-all`.
+  - **P3-1:** Redundant `disabled` alongside `isDisabled`.
+  - **P3-2:** Invalid Tailwind class `py-0.2` in `VaultsView.tsx:57` and `Sidebar.tsx:129`.
+  - **P3-3:** Redundant `type="button"` on HeroUI buttons.
+  - **P3-4:** Unused shadow glow tokens in `tailwind.config.js`.
+  - **P3-5:** Missing `prefers-reduced-motion` media queries.
+
+---
+
 ## P0: CRITICAL ISSUES
 
 ### P0-1: Dual Color Palette Schizophrenia (slate-* vs zinc-*)
+
+> **Status: 🟢 RESOLVED (Commit c12dacf)**
 
 **DESIGN.md Mandate (Section 7 - Modern Zinc Studio):**
 
@@ -64,6 +98,8 @@ The frontend suffers from a critical **dual-palette schizophrenia**: the codebas
 
 ### P0-2: onClick vs onPress Inconsistency (31 Violations)
 
+> **Status: 🔴 OPEN (Unresolved)**
+
 **DESIGN.md Mandate (Section 6):**
 
 > All interactive buttons utilize `@heroui/react` `<Button>` with `onPress` handlers, strictly avoiding deprecated `onClick` triggers.
@@ -95,6 +131,8 @@ The frontend suffers from a critical **dual-palette schizophrenia**: the codebas
 
 ### P0-3: border-radius Inconsistency (rounded-2xl vs rounded-3xl)
 
+> **Status: 🟢 RESOLVED (Commit c12dacf)**
+
 **DESIGN.md Mandate:** Cards use `rounded-2xl` consistently.
 
 **Files using `rounded-3xl` (violating):**
@@ -111,6 +149,8 @@ The frontend suffers from a critical **dual-palette schizophrenia**: the codebas
 
 ### P0-4: App.tsx Root Still Uses Old Slate Palette
 
+> **Status: 🟢 RESOLVED (Commit c12dacf)**
+
 `App.tsx:30` renders `bg-slate-950 text-slate-100` on the authenticated wrapper div while `AppLayout.tsx` renders `bg-[#0c0c0e] text-zinc-100`. This creates a potential flash of different background color during hydration.
 
 Similarly, `index.css` base layer applies `bg-slate-950 text-slate-100` which conflicts with the zinc studio tokens.
@@ -124,6 +164,8 @@ Additionally, `frontend/index.html` line 9 (`<body class="bg-slate-950 text-slat
 ## P1: HIGH PRIORITY ISSUES
 
 ### P1-1: Motion Duration Violations (DESIGN.md: <= 250ms)
+
+> **Status: 🔴 OPEN (Unresolved)**
 
 **Violations in `OmniInputHero.tsx`:**
 
@@ -142,6 +184,8 @@ Additionally, `frontend/index.html` line 9 (`<body class="bg-slate-950 text-slat
 
 ### P1-2: OmniInputHero.tsx (510 lines) & VaultsSection.tsx (160 lines) Are Dead Code
 
+> **Status: 🟢 RESOLVED (Commit c12dacf)**
+
 `VaultsSection.tsx` (160 lines) and `OmniInputHero.tsx` (510 lines), along with their unit tests `VaultsSection.test.tsx` and `OmniInputHero.test.tsx`, are completely dead code replaced by `QuickCaptureBar.tsx`, `VaultsView.tsx`, and `OverviewView.tsx`.
 
 Neither is imported or rendered anywhere in the active application. The dashboard exclusively uses `QuickCaptureBar.tsx` for ingestion and `VaultsView.tsx` / `OverviewView.tsx` for vaults management. OmniInputHero contains 510 lines of duplicated logic (file upload, voice recording, drag-and-drop) that mirror QuickCaptureBar, while VaultsSection contains 160 lines of legacy vault card grid logic.
@@ -155,6 +199,8 @@ Neither is imported or rendered anywhere in the active application. The dashboar
 ---
 
 ### P1-3: CTA Button Color Inconsistency Across Modals
+
+> **Status: 🔴 OPEN (Unresolved)**
 
 **DESIGN.md Mandate (Section 1):**
 
@@ -178,6 +224,8 @@ Neither is imported or rendered anywhere in the active application. The dashboar
 
 ### P1-4: VaultsSection vs VaultsView CTA Style Mismatch
 
+> **Status: 🔴 OPEN (Unresolved)**
+
 - `VaultsSection.tsx` "+ Tambah Vault" button: `bg-emerald-500 hover:bg-emerald-600 text-white`
 - `VaultsView.tsx` "+ Tambah Vault" button: `bg-white text-zinc-950 hover:bg-zinc-200`
 - `LedgerView.tsx` "+ Catat Manual" button: `bg-white text-zinc-950 hover:bg-zinc-200`
@@ -189,6 +237,8 @@ The newer navigation shell uses monochromatic white CTA, while the older VaultsS
 ---
 
 ### P1-5: Missing framer-motion in Components That Should Animate
+
+> **Status: 🔴 OPEN (Unresolved)**
 
 **Components with NO framer-motion but should have layout transitions per DESIGN.md:**
 
@@ -211,6 +261,8 @@ The newer navigation shell uses monochromatic white CTA, while the older VaultsS
 
 ### P1-6: Continuous animate-pulse on Non-Loading Elements
 
+> **Status: 🔴 OPEN (Unresolved)**
+
 **DESIGN.md:** Motion restraint, calm terminal. No continuous decorative pulse.
 **Impeccable Critique (P1):** "Continuous pulse animation violates calm terminal principles."
 
@@ -231,6 +283,8 @@ The newer navigation shell uses monochromatic white CTA, while the older VaultsS
 
 ### P1-7: Missing tabular-nums on Financial Amounts
 
+> **Status: 🔴 OPEN (Unresolved)**
+
 **DESIGN.md Mandate:** Always enforce `tabular-nums` for deterministic column alignment.
 
 **Violation:**
@@ -242,6 +296,8 @@ Most other components correctly use `tabular-nums`.
 ---
 
 ### P1-8: HeroUI Card / CardBody Underutilization
+
+> **Status: 🔴 OPEN (Unresolved)**
 
 **DESIGN.md Mandate (Section 6):** Metric containers leverage HeroUI Card foundations.
 
@@ -263,6 +319,8 @@ Most other components correctly use `tabular-nums`.
 
 ### P2-1: Raw `<select>` Not Using HeroUI `<Select>`
 
+> **Status: 🔴 OPEN (Unresolved)**
+
 Raw `<select>` elements in:
 
 - `ManualTransactionModal.tsx` — Account and category selects
@@ -274,12 +332,16 @@ These lose HeroUI's dark-mode styling and focus ring consistency.
 
 ### P2-2: index.css Scrollbar Uses `#020617` (slate-950) Not `#0c0c0e`
 
+> **Status: 🟢 RESOLVED (Commit c12dacf)**
+
 `index.css` scrollbar track: `background: #020617;` (old slate)
 Should be: `background: #0c0c0e;` (zinc studio root)
 
 ---
 
 ### P2-3: Missing `role="radio"` on Radio-Style Buttons
+
+> **Status: 🔴 OPEN (Unresolved)**
 
 - `ManualTransactionModal.tsx` — Transaction type buttons
 - `VaultModal.tsx` — Vault type buttons
@@ -290,17 +352,23 @@ Should be: `background: #0c0c0e;` (zinc studio root)
 
 ### P2-4: OmniInputHero.tsx Decorative Blurs
 
+> **Status: 🟢 RESOLVED (Commit c12dacf)**
+
 Dead code, but if resurrected: three `<motion.div>` blobs with `blur-3xl` at 1500ms continuous animation violate "Zero decorative fluff" principle.
 
 ---
 
 ### P2-5: Font Token Inconsistency (slate-400 vs zinc-400)
 
+> **Status: 🟢 RESOLVED (Commit c12dacf)**
+
 Components mix `text-slate-400` and `text-zinc-400` for the same semantic purpose. `slate-400 (#94a3b8)` has a cooler blue tone vs `zinc-400 (#a1a1aa)` which is warmer gray.
 
 ---
 
 ### P2-6: transition-all Overuse
+
+> **Status: 🔴 OPEN (Unresolved)**
 
 Multiple components use `transition-all` instead of specific `transition-colors` or `transition-transform`. This can cause unexpected layout shifts and performance overhead.
 
@@ -310,11 +378,15 @@ Multiple components use `transition-all` instead of specific `transition-colors`
 
 ### P3-1: Mixed disabled + isDisabled Props on HeroUI Buttons
 
+> **Status: 🔴 OPEN (Unresolved)**
+
 Several components pass both `disabled` (native) and `isDisabled` (HeroUI). Only `isDisabled` is needed. Files: `VaultCard.tsx`, `TransactionsTable.tsx`, `OmniInputHero.tsx`.
 
 ---
 
 ### P3-2: py-0.2 Invalid Tailwind Class
+
+> **Status: 🔴 OPEN (Unresolved)**
 
 `VaultsView.tsx` and `Sidebar.tsx` use `py-0.2` in counter pills. Tailwind does not have a `0.2` spacing value. Should be `py-0.5` or `py-px`.
 
@@ -322,11 +394,15 @@ Several components pass both `disabled` (native) and `isDisabled` (HeroUI). Only
 
 ### P3-3: Duplicate type="button" on HeroUI Button
 
+> **Status: 🔴 OPEN (Unresolved)**
+
 HeroUI `<Button>` defaults to `type="button"`. Many components redundantly pass this prop. Not harmful but noisy.
 
 ---
 
 ### P3-4: Unused Shadow Tokens in tailwind.config.js
+
+> **Status: 🔴 OPEN (Unresolved)**
 
 `tailwind.config.js` defines custom `shadow-glow-*` tokens (`shadow-glow-indigo`, `shadow-glow-emerald`, `shadow-glow-amber`, `shadow-glow-rose`) but they are never used in any component.
 
@@ -334,38 +410,41 @@ HeroUI `<Button>` defaults to `type="button"`. Many components redundantly pass 
 
 ### P3-5: prefers-reduced-motion Not Respected
 
+> **Status: 🔴 OPEN (Unresolved)**
+
 No component checks `prefers-reduced-motion` media query. All framer-motion animations run regardless of user preference.
 
 ---
 
 ## CROSS-CORRELATION MATRIX
 
-| Component | Color System | HeroUI Usage | Motion Usage | Button Pattern |
-|-----------|-------------|-------------|-------------|----------------|
-| `App.tsx` | slate (WRONG) | HeroUIProvider | None | N/A |
-| `AuthPage.tsx` | slate (WRONG) | None | None | onClick (WRONG) |
-| `AppLayout.tsx` | zinc (correct) | None | None | N/A |
-| `Sidebar.tsx` | zinc (correct) | Button onPress | None | Mixed (1 onClick) |
-| `BottomDock.tsx` | zinc (correct) | None | None | onClick (WRONG 5x) |
-| `QuickCaptureBar.tsx` | zinc (correct) | Button onPress | AnimatePresence | Mixed (2 onClick) |
-| `OverviewView.tsx` | zinc (correct) | Button, Chip | motion.div | Correct |
-| `LedgerView.tsx` | zinc (correct) | Button onPress | None | Correct |
-| `VaultsView.tsx` | zinc (correct) | Button onPress | None | onClick (WRONG 3x) |
-| `VaultsSection.tsx` | slate (WRONG) | Button onPress | AnimatePresence | Mixed (1 onClick) |
-| `VaultCard.tsx` | slate (WRONG) | Button, Chip | motion.div | Correct |
-| `RunwayMetricCard.tsx` | slate (WRONG) | Chip, Progress | None | onClick (WRONG 1x) |
-| `ExpenseCharts.tsx` | slate (WRONG) | Tooltip, Button, Progress | motion.div | Correct |
-| `UpcomingBillsCard.tsx` | slate (WRONG) | Card, Chip | motion.div | None |
-| `TransactionsTable.tsx` | slate (WRONG) | Button, Chip, Modal | AnimatePresence | Mixed (1 onClick) |
-| `OmniInputHero.tsx` | slate (WRONG) | Button onPress | EXCESSIVE | Correct |
-| `AccountModal.tsx` | slate (WRONG) | Modal, Button | None | Mixed (1 onClick) |
-| `VaultModal.tsx` | slate (WRONG) | Modal, Button | None | Mixed (1 onClick) |
-| `ManualTransactionModal.tsx` | slate (WRONG) | Modal, Button | None | Mixed (1 onClick) |
-| `SimulatePurchaseModal.tsx` | slate (WRONG) | Modal, Button | None | Correct |
-| `SettingsModal.tsx` | slate (WRONG) | Modal, Button | None | onClick (WRONG 7x) |
-| `CategoryManagerModal.tsx` | slate (WRONG) | Modal, Button | None | onClick (WRONG 4x) |
-| `EditTransactionModal.tsx` | Delegates | Delegates | Delegates | Delegates |
-| `EditVaultModal.tsx` | Delegates | Delegates | Delegates | Delegates |
+| Component | Color System | HeroUI Usage | Motion Usage | Button Pattern | Current Status |
+|-----------|-------------|-------------|-------------|----------------|----------------|
+| `App.tsx` | zinc (Resolved c12dacf) | HeroUIProvider | None | N/A | Resolved |
+| `AuthPage.tsx` | zinc (Resolved c12dacf) | None | None | onClick (WRONG 3x) | Open (P0-2, P1-5) |
+| `AppLayout.tsx` | zinc (correct) | None | None | N/A | Clean |
+| `Sidebar.tsx` | zinc (correct) | Button onPress | None | Mixed (1 onClick) | Open (P0-2, P1-6, P3-2) |
+| `BottomDock.tsx` | zinc (correct) | None | None | onClick (WRONG 5x) | Open (P0-2) |
+| `QuickCaptureBar.tsx` | zinc (correct) | Button onPress | AnimatePresence | Mixed (2 onClick) | Open (P0-2, P1-1) |
+| `OverviewView.tsx` | zinc (correct) | Button, Chip | motion.div | Correct | Open (P1-7, P1-8) |
+| `LedgerView.tsx` | zinc (correct) | Button onPress | None | Correct | Open (P1-5) |
+| `VaultsView.tsx` | zinc (correct) | Button onPress | None | onClick (WRONG 3x) | Open (P0-2, P1-4, P3-2) |
+| `VaultsSection.tsx` | Pruned (dead code) | Pruned | Pruned | Pruned | Resolved (P1-2 pruned in 74e0777) |
+| `VaultCard.tsx` | zinc (Resolved c12dacf) | Button, Chip | motion.div | Correct | Open (P1-8, P3-1) |
+| `RunwayMetricCard.tsx` | zinc (Resolved c12dacf) | Chip, Progress | None | onClick (WRONG 1x) | Open (P0-2, P1-8) |
+| `ExpenseCharts.tsx` | zinc (Resolved c12dacf) | Tooltip, Button, Progress | motion.div | Correct | Open (P1-8) |
+| `UpcomingBillsCard.tsx` | zinc (Resolved c12dacf) | Card, Chip | motion.div | None | Clean |
+| `TransactionsTable.tsx` | zinc (Resolved c12dacf) | Button, Chip, Modal | AnimatePresence | Mixed (1 onClick) | Open (P0-2, P2-1, P3-1) |
+| `OmniInputHero.tsx` | Pruned (dead code) | Pruned | Pruned | Pruned | Resolved (P1-2 pruned in 74e0777) |
+| `AccountModal.tsx` | zinc (Resolved c12dacf) | Modal, Button | None | Mixed (1 onClick) | Open (P0-2, P1-3, P2-3) |
+| `VaultModal.tsx` | zinc (Resolved c12dacf) | Modal, Button | None | Mixed (1 onClick) | Open (P0-2, P1-3, P2-3) |
+| `ManualTransactionModal.tsx` | zinc (Resolved c12dacf) | Modal, Button | None | Mixed (1 onClick) | Open (P0-2, P1-3, P2-1, P2-3) |
+| `SimulatePurchaseModal.tsx` | zinc (Resolved c12dacf) | Modal, Button | None | Correct | Open (P1-3) |
+| `SettingsModal.tsx` | zinc (Resolved c12dacf) | Modal, Button | None | onClick (WRONG 7x) | Open (P0-2, P1-3, P1-5, P1-6, P2-1, P2-3) |
+| `CategoryManagerModal.tsx` | zinc (Resolved c12dacf) | Modal, Button | None | onClick (WRONG 4x) | Open (P0-2, P1-3, P1-5, P1-8) |
+| `DashboardPage.tsx` | zinc (correct) | None | None | Mixed (1 onClick) | Open (P0-2) |
+| `EditTransactionModal.tsx` | Delegates | Delegates | Delegates | Delegates | Delegates to ManualTransactionModal |
+| `EditVaultModal.tsx` | Delegates | Delegates | Delegates | Delegates | Delegates to VaultModal |
 
 ---
 
