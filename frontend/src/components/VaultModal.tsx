@@ -198,7 +198,6 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                   </h3>
                 </div>
                 <Button
-                  type="button"
                   variant="light"
                   isIconOnly
                   onPress={handleClose}
@@ -244,21 +243,21 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                 {!isEdit && (
                   <div>
                     <span className="block text-xs font-medium text-zinc-400 mb-1.5">Tipe Pos</span>
-                    <div className="grid grid-cols-2 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
+                    <div className="grid grid-cols-2 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs" role="radiogroup" aria-label="Tipe Pos">
                       {VAULT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
-                        <button
+                        <Button
                           key={type}
-                          type="button"
-                          onClick={() => setVaultType(type)}
-                          className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
+                          onPress={() => setVaultType(type)}
+                          aria-checked={vaultType === type}
+                          className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all min-h-[38px] ${
                             vaultType === type
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                              : 'text-zinc-400 hover:text-white border border-transparent'
+                              : 'text-zinc-400 hover:text-white border border-transparent bg-transparent'
                           }`}
                         >
                           <Icon className="w-4 h-4" />
                           <span>{label}</span>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -338,7 +337,6 @@ export const VaultModal: React.FC<VaultModalProps> = ({
 
             <ModalFooter>
               <Button
-                type="button"
                 variant="light"
                 onPress={handleClose}
                 className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors"
@@ -349,7 +347,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                 type="submit"
                 color="primary"
                 isLoading={isSubmitting}
-                disabled={isSubmitting}
+                isDisabled={isSubmitting}
                 className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-sm"
               >
                 {isSubmitting ? (

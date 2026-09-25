@@ -161,7 +161,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   {isEditMode ? 'Edit Rekening' : 'Tambah Akun Baru'}
                 </h3>
                 <Button
-                  type="button"
                   variant="light"
                   isIconOnly
                   onPress={handleClose}
@@ -197,21 +196,21 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
                 <div>
                   <span className="block text-xs font-medium text-zinc-400 mb-1.5">Tipe Akun</span>
-                  <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
+                  <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs" role="radiogroup" aria-label="Tipe Akun">
                     {ACCOUNT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
-                      <button
+                      <Button
                         key={type}
-                        type="button"
-                        onClick={() => setAccountType(type)}
-                        className={`flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium transition-all ${
+                        onPress={() => setAccountType(type)}
+                        aria-checked={accountType === type}
+                        className={`flex items-center justify-center gap-1.5 py-2 rounded-lg font-medium transition-all min-h-[38px] ${
                           accountType === type
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                            : 'text-zinc-400 hover:text-white border border-transparent'
+                            : 'text-zinc-400 hover:text-white border border-transparent bg-transparent'
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" />
                         <span>{label}</span>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -261,7 +260,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     </p>
                     <div className="flex items-center gap-2 pt-1">
                       <Button
-                        type="button"
                         size="sm"
                         variant="light"
                         onPress={() => setIsConfirmingDeactivate(false)}
@@ -270,11 +268,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                         Batal
                       </Button>
                       <Button
-                        type="button"
                         size="sm"
                         color="danger"
                         isLoading={isSubmitting}
-                        disabled={isSubmitting}
+                        isDisabled={isSubmitting}
                         onPress={handleDeactivate}
                         className="bg-rose-600 hover:bg-rose-700 font-medium text-xs text-white min-h-[38px] px-3.5 rounded-lg"
                       >
@@ -289,7 +286,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               <div>
                 {isEditMode && !isConfirmingDeactivate && (
                   <Button
-                    type="button"
                     color="danger"
                     variant="light"
                     onPress={() => setIsConfirmingDeactivate(true)}
@@ -301,7 +297,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  type="button"
                   variant="light"
                   onPress={handleClose}
                   className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors min-h-[38px]"
@@ -312,7 +307,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   type="submit"
                   color="primary"
                   isLoading={isSubmitting}
-                  disabled={isSubmitting}
+                  isDisabled={isSubmitting}
                   className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-sm"
                 >
                   {isSubmitting ? (

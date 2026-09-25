@@ -112,7 +112,6 @@ export const VaultCard: React.FC<VaultCardProps> = ({
             variant="flat"
             onPress={() => onToggleLock(vault.id)}
             isDisabled={isTogglingLock}
-            disabled={isTogglingLock}
             aria-label={vault.is_locked ? 'Buka kunci vault' : 'Kunci vault'}
             title={vault.is_locked ? 'Buka kunci alokasi vault' : 'Kunci alokasi vault'}
             className={`min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl transition-colors border disabled:opacity-50 ${
@@ -154,7 +153,6 @@ export const VaultCard: React.FC<VaultCardProps> = ({
               }
             }}
             isDisabled={vault.is_locked || isDeleting}
-            disabled={vault.is_locked || isDeleting}
             aria-label="Hapus vault"
             title={vault.is_locked ? 'Vault terkunci tidak dapat dihapus' : 'Hapus vault'}
             className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-zinc-900 disabled:hover:text-zinc-400 disabled:hover:border-zinc-800"

@@ -369,14 +369,16 @@ export const TransactionsTable: React.FC<Props> = ({
               className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl pl-9 pr-9 py-2 text-sm text-white placeholder-zinc-500 outline-none transition-colors min-h-[38px]"
             />
             {searchQuery && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onPress={handleClearSearch}
                 aria-label="Hapus pencarian"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 rounded-md min-w-[28px] min-h-[28px] flex items-center justify-center transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 rounded-md min-w-[28px] min-h-[28px] w-7 h-7 flex items-center justify-center transition-colors bg-transparent"
               >
                 <X className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             )}
           </div>
 
@@ -515,7 +517,6 @@ export const TransactionsTable: React.FC<Props> = ({
                           variant="flat"
                           onPress={() => onEdit(tx)}
                           isDisabled={isLoading}
-                          disabled={isLoading}
                           className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center text-zinc-400 hover:text-indigo-400 rounded-lg hover:bg-zinc-800/50 transition-colors disabled:opacity-40"
                           aria-label="Edit transaksi"
                           title="Edit transaksi"
@@ -529,7 +530,6 @@ export const TransactionsTable: React.FC<Props> = ({
                         variant="flat"
                         onPress={() => setTxToDelete(tx)}
                         isDisabled={isLoading}
-                        disabled={isLoading}
                         className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-800/50 transition-colors disabled:opacity-40"
                         aria-label="Hapus transaksi"
                         title="Hapus transaksi (otomatis kembalikan saldo)"
@@ -635,7 +635,6 @@ export const TransactionsTable: React.FC<Props> = ({
                               variant="flat"
                               onPress={() => onEdit(tx)}
                               isDisabled={isLoading}
-                              disabled={isLoading}
                               className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center text-zinc-400 hover:text-indigo-400 rounded-lg hover:bg-zinc-800/50 transition-colors disabled:opacity-40"
                               aria-label="Edit transaksi"
                               title="Edit transaksi"
@@ -649,7 +648,6 @@ export const TransactionsTable: React.FC<Props> = ({
                             variant="flat"
                             onPress={() => setTxToDelete(tx)}
                             isDisabled={isLoading}
-                            disabled={isLoading}
                             className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-zinc-800/50 transition-colors disabled:opacity-40"
                             aria-label="Hapus transaksi"
                             title="Hapus transaksi (otomatis kembalikan saldo)"
@@ -677,7 +675,6 @@ export const TransactionsTable: React.FC<Props> = ({
             size="sm"
             variant="flat"
             isDisabled={currentPage <= 1 || isLoading}
-            disabled={currentPage <= 1 || isLoading}
             onPress={() => handlePageStep(-1)}
             aria-label="Halaman Sebelumnya"
             className="bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60 min-h-[38px] px-3.5 rounded-xl text-xs font-medium disabled:opacity-40 disabled:pointer-events-none"
@@ -688,7 +685,6 @@ export const TransactionsTable: React.FC<Props> = ({
             size="sm"
             variant="flat"
             isDisabled={currentPage >= totalPagesCount || isLoading}
-            disabled={currentPage >= totalPagesCount || isLoading}
             onPress={() => handlePageStep(1)}
             aria-label="Halaman Berikutnya"
             className="bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/60 min-h-[38px] px-3.5 rounded-xl text-xs font-medium disabled:opacity-40 disabled:pointer-events-none"

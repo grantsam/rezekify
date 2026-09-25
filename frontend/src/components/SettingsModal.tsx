@@ -252,42 +252,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* Navigation Tabs */}
               <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('telegram')}
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={() => setActiveTab('telegram')}
                   className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'telegram'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white'
+                      : 'text-zinc-400 hover:text-white bg-transparent'
                   }`}
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Integrasi Telegram</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('ai')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={() => setActiveTab('ai')}
                   className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'ai'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white'
+                      : 'text-zinc-400 hover:text-white bg-transparent'
                   }`}
                 >
                   <Bot className="w-3.5 h-3.5" />
                   <span>Model & Kunci AI (BYOK)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('profile')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={() => setActiveTab('profile')}
                   className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'profile'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white'
+                      : 'text-zinc-400 hover:text-white bg-transparent'
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Siklus & Ambang Batas</span>
-                </button>
+                </Button>
               </div>
 
               {/* TAB 1: TELEGRAM */}
@@ -316,7 +319,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         variant="flat"
                         color="danger"
                         onPress={handleUnlinkTelegram}
-                        disabled={isUnlinking}
+                        isDisabled={isUnlinking}
                         className="text-rose-400 bg-rose-500/10 border border-rose-500/20 text-xs font-semibold rounded-xl"
                       >
                         {isUnlinking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Putuskan Hubungan'}
@@ -337,7 +340,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <Button
                           size="sm"
                           onPress={handleGeneratePairingCode}
-                          disabled={isGeneratingCode}
+                          isDisabled={isGeneratingCode}
                           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl"
                         >
                           {isGeneratingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Dapatkan Kode Pairing Baru'}
@@ -387,10 +390,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="space-y-4 pt-2">
                   {/* Mode Toggles */}
                   <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsCustomAi(false)}
-                      className={`p-3.5 rounded-xl border text-left transition-all ${
+                    <Button
+                      variant="flat"
+                      onPress={() => setIsCustomAi(false)}
+                      className={`p-3.5 rounded-xl border text-left transition-all h-auto block min-h-[76px] ${
                         !isCustomAi
                           ? 'bg-indigo-600/10 border-indigo-500/50 shadow-md shadow-indigo-600/10'
                           : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
@@ -400,15 +403,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <Server className={`w-4 h-4 ${!isCustomAi ? 'text-indigo-400' : 'text-zinc-400'}`} />
                         <span className="text-xs font-bold text-white">Shared Platform</span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      <p className="text-[11px] text-zinc-400 leading-relaxed font-normal whitespace-normal">
                         Infrastruktur rotary pool bersama gratis dari Rezekify. Tanpa konfigurasi.
                       </p>
-                    </button>
+                    </Button>
 
-                    <button
-                      type="button"
-                      onClick={() => setIsCustomAi(true)}
-                      className={`p-3.5 rounded-xl border text-left transition-all ${
+                    <Button
+                      variant="flat"
+                      onPress={() => setIsCustomAi(true)}
+                      className={`p-3.5 rounded-xl border text-left transition-all h-auto block min-h-[76px] ${
                         isCustomAi
                           ? 'bg-indigo-600/10 border-indigo-500/50 shadow-md shadow-indigo-600/10'
                           : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
@@ -418,10 +421,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <Radio className={`w-4 h-4 ${isCustomAi ? 'text-indigo-400' : 'text-zinc-400'}`} />
                         <span className="text-xs font-bold text-white">Bring Your Own Key</span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      <p className="text-[11px] text-zinc-400 leading-relaxed font-normal whitespace-normal">
                         Gunakan kuota API pribadi Anda (Gemini/Groq) untuk kapasitas tak terbatas.
                       </p>
-                    </button>
+                    </Button>
                   </div>
 
                   {isCustomAi && (
@@ -429,24 +432,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {/* Provider Selector */}
                       <div>
                         <label className="block text-xs font-medium text-zinc-400 mb-1.5">Provider AI</label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Provider AI">
                           {(['GEMINI', 'GROQ'] as const).map((p) => (
-                            <button
+                            <Button
                               key={p}
-                              type="button"
-                              onClick={() => {
+                              role="radio"
+                              aria-checked={provider === p}
+                              onPress={() => {
                                 setProvider(p);
                                 setModel(p === 'GEMINI' ? 'gemini-2.5-flash' : 'llama-3.3-70b-versatile');
                                 setValidationResult(null);
                               }}
-                              className={`py-2 rounded-xl text-xs font-semibold border transition-all ${
+                              className={`py-2 rounded-xl text-xs font-semibold border transition-all min-h-[38px] ${
                                 provider === p
                                   ? 'bg-zinc-800 text-white border-indigo-500 shadow-sm'
                                   : 'bg-zinc-800/50 text-zinc-400 border-zinc-800 hover:text-white'
                               }`}
                             >
                               {p === 'GEMINI' ? 'Google Gemini' : 'Groq Cloud'}
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       </div>
@@ -495,14 +499,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             }
                             className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none pr-10"
                           />
-                          <button
-                            type="button"
-                            onClick={() => setShowKey(!showKey)}
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => setShowKey(!showKey)}
                             aria-label={showKey ? 'Sembunyikan API key' : 'Tampilkan API key'}
-                            className="absolute right-3 top-2.5 text-zinc-400 hover:text-white"
+                            className="absolute right-3 top-2.5 text-zinc-400 hover:text-white min-w-0 w-6 h-6 p-0 bg-transparent min-h-0"
                           >
                             {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
+                          </Button>
                         </div>
                         <div className="mt-1 flex justify-end">
                           <a
@@ -540,7 +546,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           size="sm"
                           variant="flat"
                           onPress={handleValidateKey}
-                          disabled={isValidating || !apiKey.trim()}
+                          isDisabled={isValidating || !apiKey.trim()}
                           className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold"
                         >
                           {isValidating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Uji Koneksi'}
@@ -553,7 +559,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <Button
                       size="sm"
                       onPress={handleSaveAISettings}
-                      disabled={isSaving}
+                      isDisabled={isSaving}
                       className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs px-5 min-h-[38px]"
                     >
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Pengaturan'}
@@ -621,7 +627,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <Button
                       size="sm"
                       onPress={handleSaveProfile}
-                      disabled={isSavingProfile}
+                      isDisabled={isSavingProfile}
                       className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs px-5 min-h-[38px]"
                     >
                       {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Preferensi Siklus'}

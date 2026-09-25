@@ -249,7 +249,6 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                   )}
                 </div>
                 <Button
-                  type="button"
                   variant="light"
                   isIconOnly
                   onPress={onClose}
@@ -269,12 +268,12 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
               )}
 
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1.5 rounded-xl border border-zinc-800 text-xs">
+                <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1.5 rounded-xl border border-zinc-800 text-xs" role="radiogroup" aria-label="Tipe Transaksi">
                   {(['EXPENSE', 'INCOME', 'TRANSFER'] as const).map((t) => (
-                    <button
+                    <Button
                       key={t}
-                      type="button"
-                      onClick={() => setType(t)}
+                      aria-checked={type === t}
+                      onPress={() => setType(t)}
                       className={`min-h-[38px] flex items-center justify-center py-2 rounded-lg font-medium transition-all ${
                         type === t
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
@@ -282,7 +281,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                       }`}
                     >
                       {t === 'EXPENSE' ? 'Pengeluaran' : t === 'INCOME' ? 'Pemasukan' : 'Transfer'}
-                    </button>
+                    </Button>
                   ))}
                 </div>
 
@@ -427,10 +426,9 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
 
             <ModalFooter>
               <Button
-                type="button"
                 variant="light"
                 onPress={onClose}
-                disabled={isSubmitting}
+                isDisabled={isSubmitting}
                 className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-800/80 hover:bg-zinc-800 rounded-xl transition-colors min-h-[40px]"
               >
                 Batal
@@ -439,7 +437,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                 type="submit"
                 color="primary"
                 isLoading={isSubmitting}
-                disabled={isSubmitting || !amount}
+                isDisabled={isSubmitting || !amount}
                 className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 min-h-[40px] rounded-xl text-xs font-medium transition-all shadow-md shadow-indigo-600/30 active:scale-95"
               >
                 {isSubmitting ? (

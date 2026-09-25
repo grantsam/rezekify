@@ -279,34 +279,36 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
 
               {/* Category Type Tabs */}
               <div className="grid grid-cols-2 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={() => {
                     setActiveTab('EXPENSE');
                     if (!editingCategory) resetForm();
                   }}
                   className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'EXPENSE'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white'
+                      : 'text-zinc-400 hover:text-white bg-transparent'
                   }`}
                 >
                   Pengeluaran
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={() => {
                     setActiveTab('INCOME');
                     if (!editingCategory) resetForm();
                   }}
                   className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'INCOME'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white'
+                      : 'text-zinc-400 hover:text-white bg-transparent'
                   }`}
                 >
                   Pemasukan
-                </button>
+                </Button>
               </div>
 
               {/* Form Section */}
@@ -354,15 +356,15 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     {COLOR_SWATCHES.map((swatch) => {
                       const isSelected = selectedColor.toLowerCase() === swatch.value.toLowerCase();
                       return (
-                        <button
+                        <Button
                           key={swatch.value}
-                          type="button"
+                          isIconOnly
                           aria-label={`Warna ${swatch.label}`}
                           aria-checked={isSelected}
                           role="radio"
-                          disabled={isSubmitting}
-                          onClick={() => setSelectedColor(swatch.value)}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 min-h-[38px] min-w-[38px] focus:outline-none ${
+                          isDisabled={isSubmitting}
+                          onPress={() => setSelectedColor(swatch.value)}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 min-h-[38px] min-w-[38px] p-0 focus:outline-none ${
                             isSelected
                               ? 'ring-2 ring-offset-2 ring-offset-zinc-900 ring-white scale-105'
                               : 'opacity-85 hover:opacity-100'
@@ -370,7 +372,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           style={{ backgroundColor: swatch.value }}
                         >
                           {isSelected && <Check className="w-4 h-4 text-white drop-shadow" />}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -386,21 +388,20 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                       const IconComp = item.icon;
                       const isSelected = selectedIcon.toLowerCase() === item.key.toLowerCase();
                       return (
-                        <button
+                        <Button
                           key={item.key}
-                          type="button"
                           aria-label={`Ikon ${item.label}`}
-                          disabled={isSubmitting}
-                          onClick={() => setSelectedIcon(item.key)}
-                          className={`p-2 rounded-xl flex flex-col items-center justify-center gap-1 min-h-[46px] min-w-[38px] transition-all border text-xs ${
+                          isDisabled={isSubmitting}
+                          onPress={() => setSelectedIcon(item.key)}
+                          className={`p-2 rounded-xl flex flex-col items-center justify-center gap-1 min-h-[46px] min-w-[38px] h-auto transition-all border text-xs ${
                             isSelected
                               ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
                               : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
                           }`}
                         >
                           <IconComp className="w-4 h-4" />
-                          <span className="text-[10px] truncate max-w-full">{item.label}</span>
-                        </button>
+                          <span className="text-[10px] truncate max-w-full font-normal">{item.label}</span>
+                        </Button>
                       );
                     })}
                   </div>
@@ -410,9 +411,8 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800/80">
                   {editingCategory && (
                     <Button
-                      type="button"
                       variant="light"
-                      disabled={isSubmitting}
+                      isDisabled={isSubmitting}
                       onPress={handleCancelEdit}
                       className="min-h-[38px] text-xs text-zinc-400 hover:text-white"
                     >
@@ -421,7 +421,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   )}
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    isDisabled={isSubmitting}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-sm"
                   >
                     {isSubmitting ? (
@@ -495,7 +495,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                                 size="sm"
                                 color="danger"
                                 variant="flat"
-                                disabled={isSubmitting}
+                                isDisabled={isSubmitting}
                                 onPress={() => handleDelete(cat.id)}
                                 className="min-h-[38px] px-3 text-xs text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl"
                               >
@@ -508,7 +508,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                               <Button
                                 size="sm"
                                 variant="light"
-                                disabled={isSubmitting}
+                                isDisabled={isSubmitting}
                                 onPress={() => setDeletingId(null)}
                                 className="min-h-[38px] px-3 text-xs text-zinc-400 hover:text-white rounded-xl"
                               >
@@ -518,7 +518,6 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           ) : (
                             <div className="flex items-center gap-1">
                               <Button
-                                type="button"
                                 isIconOnly
                                 size="sm"
                                 variant="light"
@@ -529,7 +528,6 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                                 <Pencil className="w-4 h-4" />
                               </Button>
                               <Button
-                                type="button"
                                 isIconOnly
                                 size="sm"
                                 variant="light"
