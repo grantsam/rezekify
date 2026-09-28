@@ -180,3 +180,43 @@ def test_migration_005_maps_gemini_groq_to_custom(tmp_path: Path):
     assert by_user["u2"][2] == "OPENAI"
     assert by_user["u2"][3] == "https://api.groq.com/openai/v1"
 
+
+def test_migration_006_chat_messages_schema(tmp_path: Path):
+    """006 upgrade creates chat_messages table and indexes, downgrade removes it."""
+    db_path = tmp_path / "test_006.db"
+    db_url = f"sqlite:///{db_path.as_posix()}"
+
+    cfg = Config("alembic.ini")
+    cfg.set_main_option("sqlalchemy.url", db_url)
+
+    command.upgrade(cfg, "head")
+
+    engine = sa.create_engine(db_url)
+    try:
+        inspector = sa.inspect(engine)
+        assert "chat_messages" in inspector.get_table_names()
+
+        columns = {c["name"]: c for c in inspector.get_columns("chat_messages")}
+        assert set(columns.keys()) == {
+            "id", "user_id", "role", "content", "transaction_id", "metadata_json", "created_at"
+        }
+
+        indexes = {idx["name"]: idx for idx in inspector.get_indexes("chat_messages")}
+        assert "ix_chat_messages_user_id" in indexes
+        assert "ix_chat_messages_transaction_id" in indexes
+        assert "idx_chat_messages_user_created" in indexes
+        assert indexes["idx_chat_messages_user_created"]["column_names"] == ["user_id", "created_at"]
+    finally:
+        engine.dispose()
+
+    # Downgrade back to 005
+    command.downgrade(cfg, "005_multi_provider_byok")
+
+    engine = sa.create_engine(db_url)
+    try:
+        inspector = sa.inspect(engine)
+        assert "chat_messages" not in inspector.get_table_names()
+    finally:
+        engine.dispose()
+
+

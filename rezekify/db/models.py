@@ -105,6 +105,7 @@ class User(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
 
 
 class Account(Base):
@@ -162,6 +163,7 @@ class Transaction(Base):
 
     user = relationship("User", back_populates="transactions")
     ledger_entries = relationship("LedgerEntry", back_populates="transaction", cascade="all, delete-orphan")
+    chat_message = relationship("ChatMessage", back_populates="transaction", uselist=False)
 
 
 class LedgerEntry(Base):
@@ -211,4 +213,33 @@ class UserSettings(Base):
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     user = relationship("User", back_populates="settings")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    __table_args__ = (
+        Index("idx_chat_messages_user_created", "user_id", "created_at"),
+    )
+
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        GUID,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role = Column(String(20), nullable=False)  # "user" | "assistant"
+    content = Column(Text, nullable=False)
+    transaction_id = Column(
+        GUID,
+        ForeignKey("transactions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    metadata_json = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+
+    user = relationship("User", back_populates="chat_messages")
+    transaction = relationship("Transaction", back_populates="chat_message")
+
 
