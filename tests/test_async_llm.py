@@ -153,31 +153,26 @@ async def test_aprocess_input_gemini_fails_over_to_groq_text():
 
 
 @pytest.mark.asyncio
-async def test_aprocess_input_byok_guarded_errors():
-    gemini_pool = RotaryKeyPool(keys=["INVALID_KEY"])
-    byok_agent = ReActAgent(gemini_pool=gemini_pool, is_byok=True)
+async def test_aprocess_input_byok_delegates_and_maps_errors():
+    from rezekify.agent.providers.base import AuthError, BYOKConfig, RateLimitError
+    from rezekify.agent.runtime import ReActAgent
 
-    mock_401 = httpx.Response(
-        status_code=401,
-        text="Invalid API Key",
-        request=httpx.Request("POST", "https://generativelanguage.googleapis.com"),
-    )
+    cfg = BYOKConfig(protocol="OPENAI", base_url="https://api.openai.com/v1", model="m", api_key="k")
+    agent = ReActAgent(byok=cfg, is_byok=True)
 
-    with patch("httpx.AsyncClient.post", return_value=mock_401):
-        res = await byok_agent.aprocess_input(user_id=uuid4(), text="halo")
-        assert res["action"] == "byok_error"
-        assert res["status_code"] == 401
+    with patch(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.process_input",
+        side_effect=AuthError("401"),
+    ):
+        res = await agent.aprocess_input(user_id=uuid4(), text="halo")
+        assert res == {"action": "byok_error", "status_code": 401}
 
-    mock_429 = httpx.Response(
-        status_code=429,
-        text="Rate limit exceeded",
-        request=httpx.Request("POST", "https://generativelanguage.googleapis.com"),
-    )
-
-    with patch("httpx.AsyncClient.post", return_value=mock_429):
-        res = await byok_agent.aprocess_input(user_id=uuid4(), text="halo")
-        assert res["action"] == "byok_error"
-        assert res["status_code"] == 429
+    with patch(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.process_input",
+        side_effect=RateLimitError("429"),
+    ):
+        res = await agent.aprocess_input(user_id=uuid4(), text="halo")
+        assert res == {"action": "byok_error", "status_code": 429}
 
 
 @pytest.mark.asyncio

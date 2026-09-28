@@ -327,30 +327,32 @@ def test_react_agent_transcribe_audio_rotates_on_rate_limit():
         assert groq_pool.cooldowns["GROQ_KEY_1"] > 0
 
 
-def test_react_agent_byok_guarded_errors():
-    gemini_pool = RotaryKeyPool(keys=["KEY_1"])
-    # BYOK Agent with 401
-    byok_agent = ReActAgent(gemini_pool=gemini_pool, is_byok=True)
-    mock_client = MagicMock()
-    mock_client.models.generate_content.side_effect = Exception("401 API_KEY_INVALID")
-    with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
-        res = byok_agent.process_input(user_id=uuid4(), text="halo")
-        assert res["action"] == "byok_error"
-        assert res["status_code"] == 401
+def test_react_agent_byok_delegates_and_maps_errors():
+    from rezekify.agent.providers.base import AuthError, BYOKConfig, RateLimitError
+    from rezekify.agent.runtime import ReActAgent
 
-    # BYOK Agent with 429
-    mock_client.models.generate_content.side_effect = Exception("429 RESOURCE_EXHAUSTED")
-    with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
-        res = byok_agent.process_input(user_id=uuid4(), text="halo")
-        assert res["action"] == "byok_error"
-        assert res["status_code"] == 429
+    cfg = BYOKConfig(protocol="OPENAI", base_url="https://api.openai.com/v1", model="m", api_key="k")
+    agent = ReActAgent(byok=cfg, is_byok=True)
 
-    # System Agent (is_byok=False) should NOT return byok_error
-    system_agent = ReActAgent(gemini_pool=gemini_pool, is_byok=False)
-    mock_client.models.generate_content.side_effect = Exception("401 API_KEY_INVALID")
-    with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
-        res = system_agent.process_input(user_id=uuid4(), text="halo")
-        assert res["action"] == "unknown"
+    with patch(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.process_input",
+        return_value={"action": "expense", "amount": 1000},
+    ):
+        assert agent.process_input(user_id=uuid4(), text="kopi 1rb")["action"] == "expense"
+
+    with patch(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.process_input",
+        side_effect=AuthError("401"),
+    ):
+        res = agent.process_input(user_id=uuid4(), text="halo")
+        assert res == {"action": "byok_error", "status_code": 401}
+
+    with patch(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.process_input",
+        side_effect=RateLimitError("429"),
+    ):
+        res = agent.process_input(user_id=uuid4(), text="halo")
+        assert res == {"action": "byok_error", "status_code": 429}
 
 
 def test_react_agent_fallback_groq_vision_pins_vision_model():
@@ -443,18 +445,19 @@ def test_react_agent_process_audio_falls_back_to_groq_whisper_on_gemini_failure(
                 assert res["transcription"] == "makan siang 35000 bca"
 
 
-def test_react_agent_process_audio_byok_401():
-    gemini_pool = RotaryKeyPool(keys=["BYOK_KEY"])
-    byok_agent = ReActAgent(gemini_pool=gemini_pool, is_byok=True)
+def test_react_agent_process_audio_byok_unsupported_capability():
+    from rezekify.agent.providers.base import BYOKConfig, CapabilityUnsupported
+    from rezekify.agent.runtime import ReActAgent
 
-    mock_client = MagicMock()
-    mock_client.models.generate_content.side_effect = Exception("401 API_KEY_INVALID")
+    cfg = BYOKConfig(protocol="ANTHROPIC", base_url="https://api.anthropic.com", model="m", api_key="k")
+    agent = ReActAgent(byok=cfg, is_byok=True)
 
-    with patch("google.genai.types.Part.from_bytes"):
-        with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
-            res = byok_agent.process_audio(b"fake_bytes")
-            assert res["action"] == "byok_error"
-            assert res["status_code"] == 401
+    with patch(
+        "rezekify.agent.providers.anthropic_compatible.AnthropicCompatibleAdapter.process_audio",
+        side_effect=CapabilityUnsupported("no audio"),
+    ):
+        res = agent.process_audio(b"audio", mime_type="audio/webm")
+        assert res == {"action": "byok_error", "reason": "unsupported_capability"}
 
 
 

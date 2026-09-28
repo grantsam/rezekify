@@ -3,12 +3,21 @@
 import base64
 import json
 import re
+import asyncio
 from typing import Any, Dict, Optional
 from uuid import UUID
 
 import httpx
 
 from rezekify.agent.key_pool import RotaryKeyPool
+from rezekify.agent.providers import (
+    AuthError,
+    BYOKConfig,
+    CapabilityUnsupported,
+    RateLimitError,
+    extract_json,
+    get_adapter,
+)
 
 SYSTEM_PROMPT = """Anda adalah asisten cerdas pencatatan keuangan Rezekify.
 Tugas Anda adalah mengekstrak entitas transaksi keuangan dari teks atau struk belanja pengguna.
@@ -52,23 +61,50 @@ class ReActAgent:
         gemini_model: str = "gemini-2.5-flash",
         groq_model: str = "meta-llama/llama-4-scout-17b-16e-instruct",
         is_byok: bool = False,
+        byok: Optional[BYOKConfig] = None,
     ):
         self.gemini_pool = gemini_pool
         self.groq_pool = groq_pool
         self.gemini_model = gemini_model
         self.groq_model = groq_model
         self.is_byok = is_byok
+        self.byok = byok
 
     def _clean_json_response(self, text: str) -> Dict[str, Any]:
         """Extracts and parses JSON object from LLM response text."""
-        text = text.strip()
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            text = match.group(0)
+        return extract_json(text)
+
+    def _byok_process_input(
+        self, text: str, image_bytes: Optional[bytes] = None, mime_type: str = "image/jpeg"
+    ) -> Dict[str, Any]:
+        """Delegates a text/vision request to the configured BYOK adapter and maps errors."""
+        adapter = get_adapter(self.byok)
         try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            return {"action": "unknown", "raw": text}
+            return adapter.process_input(text, image_bytes=image_bytes, mime_type=mime_type)
+        except AuthError:
+            return {"action": "byok_error", "status_code": 401}
+        except RateLimitError:
+            return {"action": "byok_error", "status_code": 429}
+        except CapabilityUnsupported:
+            return {"action": "byok_error", "reason": "unsupported_capability"}
+        except Exception:
+            return {"action": "byok_error"}
+
+    def _byok_process_audio(
+        self, audio_bytes: bytes, mime_type: str = "audio/webm", text_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Delegates an audio request to the configured BYOK adapter and maps errors."""
+        adapter = get_adapter(self.byok)
+        try:
+            return adapter.process_audio(audio_bytes, mime_type=mime_type, text_context=text_context)
+        except AuthError:
+            return {"action": "byok_error", "status_code": 401}
+        except RateLimitError:
+            return {"action": "byok_error", "status_code": 429}
+        except CapabilityUnsupported:
+            return {"action": "byok_error", "reason": "unsupported_capability"}
+        except Exception:
+            return {"action": "byok_error"}
 
     def process_input(
         self,
@@ -78,6 +114,9 @@ class ReActAgent:
         mime_type: str = "image/jpeg",
     ) -> Dict[str, Any]:
         """Processes natural language text or receipt image into structured transaction entities."""
+        if self.byok:
+            return self._byok_process_input(text, image_bytes=image_bytes, mime_type=mime_type)
+
         # Try Gemini first using rotary key pool
         if self.gemini_pool and self.gemini_pool.keys:
             for _ in range(len(self.gemini_pool.keys)):
@@ -243,6 +282,9 @@ class ReActAgent:
         """Processes audio bytes directly via 1-Hop Gemini 2.5 Flash with fallback to Groq Whisper + LLM."""
         if not audio_bytes:
             return {"action": "unknown", "transcription": ""}
+
+        if self.byok:
+            return self._byok_process_audio(audio_bytes, mime_type=mime_type, text_context=text_context)
 
         # ponytail: Direct memory bytes via Part.from_bytes. Ceiling: 10MB payload cap. Upgrade to Google Cloud Storage / Gemini File API upload only if voice note duration limit is expanded beyond 5 minutes.
         if len(audio_bytes) > 10 * 1024 * 1024:
@@ -469,6 +511,11 @@ class ReActAgent:
         mime_type: str = "image/jpeg",
     ) -> Dict[str, Any]:
         """Asynchronously processes natural language text or receipt image into structured transaction entities."""
+        if self.byok:
+            return await asyncio.to_thread(
+                self._byok_process_input, text, image_bytes, mime_type
+            )
+
         if self.gemini_pool and self.gemini_pool.keys:
             for _ in range(len(self.gemini_pool.keys)):
                 key = self.gemini_pool.get_current_key()
@@ -521,6 +568,11 @@ class ReActAgent:
         text_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Asynchronously processes audio bytes directly via 1-Hop Gemini or Groq Whisper fallback."""
+        if self.byok:
+            return await asyncio.to_thread(
+                self._byok_process_audio, audio_bytes, mime_type, text_context
+            )
+
         if not audio_bytes:
             return {"action": "unknown", "transcription": ""}
 
