@@ -568,13 +568,13 @@ class ReActAgent:
         text_context: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Asynchronously processes audio bytes directly via 1-Hop Gemini or Groq Whisper fallback."""
+        if not audio_bytes:
+            return {"action": "unknown", "transcription": ""}
+
         if self.byok:
             return await asyncio.to_thread(
                 self._byok_process_audio, audio_bytes, mime_type, text_context
             )
-
-        if not audio_bytes:
-            return {"action": "unknown", "transcription": ""}
 
         if len(audio_bytes) > 10 * 1024 * 1024:
             raise ValueError("Ukuran file audio melebihi batas maksimal 10MB.")

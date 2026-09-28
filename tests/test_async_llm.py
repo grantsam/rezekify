@@ -278,6 +278,21 @@ async def test_aprocess_audio_falls_back_to_whisper():
 
 
 @pytest.mark.asyncio
+async def test_aprocess_audio_byok_empty_bytes_short_circuits_before_adapter():
+    from rezekify.agent.providers.base import BYOKConfig
+
+    cfg = BYOKConfig(protocol="OPENAI", base_url="https://api.openai.com/v1", model="m", api_key="k")
+    agent = ReActAgent(byok=cfg, is_byok=True)
+
+    with patch(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.process_audio"
+    ) as mock_audio:
+        res = await agent.aprocess_audio(b"")
+        assert res == {"action": "unknown", "transcription": ""}
+        mock_audio.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_orchestrator_handle_message_async(db_session, sample_user):
     acc = Account(
         user_id=sample_user.id,
