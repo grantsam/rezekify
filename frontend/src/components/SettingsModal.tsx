@@ -29,7 +29,7 @@ import {
   getTelegramPairingCode,
   updateUserProfile,
 } from '../services/apiClient';
-import { SettingsResponse, AIProviderType, AIProtocolType } from '../types/api';
+import { SettingsResponse, AIProtocolType } from '../types/api';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -57,7 +57,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // AI BYOK form state
   const [isCustomAi, setIsCustomAi] = useState<boolean>(false);
-  const [provider, setProvider] = useState<AIProviderType>('SYSTEM');
   const [protocol, setProtocol] = useState<AIProtocolType>('OPENAI');
   const [baseUrl, setBaseUrl] = useState<string>('');
   const [model, setModel] = useState<string>('');
@@ -74,7 +73,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const data = await getSettings();
       setSettings(data);
       setIsCustomAi(data.ai.is_custom_ai_enabled);
-      setProvider(data.ai.provider);
       setProtocol(data.ai.protocol ?? 'OPENAI');
       setBaseUrl(data.ai.base_url ?? '');
       setModel(data.ai.model ?? '');
@@ -262,6 +260,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <ModalBody className="pb-6">
               {feedbackMsg && (
                 <div
+                  role="status"
+                  aria-live="polite"
                   className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
                     feedbackMsg.isError
                       ? 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
@@ -412,7 +412,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {activeTab === 'ai' && (
                 <div className="space-y-4 pt-2">
                   {/* Mode Toggles */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Button
                       variant="flat"
                       onPress={() => setIsCustomAi(false)}
@@ -445,7 +445,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <span className="text-xs font-bold text-white">Bring Your Own Key</span>
                         {isCustomAi && (
                           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                            {provider}
+                            {protocol === 'OPENAI' ? 'OpenAI-compat' : 'Anthropic-compat'}
                           </span>
                         )}
                       </div>
@@ -507,9 +507,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           value={baseUrl}
                           onChange={(e) => setBaseUrl(e.target.value)}
                           placeholder={protocol === 'ANTHROPIC' ? 'https://api.anthropic.com' : 'https://api.openai.com/v1'}
-                          className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-zinc-600 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 min-h-[38px]"
+                          className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 min-h-[38px]"
                         />
-                        <p className="text-[11px] text-zinc-500 mt-1">
+                        <p className="text-[11px] text-zinc-400 mt-1">
                           Harus diawali https:// (contoh: {protocol === 'ANTHROPIC' ? 'https://api.anthropic.com' : 'https://api.openai.com/v1, https://api.groq.com/openai/v1'})
                         </p>
                       </div>
@@ -525,9 +525,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           value={model}
                           onChange={(e) => setModel(e.target.value)}
                           placeholder={protocol === 'ANTHROPIC' ? 'claude-3-5-haiku-20241022' : 'gpt-4o-mini'}
-                          className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-zinc-600 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 min-h-[38px]"
+                          className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 min-h-[38px]"
                         />
-                        <p className="text-[11px] text-zinc-500 mt-1">
+                        <p className="text-[11px] text-zinc-400 mt-1">
                           Contoh: {protocol === 'ANTHROPIC' ? 'claude-3-5-haiku-20241022, claude-3-7-sonnet-20250219' : 'gpt-4o-mini, llama-3.3-70b-versatile, deepseek-chat'}
                         </p>
                       </div>
@@ -555,7 +555,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 ? 'Biarkan kosong jika tidak ingin mengubah'
                                 : 'Masukkan kunci API Anda'
                             }
-                            className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-zinc-600 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 pr-10 min-h-[38px]"
+                            className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 pr-10 min-h-[38px]"
                           />
                           <Button
                             isIconOnly
@@ -563,7 +563,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             variant="light"
                             onPress={() => setShowKey(!showKey)}
                             aria-label={showKey ? 'Sembunyikan API key' : 'Tampilkan API key'}
-                            className="absolute right-2 top-1.5 text-zinc-400 hover:text-white min-w-[32px] w-8 h-8 p-0 bg-transparent min-h-[32px]"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white min-w-[38px] min-h-[38px] flex items-center justify-center p-0 bg-transparent"
                           >
                             {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </Button>
@@ -580,7 +580,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               <ExternalLink className="w-2.5 h-2.5" />
                             </a>
                           ) : (
-                            <span className="text-[11px] text-zinc-500 inline-flex items-center gap-1">
+                            <span className="text-[11px] text-zinc-400 inline-flex items-center gap-1">
                               Dapatkan API Key di penyedia endpoint Anda (mis.{' '}
                               <a
                                 href="https://platform.openai.com/api-keys"
@@ -608,6 +608,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {/* Connection Test Banner */}
                       {validationResult && (
                         <div
+                          role="status"
+                          aria-live="polite"
                           className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
                             validationResult.valid
                               ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
