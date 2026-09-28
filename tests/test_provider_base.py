@@ -35,6 +35,14 @@ def test_validate_base_url_blocks_private_ip_literal():
         validate_base_url("https://127.0.0.1/v1")
 
 
+def test_validate_base_url_blocks_localhost_without_resolve():
+    with pytest.raises(ValueError, match="privat/loopback"):
+        validate_base_url("https://localhost/v1", resolve=False)
+    with pytest.raises(ValueError, match="privat/loopback"):
+        validate_base_url("https://api.localhost/v1", resolve=False)
+
+
+
 def test_validate_base_url_normalizes_trailing_slash():
     assert validate_base_url("https://api.openai.com/v1/") == "https://api.openai.com/v1"
 

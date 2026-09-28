@@ -77,3 +77,30 @@ def test_process_audio_transcribes_then_extracts():
         out = adapter.process_audio(b"audio", mime_type="audio/webm")
     assert out["action"] == "expense"
     assert out["transcription"] == "makan siang 30000 cash"
+
+
+def test_process_audio_empty_transcription_returns_unknown_without_chat():
+    adapter = OpenAICompatibleAdapter(_cfg())
+    transcript = httpx.Response(
+        status_code=200,
+        json={"text": "   "},
+        request=httpx.Request("POST", "https://api.openai.com/v1/audio/transcriptions"),
+    )
+    with patch("httpx.Client.post", return_value=transcript) as mock_post:
+        out = adapter.process_audio(b"silence", mime_type="audio/webm")
+    assert out == {"action": "unknown", "transcription": ""}
+    assert mock_post.call_count == 1
+
+
+def test_process_input_empty_choices_returns_unknown():
+    adapter = OpenAICompatibleAdapter(_cfg())
+    empty_choices_resp = httpx.Response(
+        status_code=200,
+        json={"choices": []},
+        request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+    )
+    with patch("httpx.Client.post", return_value=empty_choices_resp):
+        out = adapter.process_input("halo")
+    assert out["action"] == "unknown"
+    assert "choices" in out["raw"]
+

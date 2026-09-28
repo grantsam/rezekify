@@ -66,7 +66,10 @@ class OpenAICompatibleAdapter:
             )
             self._raise_for_auth_rate(resp)
             resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"] or ""
+            choices = resp.json().get("choices", [])
+            if not choices:
+                return {"action": "unknown", "raw": resp.text}
+            content = choices[0].get("message", {}).get("content") or ""
             return extract_json(content)
 
     def process_audio(
@@ -97,6 +100,8 @@ class OpenAICompatibleAdapter:
         combined = transcription
         if text_context:
             combined = f"{transcription} ({text_context})"
+        if not combined.strip():
+            return {"action": "unknown", "transcription": transcription}
         result = self.process_input(combined)
         result["transcription"] = transcription
         return result

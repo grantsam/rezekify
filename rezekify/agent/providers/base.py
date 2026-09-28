@@ -60,6 +60,10 @@ def validate_base_url(base_url: str, *, resolve: bool = False) -> str:
     if not host:
         raise ValueError("base_url tidak memiliki host yang valid.")
 
+    host_lower = host.lower()
+    if host_lower == "localhost" or host_lower.endswith(".localhost"):
+        raise ValueError("base_url menunjuk ke alamat privat/loopback yang tidak diizinkan.")
+
     candidates = []
     try:
         candidates = [ipaddress.ip_address(host)]

@@ -105,6 +105,18 @@ def test_update_request_requires_protocol_and_base_url_when_custom():
         )
 
 
+def test_update_request_normalizes_trailing_slash_in_base_url():
+    req = AISettingsUpdateRequest(
+        is_custom_ai_enabled=True,
+        provider=AIProvider.CUSTOM,
+        protocol=AIProtocol.OPENAI,
+        base_url="https://api.openai.com/v1/",
+        model="gpt-4o-mini",
+    )
+    assert req.base_url == "https://api.openai.com/v1"
+
+
+
 def test_validate_request_rejects_http_base_url():
     import pytest
     from pydantic import ValidationError

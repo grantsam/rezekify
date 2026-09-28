@@ -87,7 +87,7 @@ class AISettingsUpdateRequest(BaseModel):
             if not self.base_url:
                 raise ValueError("base_url wajib diisi untuk AI kustom (BYOK).")
             # https + SSRF check (hermetic: IP-literal only, no DNS in schema).
-            validate_base_url(self.base_url)
+            self.base_url = validate_base_url(self.base_url)
         return self
 
 
