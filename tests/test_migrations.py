@@ -138,3 +138,45 @@ def test_migration_upgrade_and_downgrade_lifecycle(alembic_config, migration_eng
         "ledger_entries",
     }
     assert domain_tables.isdisjoint(remaining_tables), f"Tables not cleanly dropped: {domain_tables & remaining_tables}"
+
+
+def test_migration_005_maps_gemini_groq_to_custom(tmp_path: Path):
+    """005 upgrade adds columns and remaps legacy GEMINI/GROQ rows to CUSTOM/OPENAI."""
+    db_path = tmp_path / "test_005.db"
+    db_url = f"sqlite:///{db_path.as_posix()}"
+
+    cfg = Config("alembic.ini")
+    cfg.set_main_option("sqlalchemy.url", db_url)
+
+    # Upgrade only up to 004 so we can seed legacy rows
+    command.upgrade(cfg, "004_add_performance_indexes")
+
+    engine = sa.create_engine(db_url)
+    with engine.begin() as conn:
+        conn.execute(sa.text(
+            "INSERT INTO users (id, email, password_hash, full_name, monthly_cycle_day, currency) "
+            "VALUES ('u1', 'a@b.co', 'h', 'A', 1, 'IDR'), ('u2', 'c@d.co', 'h', 'C', 1, 'IDR')"
+        ))
+        conn.execute(sa.text(
+            "INSERT INTO user_settings (id, user_id, ai_provider, ai_model, is_custom_ai_enabled) "
+            "VALUES ('s1', 'u1', 'GEMINI', 'gemini-2.5-pro', 1), "
+            "('s2', 'u2', 'GROQ', 'llama-3.3-70b-versatile', 1)"
+        ))
+
+    # Upgrade to head (runs 005)
+    command.upgrade(cfg, "head")
+
+    with engine.connect() as conn:
+        rows = conn.execute(sa.text(
+            "SELECT user_id, ai_provider, ai_protocol, ai_base_url FROM user_settings ORDER BY user_id"
+        )).fetchall()
+    engine.dispose()
+
+    by_user = {r[0]: r for r in rows}
+    assert by_user["u1"][1] == "CUSTOM"
+    assert by_user["u1"][2] == "OPENAI"
+    assert by_user["u1"][3] == "https://generativelanguage.googleapis.com/v1beta/openai"
+    assert by_user["u2"][1] == "CUSTOM"
+    assert by_user["u2"][2] == "OPENAI"
+    assert by_user["u2"][3] == "https://api.groq.com/openai/v1"
+
