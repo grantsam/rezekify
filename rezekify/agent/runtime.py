@@ -1,8 +1,6 @@
 """Multimodal ReAct Agent Runtime with Rotary Key Pool failover."""
 
 import base64
-import json
-import re
 import asyncio
 from typing import Any, Dict, Optional
 from uuid import UUID
@@ -355,7 +353,7 @@ class ReActAgent:
         mime_type: str = "image/jpeg",
     ) -> Dict[str, Any]:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={api_key}"
-        parts = [{"text": SYSTEM_PROMPT}, {"text": f"Input pengguna: {text}"}]
+        parts: list[Dict[str, Any]] = [{"text": SYSTEM_PROMPT}, {"text": f"Input pengguna: {text}"}]
         if image_bytes:
             b64_data = base64.b64encode(image_bytes).decode("utf-8")
             parts.append({"inline_data": {"mime_type": mime_type, "data": b64_data}})

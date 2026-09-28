@@ -206,9 +206,10 @@ describe('DashboardPage Component', () => {
           ai: {
             is_custom_ai_enabled: false,
             provider: 'SYSTEM',
+            protocol: null,
+            base_url: null,
             model: 'gemini-2.5-flash',
             has_api_key: false,
-            available_models: {},
           },
         };
       }

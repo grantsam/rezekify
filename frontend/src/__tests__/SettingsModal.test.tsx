@@ -13,13 +13,11 @@ describe('SettingsModal Component', () => {
     ai: {
       is_custom_ai_enabled: false,
       provider: 'SYSTEM' as const,
+      protocol: null,
+      base_url: null,
       model: 'gemini-2.5-flash',
       has_api_key: false,
       key_hint: null,
-      available_models: {
-        GEMINI: ['gemini-2.5-flash', 'gemini-2.5-pro'],
-        GROQ: ['meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.3-70b-versatile'],
-      },
     },
     profile: {
       id: 'usr-1',
@@ -100,15 +98,16 @@ describe('SettingsModal Component', () => {
   it('switches to AI BYOK tab, validates key and saves settings', async () => {
     const validateSpy = vi.spyOn(apiClient, 'validateAIKey').mockResolvedValue({
       valid: true,
-      message: 'Koneksi ke Google Gemini berhasil diverifikasi.',
+      message: 'Koneksi ke endpoint OPENAI berhasil diverifikasi.',
     });
     const updateSpy = vi.spyOn(apiClient, 'updateAISettings').mockResolvedValue({
       is_custom_ai_enabled: true,
-      provider: 'GEMINI',
-      model: 'gemini-2.5-flash',
+      provider: 'CUSTOM',
+      protocol: 'OPENAI',
+      base_url: 'https://api.openai.com/v1',
+      model: 'gpt-4o-mini',
       has_api_key: true,
       key_hint: '...9999',
-      available_models: mockSettings.ai.available_models,
     });
 
     render(<SettingsModal isOpen={true} onClose={vi.fn()} />);
@@ -123,9 +122,15 @@ describe('SettingsModal Component', () => {
     const byokCard = screen.getByRole('button', { name: /Bring Your Own Key/i });
     fireEvent.click(byokCard);
 
-    // Fill API key
+    // Fill Base URL, Model, and API key
+    const baseUrlInput = screen.getByLabelText(/Base URL Endpoint/i);
+    fireEvent.change(baseUrlInput, { target: { value: 'https://api.openai.com/v1' } });
+
+    const modelInput = screen.getByLabelText(/Nama Model/i);
+    fireEvent.change(modelInput, { target: { value: 'gpt-4o-mini' } });
+
     const keyInput = screen.getByLabelText(/Kunci API/i);
-    fireEvent.change(keyInput, { target: { value: 'AIzaSyD-TestKey9999' } });
+    fireEvent.change(keyInput, { target: { value: 'sk-TestKey9999' } });
 
     // Test connection
     const testBtn = screen.getByRole('button', { name: /Uji Koneksi/i });
@@ -133,11 +138,12 @@ describe('SettingsModal Component', () => {
 
     await waitFor(() => {
       expect(validateSpy).toHaveBeenCalledWith({
-        provider: 'GEMINI',
-        api_key: 'AIzaSyD-TestKey9999',
-        model: 'gemini-2.5-flash',
+        protocol: 'OPENAI',
+        base_url: 'https://api.openai.com/v1',
+        model: 'gpt-4o-mini',
+        api_key: 'sk-TestKey9999',
       });
-      expect(screen.getByText(/Koneksi ke Google Gemini berhasil diverifikasi/i)).toBeInTheDocument();
+      expect(screen.getByText(/Koneksi ke endpoint OPENAI berhasil diverifikasi/i)).toBeInTheDocument();
     });
 
     // Save settings
@@ -147,9 +153,11 @@ describe('SettingsModal Component', () => {
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalledWith({
         is_custom_ai_enabled: true,
-        provider: 'GEMINI',
-        model: 'gemini-2.5-flash',
-        api_key: 'AIzaSyD-TestKey9999',
+        provider: 'CUSTOM',
+        protocol: 'OPENAI',
+        base_url: 'https://api.openai.com/v1',
+        model: 'gpt-4o-mini',
+        api_key: 'sk-TestKey9999',
       });
     });
   });
@@ -231,14 +239,15 @@ describe('SettingsModal Component', () => {
     });
   });
 
-  it('allows changing AI model via HeroUI Select dropdown in BYOK tab', async () => {
+  it('allows switching protocol and entering custom endpoint details in BYOK tab', async () => {
     const updateSpy = vi.spyOn(apiClient, 'updateAISettings').mockResolvedValue({
       is_custom_ai_enabled: true,
-      provider: 'GEMINI',
-      model: 'gemini-2.5-pro',
+      provider: 'CUSTOM',
+      protocol: 'ANTHROPIC',
+      base_url: 'https://api.anthropic.com',
+      model: 'claude-3-5-haiku-20241022',
       has_api_key: true,
       key_hint: '...9999',
-      available_models: mockSettings.ai.available_models,
     });
 
     render(<SettingsModal isOpen={true} onClose={vi.fn()} />);
@@ -252,12 +261,16 @@ describe('SettingsModal Component', () => {
     const byokCard = screen.getByRole('button', { name: /Bring Your Own Key/i });
     fireEvent.click(byokCard);
 
-    const modelSelect = screen.getByRole('combobox', { name: /Model AI/i });
-    expect(modelSelect).toBeInTheDocument();
+    // Switch protocol to Anthropic
+    const anthropicRadio = screen.getByRole('radio', { name: /Anthropic-compatible/i });
+    fireEvent.click(anthropicRadio);
 
-    fireEvent.click(modelSelect);
-    const proOption = screen.getByRole('option', { name: 'gemini-2.5-pro' });
-    fireEvent.click(proOption);
+    // Fill base URL and model
+    const baseUrlInput = screen.getByLabelText(/Base URL Endpoint/i);
+    fireEvent.change(baseUrlInput, { target: { value: 'https://api.anthropic.com' } });
+
+    const modelInput = screen.getByLabelText(/Nama Model/i);
+    fireEvent.change(modelInput, { target: { value: 'claude-3-5-haiku-20241022' } });
 
     const saveBtn = screen.getByRole('button', { name: /Simpan Pengaturan/i });
     fireEvent.click(saveBtn);
@@ -265,8 +278,10 @@ describe('SettingsModal Component', () => {
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalledWith({
         is_custom_ai_enabled: true,
-        provider: 'GEMINI',
-        model: 'gemini-2.5-pro',
+        provider: 'CUSTOM',
+        protocol: 'ANTHROPIC',
+        base_url: 'https://api.anthropic.com',
+        model: 'claude-3-5-haiku-20241022',
         api_key: undefined,
       });
     });

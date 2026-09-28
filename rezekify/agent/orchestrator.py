@@ -6,7 +6,6 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.providers import BYOKConfig
 from rezekify.agent.runtime import ReActAgent
 from rezekify.core.crypto import decrypt_key

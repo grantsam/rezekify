@@ -9,7 +9,7 @@ from rezekify.api.deps import get_current_user, get_db
 from rezekify.core.config import settings as app_settings
 from rezekify.core.crypto import encrypt_key, mask_key
 from rezekify.core.rate_limit import RateLimiter
-from rezekify.db.models import AIProvider, AIProtocol, User, UserSettings
+from rezekify.db.models import AIProvider, User, UserSettings
 from rezekify.schemas.settings import (
     AIKeyValidateRequest,
     AIKeyValidateResponse,

@@ -700,9 +700,10 @@ describe('Settings and BYOK API Client functions', () => {
       ai: {
         is_custom_ai_enabled: false,
         provider: 'SYSTEM',
+        protocol: null,
+        base_url: null,
         model: 'gemini-2.5-flash',
         has_api_key: false,
-        available_models: { GEMINI: ['gemini-2.5-flash'], GROQ: ['llama-3.3-70b-versatile'] },
       },
     };
     global.fetch = vi.fn().mockResolvedValue({
@@ -725,9 +726,10 @@ describe('Settings and BYOK API Client functions', () => {
     });
 
     const res = await validateAIKey({
-      provider: 'GEMINI',
+      protocol: 'OPENAI',
+      base_url: 'https://api.openai.com/v1',
       api_key: 'test-key-12345',
-      model: 'gemini-2.5-flash',
+      model: 'gpt-4o-mini',
     });
     expect(res.valid).toBe(true);
     expect(global.fetch).toHaveBeenCalledWith(
@@ -735,9 +737,10 @@ describe('Settings and BYOK API Client functions', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
-          provider: 'GEMINI',
+          protocol: 'OPENAI',
+          base_url: 'https://api.openai.com/v1',
           api_key: 'test-key-12345',
-          model: 'gemini-2.5-flash',
+          model: 'gpt-4o-mini',
         }),
       })
     );
@@ -746,11 +749,12 @@ describe('Settings and BYOK API Client functions', () => {
   it('updateAISettings calls PUT /settings/ai', async () => {
     const mockUpdated = {
       is_custom_ai_enabled: true,
-      provider: 'GROQ',
-      model: 'llama-3.3-70b-versatile',
+      provider: 'CUSTOM',
+      protocol: 'OPENAI',
+      base_url: 'https://api.openai.com/v1',
+      model: 'gpt-4o-mini',
       has_api_key: true,
-      key_hint: '...70b',
-      available_models: { GEMINI: [], GROQ: [] },
+      key_hint: '...mini',
     };
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -759,9 +763,11 @@ describe('Settings and BYOK API Client functions', () => {
 
     const res = await updateAISettings({
       is_custom_ai_enabled: true,
-      provider: 'GROQ',
-      model: 'llama-3.3-70b-versatile',
-      api_key: 'groq-key-99',
+      provider: 'CUSTOM',
+      protocol: 'OPENAI',
+      base_url: 'https://api.openai.com/v1',
+      model: 'gpt-4o-mini',
+      api_key: 'custom-key-99',
     });
     expect(res).toEqual(mockUpdated);
     expect(global.fetch).toHaveBeenCalledWith(
@@ -770,9 +776,11 @@ describe('Settings and BYOK API Client functions', () => {
         method: 'PUT',
         body: JSON.stringify({
           is_custom_ai_enabled: true,
-          provider: 'GROQ',
-          model: 'llama-3.3-70b-versatile',
-          api_key: 'groq-key-99',
+          provider: 'CUSTOM',
+          protocol: 'OPENAI',
+          base_url: 'https://api.openai.com/v1',
+          model: 'gpt-4o-mini',
+          api_key: 'custom-key-99',
         }),
       })
     );
