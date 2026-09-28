@@ -5,7 +5,14 @@ from unittest.mock import MagicMock, patch
 
 from rezekify.agent.orchestrator import AgentOrchestrator
 from rezekify.core.crypto import encrypt_key
-from rezekify.db.models import Account, AccountType, AIProvider, Transaction, UserSettings
+from rezekify.db.models import (
+    Account,
+    AccountType,
+    AIProtocol,
+    AIProvider,
+    Transaction,
+    UserSettings,
+)
 
 
 def test_agent_parses_natural_language_and_records_expense(db_session, sample_user):
@@ -383,12 +390,16 @@ def test_resolve_agent_uses_system_pool_when_byok_disabled(db_session, sample_us
     assert agent == orchestrator.agent
 
 
-def test_resolve_agent_instantiates_byok_gemini_agent(db_session, sample_user):
+def test_resolve_agent_instantiates_byok_openai_agent(db_session, sample_user):
+    from rezekify.db.models import AIProtocol
+
     settings = UserSettings(
         user_id=sample_user.id,
-        ai_provider=AIProvider.GEMINI,
-        ai_model="gemini-2.5-pro",
-        encrypted_api_key=encrypt_key("custom-gemini-key"),
+        ai_provider=AIProvider.CUSTOM,
+        ai_protocol=AIProtocol.OPENAI,
+        ai_base_url="https://api.openai.com/v1",
+        ai_model="gpt-4o-mini",
+        encrypted_api_key=encrypt_key("sk-custom-openai"),
         is_custom_ai_enabled=True,
     )
     db_session.add(settings)
@@ -398,17 +409,23 @@ def test_resolve_agent_instantiates_byok_gemini_agent(db_session, sample_user):
     agent, is_custom = orchestrator._resolve_agent_for_user(sample_user.id)
     assert is_custom is True
     assert agent is not None
-    assert agent.gemini_model == "gemini-2.5-pro"
-    assert agent.gemini_pool.keys == ["custom-gemini-key"]
     assert agent.is_byok is True
+    assert agent.byok.protocol == "OPENAI"
+    assert agent.byok.base_url == "https://api.openai.com/v1"
+    assert agent.byok.model == "gpt-4o-mini"
+    assert agent.byok.api_key == "sk-custom-openai"
 
 
-def test_resolve_agent_instantiates_byok_groq_agent(db_session, sample_user):
+def test_resolve_agent_instantiates_byok_anthropic_agent(db_session, sample_user):
+    from rezekify.db.models import AIProtocol
+
     settings = UserSettings(
         user_id=sample_user.id,
-        ai_provider=AIProvider.GROQ,
-        ai_model="llama-3.3-70b-versatile",
-        encrypted_api_key=encrypt_key("custom-groq-key"),
+        ai_provider=AIProvider.CUSTOM,
+        ai_protocol=AIProtocol.ANTHROPIC,
+        ai_base_url="https://api.anthropic.com",
+        ai_model="claude-3-5-sonnet-latest",
+        encrypted_api_key=encrypt_key("sk-ant-custom"),
         is_custom_ai_enabled=True,
     )
     db_session.add(settings)
@@ -417,17 +434,25 @@ def test_resolve_agent_instantiates_byok_groq_agent(db_session, sample_user):
     orchestrator = AgentOrchestrator(db=db_session)
     agent, is_custom = orchestrator._resolve_agent_for_user(sample_user.id)
     assert is_custom is True
-    assert agent is not None
-    assert agent.groq_model == "llama-3.3-70b-versatile"
-    assert agent.groq_pool.keys == ["custom-groq-key"]
-    assert agent.is_byok is True
+    assert agent.byok.protocol == "ANTHROPIC"
+    assert agent.byok.api_key == "sk-ant-custom"
+
+
+def test_execute_action_byok_unsupported_capability_message(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    reply = orchestrator._execute_action(
+        sample_user.id, {"action": "byok_error", "reason": "unsupported_capability"}, "voice"
+    )
+    assert "tidak mendukung" in reply.lower()
 
 
 def test_handle_message_byok_401_error_feedback(db_session, sample_user):
     settings = UserSettings(
         user_id=sample_user.id,
-        ai_provider=AIProvider.GEMINI,
-        ai_model="gemini-2.5-flash",
+        ai_provider=AIProvider.CUSTOM,
+        ai_protocol=AIProtocol.OPENAI,
+        ai_base_url="https://api.openai.com/v1",
+        ai_model="gpt-4o-mini",
         encrypted_api_key=encrypt_key("revoked-key"),
         is_custom_ai_enabled=True,
     )
@@ -446,8 +471,10 @@ def test_handle_message_byok_401_error_feedback(db_session, sample_user):
 def test_handle_message_byok_429_error_feedback(db_session, sample_user):
     settings = UserSettings(
         user_id=sample_user.id,
-        ai_provider=AIProvider.GEMINI,
-        ai_model="gemini-2.5-flash",
+        ai_provider=AIProvider.CUSTOM,
+        ai_protocol=AIProtocol.OPENAI,
+        ai_base_url="https://api.openai.com/v1",
+        ai_model="gpt-4o-mini",
         encrypted_api_key=encrypt_key("rate-limited-key"),
         is_custom_ai_enabled=True,
     )

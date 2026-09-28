@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from rezekify.agent.key_pool import RotaryKeyPool
+from rezekify.agent.providers import BYOKConfig
 from rezekify.agent.runtime import ReActAgent
 from rezekify.core.crypto import decrypt_key
 from rezekify.db.models import (
@@ -36,7 +37,7 @@ class AgentOrchestrator:
         self.runway = RunwayService(db)
 
     def _resolve_agent_for_user(self, user_id: UUID) -> tuple[Optional[ReActAgent], bool]:
-        """Resolves an ephemeral ReActAgent for BYOK user or falls back to system agent."""
+        """Resolves an ephemeral BYOK ReActAgent for a CUSTOM user or falls back to the system agent."""
         settings_rec = (
             self.db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
         )
@@ -45,30 +46,21 @@ class AgentOrchestrator:
             settings_rec
             and settings_rec.is_custom_ai_enabled
             and settings_rec.encrypted_api_key
+            and settings_rec.ai_provider == AIProvider.CUSTOM
+            and settings_rec.ai_protocol
+            and settings_rec.ai_base_url
         ):
             try:
                 raw_key = decrypt_key(settings_rec.encrypted_api_key)
-                provider = settings_rec.ai_provider
-                model = settings_rec.ai_model
-
-                if provider == AIProvider.GEMINI:
-                    user_pool = RotaryKeyPool(keys=[raw_key], cooldown_seconds=30)
-                    agent = ReActAgent(
-                        gemini_pool=user_pool,
-                        groq_pool=None,
-                        gemini_model=model,
-                        is_byok=True,
-                    )
-                    return agent, True
-                elif provider == AIProvider.GROQ:
-                    user_pool = RotaryKeyPool(keys=[raw_key], cooldown_seconds=30)
-                    agent = ReActAgent(
-                        gemini_pool=None,
-                        groq_pool=user_pool,
-                        groq_model=model,
-                        is_byok=True,
-                    )
-                    return agent, True
+                protocol = getattr(settings_rec.ai_protocol, "value", str(settings_rec.ai_protocol))
+                config = BYOKConfig(
+                    protocol=protocol,
+                    base_url=settings_rec.ai_base_url,
+                    model=settings_rec.ai_model,
+                    api_key=raw_key,
+                )
+                agent = ReActAgent(byok=config, is_byok=True)
+                return agent, True
             except Exception:
                 pass
 
@@ -149,6 +141,13 @@ class AgentOrchestrator:
         action = entities.get("action")
 
         if action == "byok_error":
+            reason = entities.get("reason")
+            if reason == "unsupported_capability":
+                return (
+                    "❌ Endpoint AI kustom Anda tidak mendukung jenis input ini "
+                    "(misalnya audio pada protokol Anthropic). Silakan gunakan input teks atau gambar, "
+                    "atau ganti protokol/endpoint di menu Pengaturan."
+                )
             status_code = entities.get("status_code", 400)
             if status_code == 401:
                 return "❌ Kunci API AI kustom Anda tidak valid atau telah dicabut. Silakan periksa di menu Pengaturan."
