@@ -157,7 +157,8 @@ async def ai_chat_omni_input(
 ):
     """Processes natural language omni-input into ledger mutations."""
     orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
-    reply = await orchestrator.handle_message_async(user_id=current_user.id, text=req.message)
+    res = await orchestrator.handle_message_async(user_id=current_user.id, text=req.message)
+    reply = res["reply"] if isinstance(res, dict) else res
     return ChatResponse(reply=reply)
 
 
@@ -190,12 +191,13 @@ async def ai_receipt_upload(
 
     orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
     prompt_text = (message or "").strip() or "Foto struk kasir"
-    reply = await orchestrator.handle_message_async(
+    res = await orchestrator.handle_message_async(
         user_id=current_user.id,
         text=prompt_text,
         image_bytes=content,
         mime_type=file.content_type,
     )
+    reply = res["reply"] if isinstance(res, dict) else res
     return ChatResponse(reply=reply)
 
 

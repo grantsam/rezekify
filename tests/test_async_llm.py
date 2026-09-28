@@ -314,10 +314,11 @@ async def test_orchestrator_handle_message_async(db_session, sample_user):
         }
     )
 
-    reply = await orchestrator.handle_message_async(
+    res = await orchestrator.handle_message_async(
         user_id=sample_user.id,
         text="makan malam 50rb bca",
     )
+    reply = res["reply"] if isinstance(res, dict) else res
     db_session.refresh(acc)
 
     assert acc.current_balance == Decimal("100000.00")
@@ -328,10 +329,11 @@ async def test_orchestrator_handle_message_async(db_session, sample_user):
 @pytest.mark.asyncio
 async def test_orchestrator_handle_message_async_runway(db_session, sample_user):
     orchestrator = AgentOrchestrator(db=db_session)
-    reply = await orchestrator.handle_message_async(
+    res = await orchestrator.handle_message_async(
         user_id=sample_user.id,
         text="cek runway",
     )
+    reply = res["reply"] if isinstance(res, dict) else res
     assert "Status Keuangan Rezekify" in reply
 
 

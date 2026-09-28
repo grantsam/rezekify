@@ -1,7 +1,8 @@
 """Tests for AgentOrchestrator translating extracted intents into deterministic ledger transactions."""
 
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+import pytest
 
 from rezekify.agent.orchestrator import AgentOrchestrator
 from rezekify.core.crypto import encrypt_key
@@ -440,9 +441,10 @@ def test_resolve_agent_instantiates_byok_anthropic_agent(db_session, sample_user
 
 def test_execute_action_byok_unsupported_capability_message(db_session, sample_user):
     orchestrator = AgentOrchestrator(db=db_session)
-    reply = orchestrator._execute_action(
+    res = orchestrator._execute_action(
         sample_user.id, {"action": "byok_error", "reason": "unsupported_capability"}, "voice"
     )
+    reply = res["reply"] if isinstance(res, dict) else res
     assert "tidak mendukung" in reply.lower()
 
 
@@ -532,6 +534,160 @@ def test_resolve_or_create_category_sanitizes_wildcards(db_session):
     # Must sanitize to 'Mkn' and not match 'Makanan Ringan' via SQL wildcard expansion
     assert resolved_embedded.name == "Mkn"
     assert resolved_embedded.id != existing_cat.id
+
+
+@pytest.mark.asyncio
+async def test_handle_message_async_returns_enriched_dict_with_transaction(db_session, sample_user):
+    from rezekify.db.models import Account, AccountType
+    acc = Account(
+        user_id=sample_user.id,
+        name="Kas",
+        account_type=AccountType.CASH,
+        current_balance=Decimal("100000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities_async = AsyncMock(
+        return_value={
+            "action": "expense",
+            "amount": 25000,
+            "account_name": "Kas",
+            "category_name": "Makanan",
+            "note": "Nasi Goreng",
+        }
+    )
+
+    result = await orchestrator.handle_message_async(
+        user_id=sample_user.id,
+        text="beli nasi goreng 25rb kas",
+    )
+    assert isinstance(result, dict)
+    assert "reply" in result
+    assert "Rp 25,000" in result["reply"]
+    assert result["transaction_id"] is not None
+    assert result["transaction"]["amount"] == Decimal("25000")
+    assert result["transaction"]["account_name"] == "Kas"
+    assert result["transaction"]["account_balance_after"] == Decimal("75000.00")
+    assert result["telemetry"]["operational_free_cash"] is not None
+
+
+@pytest.mark.asyncio
+async def test_handle_message_async_returns_enriched_dict_with_income(db_session, sample_user):
+    from rezekify.db.models import Account, AccountType
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("200000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities_async = AsyncMock(
+        return_value={
+            "action": "income",
+            "amount": 100000,
+            "account_name": "BCA",
+            "category_name": "Gaji",
+            "note": "Bonus",
+        }
+    )
+
+    result = await orchestrator.handle_message_async(
+        user_id=sample_user.id,
+        text="bonus 100rb bca",
+    )
+    assert isinstance(result, dict)
+    assert "Pemasukan Berhasil Dicatat" in result["reply"]
+    assert result["transaction_id"] is not None
+    assert result["transaction"]["amount"] == Decimal("100000")
+    assert result["transaction"]["type"] == "INCOME"
+    assert result["transaction"]["account_balance_after"] == Decimal("300000.00")
+    assert result["telemetry"]["operational_free_cash"] is not None
+
+
+@pytest.mark.asyncio
+async def test_handle_message_async_returns_enriched_dict_with_transfer(db_session, sample_user):
+    from rezekify.db.models import Account, AccountType
+    acc1 = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    acc2 = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("50000.00"),
+    )
+    db_session.add_all([acc1, acc2])
+    db_session.commit()
+
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities_async = AsyncMock(
+        return_value={
+            "action": "transfer",
+            "amount": 100000,
+            "from_account": "BCA",
+            "to_account": "GoPay",
+            "note": "Top up",
+        }
+    )
+
+    result = await orchestrator.handle_message_async(
+        user_id=sample_user.id,
+        text="transfer 100rb dari bca ke gopay",
+    )
+    assert isinstance(result, dict)
+    assert "Transfer Berhasil" in result["reply"]
+    assert result["transaction_id"] is not None
+    assert result["transaction"]["amount"] == Decimal("100000")
+    assert result["transaction"]["type"] == "TRANSFER"
+    assert result["transaction"]["account_balance_after"] == Decimal("400000.00")
+    assert result["telemetry"]["operational_free_cash"] is not None
+
+
+@pytest.mark.asyncio
+async def test_handle_voice_async_returns_enriched_dict(db_session, sample_user):
+    from rezekify.db.models import Account, AccountType
+    acc = Account(
+        user_id=sample_user.id,
+        name="Kas",
+        account_type=AccountType.CASH,
+        current_balance=Decimal("50000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    mock_agent = MagicMock()
+    mock_agent.aprocess_audio = AsyncMock(
+        return_value={
+            "transcription": "beli es teh 5rb",
+            "action": "expense",
+            "amount": 5000,
+            "account_name": "Kas",
+            "category_name": "Minuman",
+            "note": "Es teh",
+        }
+    )
+
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    result = await orchestrator.handle_voice_async(
+        user_id=sample_user.id,
+        audio_bytes=b"sample_bytes",
+    )
+    assert result["success"] is True
+    assert result["transcription"] == "beli es teh 5rb"
+    assert "Rp 5,000" in result["reply"]
+    assert result["transaction_id"] is not None
+    assert result["transaction"]["account_balance_after"] == Decimal("45000.00")
+    assert result["telemetry"] is not None
+
+
 
 
 

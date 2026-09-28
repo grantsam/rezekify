@@ -133,35 +133,61 @@ class AgentOrchestrator:
             self.db.flush()
         return category
 
+    def _safe_get_telemetry(self, user_id: UUID) -> Optional[Dict[str, Any]]:
+        """Safely calculates runway telemetry without raising exceptions."""
+        try:
+            runway = self.runway.calculate_runway(user_id)
+            return {
+                "operational_free_cash": runway.operational_free_cash,
+                "daily_safe_runway": runway.daily_safe_runway,
+                "days_remaining": runway.days_remaining,
+                "health_status": runway.health_status,
+            }
+        except Exception:
+            return None
+
     def _execute_action(
         self, user_id: UUID, entities: Dict[str, Any], text: str
-    ) -> str:
+    ) -> Dict[str, Any]:
         """Executes double-entry ledger mutations or runway queries based on parsed entities."""
         action = entities.get("action")
 
         if action == "byok_error":
             reason = entities.get("reason")
             if reason == "unsupported_capability":
-                return (
+                reply = (
                     "❌ Endpoint AI kustom Anda tidak mendukung jenis input ini "
                     "(misalnya audio pada protokol Anthropic). Silakan gunakan input teks atau gambar, "
                     "atau ganti protokol/endpoint di menu Pengaturan."
                 )
-            status_code = entities.get("status_code", 400)
-            if status_code == 401:
-                return "❌ Kunci API AI kustom Anda tidak valid atau telah dicabut. Silakan periksa di menu Pengaturan."
-            elif status_code == 429:
-                return (
-                    "⚠️ Kuota kunci API AI kustom Anda telah habis (Rate Limit). "
-                    "Silakan periksa kuota Anda di dashboard provider atau nonaktifkan BYOK untuk menggunakan kuota bersama."
-                )
-            return "❌ Terjadi kendala pada kunci API AI kustom Anda. Silakan periksa di menu Pengaturan."
+            else:
+                status_code = entities.get("status_code", 400)
+                if status_code == 401:
+                    reply = "❌ Kunci API AI kustom Anda tidak valid atau telah dicabut. Silakan periksa di menu Pengaturan."
+                elif status_code == 429:
+                    reply = (
+                        "⚠️ Kuota kunci API AI kustom Anda telah habis (Rate Limit). "
+                        "Silakan periksa kuota Anda di dashboard provider atau nonaktifkan BYOK untuk menggunakan kuota bersama."
+                    )
+                else:
+                    reply = "❌ Terjadi kendala pada kunci API AI kustom Anda. Silakan periksa di menu Pengaturan."
+            return {
+                "reply": reply,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": self._safe_get_telemetry(user_id),
+            }
 
         if action == "expense":
             amount = Decimal(str(entities.get("amount", 0)))
             account = self._resolve_account(user_id, entities.get("account_name"))
             if not account:
-                return "❌ Gagal: Anda belum memiliki akun keuangan. Silakan tambahkan akun terlebih dahulu."
+                return {
+                    "reply": "❌ Gagal: Anda belum memiliki akun keuangan. Silakan tambahkan akun terlebih dahulu.",
+                    "transaction_id": None,
+                    "transaction": None,
+                    "telemetry": self._safe_get_telemetry(user_id),
+                }
 
             category = self._resolve_or_create_category(
                 user_id, entities.get("category_name"), CategoryType.EXPENSE
@@ -169,7 +195,7 @@ class AgentOrchestrator:
             note = entities.get("note") or "Pengeluaran"
 
             try:
-                self.ledger.record_expense(
+                tx = self.ledger.record_expense(
                     user_id=user_id,
                     account_id=account.id,
                     category_id=category.id,
@@ -181,21 +207,51 @@ class AgentOrchestrator:
 
                 runway = self.runway.calculate_runway(user_id)
                 self.db.commit()
+                self.db.refresh(account)
             except Exception as e:
                 self.db.rollback()
-                return f"❌ Gagal mencatat pengeluaran: {str(e)}"
+                return {
+                    "reply": f"❌ Gagal mencatat pengeluaran: {str(e)}",
+                    "transaction_id": None,
+                    "transaction": None,
+                    "telemetry": self._safe_get_telemetry(user_id),
+                }
 
-            return (
+            reply = (
                 f"✅ **Tercatat:** Rp {amount:,.0f} ({note}) via {account.name}.\n"
                 f"📊 **Sisa Jatah Belanja Hari Ini:** Rp {runway.daily_safe_runway:,.0f} "
                 f"({runway.days_remaining} hari menuju siklus baru)."
             )
+            return {
+                "reply": reply,
+                "transaction_id": tx.id,
+                "transaction": {
+                    "id": tx.id,
+                    "amount": amount,
+                    "account_name": account.name,
+                    "category_name": category.name,
+                    "description": note,
+                    "type": "EXPENSE",
+                    "account_balance_after": account.current_balance,
+                },
+                "telemetry": {
+                    "operational_free_cash": runway.operational_free_cash,
+                    "daily_safe_runway": runway.daily_safe_runway,
+                    "days_remaining": runway.days_remaining,
+                    "health_status": runway.health_status,
+                },
+            }
 
         elif action == "income":
             amount = Decimal(str(entities.get("amount", 0)))
             account = self._resolve_account(user_id, entities.get("account_name"))
             if not account:
-                return "❌ Gagal: Tidak ada akun tujuan yang ditemukan."
+                return {
+                    "reply": "❌ Gagal: Tidak ada akun tujuan yang ditemukan.",
+                    "transaction_id": None,
+                    "transaction": None,
+                    "telemetry": self._safe_get_telemetry(user_id),
+                }
 
             category = self._resolve_or_create_category(
                 user_id, entities.get("category_name"), CategoryType.INCOME
@@ -203,7 +259,7 @@ class AgentOrchestrator:
             note = entities.get("note") or "Pemasukan"
 
             try:
-                self.ledger.record_income(
+                tx = self.ledger.record_income(
                     user_id=user_id,
                     account_id=account.id,
                     category_id=category.id,
@@ -214,53 +270,136 @@ class AgentOrchestrator:
 
                 runway = self.runway.calculate_runway(user_id)
                 self.db.commit()
+                self.db.refresh(account)
             except Exception as e:
                 self.db.rollback()
-                return f"❌ Gagal mencatat pemasukan: {str(e)}"
+                return {
+                    "reply": f"❌ Gagal mencatat pemasukan: {str(e)}",
+                    "transaction_id": None,
+                    "transaction": None,
+                    "telemetry": self._safe_get_telemetry(user_id),
+                }
 
-            return (
+            reply = (
                 f"💰 **Pemasukan Berhasil Dicatat:** Rp {amount:,.0f} ({note}) ke {account.name}.\n"
                 f"📈 Jatah aman belanja harian Anda meningkat menjadi Rp {runway.daily_safe_runway:,.0f}/hari."
             )
+            return {
+                "reply": reply,
+                "transaction_id": tx.id,
+                "transaction": {
+                    "id": tx.id,
+                    "amount": amount,
+                    "account_name": account.name,
+                    "category_name": category.name,
+                    "description": note,
+                    "type": "INCOME",
+                    "account_balance_after": account.current_balance,
+                },
+                "telemetry": {
+                    "operational_free_cash": runway.operational_free_cash,
+                    "daily_safe_runway": runway.daily_safe_runway,
+                    "days_remaining": runway.days_remaining,
+                    "health_status": runway.health_status,
+                },
+            }
 
         elif action == "transfer":
             amount = Decimal(str(entities.get("amount", 0)))
             from_acc = self._resolve_account(user_id, entities.get("from_account"))
             to_acc = self._resolve_account(user_id, entities.get("to_account"))
             if not from_acc or not to_acc or from_acc.id == to_acc.id:
-                return "❌ Gagal: Akun sumber dan tujuan transfer harus berbeda dan terdaftar."
+                return {
+                    "reply": "❌ Gagal: Akun sumber dan tujuan transfer harus berbeda dan terdaftar.",
+                    "transaction_id": None,
+                    "transaction": None,
+                    "telemetry": self._safe_get_telemetry(user_id),
+                }
+
+            note = entities.get("note") or f"Transfer {from_acc.name} ke {to_acc.name}"
 
             try:
-                self.ledger.record_transfer(
+                tx = self.ledger.record_transfer(
                     user_id=user_id,
                     from_account_id=from_acc.id,
                     to_account_id=to_acc.id,
                     amount=amount,
-                    description=entities.get("note") or f"Transfer {from_acc.name} ke {to_acc.name}",
+                    description=note,
                 )
+                runway = self.runway.calculate_runway(user_id)
                 self.db.commit()
+                self.db.refresh(from_acc)
             except Exception as e:
                 self.db.rollback()
-                return f"❌ Gagal memproses transfer: {str(e)}"
+                return {
+                    "reply": f"❌ Gagal memproses transfer: {str(e)}",
+                    "transaction_id": None,
+                    "transaction": None,
+                    "telemetry": self._safe_get_telemetry(user_id),
+                }
 
-            return f"🔁 **Transfer Berhasil:** Rp {amount:,.0f} dari {from_acc.name} ke {to_acc.name}."
+            reply = f"🔁 **Transfer Berhasil:** Rp {amount:,.0f} dari {from_acc.name} ke {to_acc.name}."
+            return {
+                "reply": reply,
+                "transaction_id": tx.id,
+                "transaction": {
+                    "id": tx.id,
+                    "amount": amount,
+                    "account_name": from_acc.name,
+                    "category_name": "Transfer",
+                    "description": note,
+                    "type": "TRANSFER",
+                    "account_balance_after": from_acc.current_balance,
+                },
+                "telemetry": {
+                    "operational_free_cash": runway.operational_free_cash,
+                    "daily_safe_runway": runway.daily_safe_runway,
+                    "days_remaining": runway.days_remaining,
+                    "health_status": runway.health_status,
+                },
+            }
 
         elif action == "query_runway" or text.lower().strip() in ("cek runway", "/runway", "/saldo", "runway", "saldo", "status"):
-            runway = self.runway.calculate_runway(user_id)
-            reply = (
-                f"📈 **Status Keuangan Rezekify:**\n"
-                f"• Saldo Bebas Operasional: Rp {runway.operational_free_cash:,.0f}\n"
-                f"• Jatah Aman Belanja Hari Ini: Rp {runway.daily_safe_runway:,.0f}/hari\n"
-                f"• Sisa Hari Siklus: {runway.days_remaining} hari\n"
-                f"• Status: **{runway.health_status}**"
-            )
-            if runway.upcoming_bills:
-                reply += "\n\n⚠️ **Tagihan Mendatang (H-7):**"
-                for b in runway.upcoming_bills:
-                    reply += f"\n• {b.name}: Rp {b.target_amount:,.0f} (sisa {b.days_until_due} hari)"
-            return reply
+            try:
+                runway = self.runway.calculate_runway(user_id)
+            except Exception:
+                runway = None
 
-        return "Saya siap membantu mencatat pengeluaran, pemasukan, transfer, atau memeriksa status jatah belanja harian Anda."
+            if runway:
+                reply = (
+                    f"📈 **Status Keuangan Rezekify:**\n"
+                    f"• Saldo Bebas Operasional: Rp {runway.operational_free_cash:,.0f}\n"
+                    f"• Jatah Aman Belanja Hari Ini: Rp {runway.daily_safe_runway:,.0f}/hari\n"
+                    f"• Sisa Hari Siklus: {runway.days_remaining} hari\n"
+                    f"• Status: **{runway.health_status}**"
+                )
+                if runway.upcoming_bills:
+                    reply += "\n\n⚠️ **Tagihan Mendatang (H-7):**"
+                    for b in runway.upcoming_bills:
+                        reply += f"\n• {b.name}: Rp {b.target_amount:,.0f} (sisa {b.days_until_due} hari)"
+                telemetry = {
+                    "operational_free_cash": runway.operational_free_cash,
+                    "daily_safe_runway": runway.daily_safe_runway,
+                    "days_remaining": runway.days_remaining,
+                    "health_status": runway.health_status,
+                }
+            else:
+                reply = "❌ Gagal memuat data status keuangan."
+                telemetry = None
+
+            return {
+                "reply": reply,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": telemetry,
+            }
+
+        return {
+            "reply": "Saya siap membantu mencatat pengeluaran, pemasukan, transfer, atau memeriksa status jatah belanja harian Anda.",
+            "transaction_id": None,
+            "transaction": None,
+            "telemetry": self._safe_get_telemetry(user_id),
+        }
 
     def handle_message(
         self,
@@ -278,7 +417,10 @@ class AgentOrchestrator:
             entities = self.extract_entities(
                 text=text, image_bytes=image_bytes, user_id=user_id
             )
-        return self._execute_action(user_id, entities, text)
+        res = self._execute_action(user_id, entities, text)
+        if isinstance(res, dict):
+            return res.get("reply", "")
+        return res
 
     def handle_voice(
         self,
@@ -293,6 +435,9 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": "Gagal memproses pesan suara: audio kosong atau tidak dapat diunduh.",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
         if len(audio_bytes) > 10 * 1024 * 1024:
@@ -300,6 +445,9 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": "❌ Ukuran pesan suara melebihi batas maksimal 10MB.",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
         active_agent = self.agent
@@ -313,6 +461,9 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": "❌ Layanan AI belum terkonfigurasi.",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
         try:
@@ -326,6 +477,9 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": f"❌ Gagal memproses audio: {str(e)}",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
         transcription = parsed_result.get("transcription", "")
@@ -336,15 +490,25 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": "⚠️ Suara tidak terdengar jelas atau audio kosong. Silakan ulangi rekaman suara Anda.",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
-        reply = self._execute_action(user_id, parsed_result, transcription or caption or "")
+        res = self._execute_action(user_id, parsed_result, transcription or caption or "")
+        reply = res.get("reply", "") if isinstance(res, dict) else res
+        tx_id = res.get("transaction_id") if isinstance(res, dict) else None
+        tx = res.get("transaction") if isinstance(res, dict) else None
+        telemetry = res.get("telemetry") if isinstance(res, dict) else None
 
         return {
             "transcription": transcription,
             "reply": reply,
             "success": action != "unknown",
             "parsed_data": parsed_result,
+            "transaction_id": tx_id,
+            "transaction": tx,
+            "telemetry": telemetry,
         }
 
     async def extract_entities_async(
@@ -381,7 +545,7 @@ class AgentOrchestrator:
         text: str,
         image_bytes: Optional[bytes] = None,
         mime_type: Optional[str] = "image/jpeg",
-    ) -> str:
+    ) -> Dict[str, Any]:
         """Asynchronously processes message/receipt and executes double-entry mutations."""
         entities = await self.extract_entities_async(
             text=text, image_bytes=image_bytes, user_id=user_id, mime_type=mime_type
@@ -401,6 +565,9 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": "Gagal memproses pesan suara: audio kosong atau tidak dapat diunduh.",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
         if len(audio_bytes) > 10 * 1024 * 1024:
@@ -408,6 +575,9 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": "❌ Ukuran pesan suara melebihi batas maksimal 10MB.",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
         active_agent = self.agent
@@ -421,6 +591,9 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": "❌ Layanan AI belum terkonfigurasi.",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
         try:
@@ -434,6 +607,9 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": f"❌ Gagal memproses audio: {str(e)}",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
         transcription = parsed_result.get("transcription", "")
@@ -444,15 +620,25 @@ class AgentOrchestrator:
                 "transcription": "",
                 "reply": "⚠️ Suara tidak terdengar jelas atau audio kosong. Silakan ulangi rekaman suara Anda.",
                 "success": False,
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": None,
             }
 
-        reply = self._execute_action(user_id, parsed_result, transcription or caption or "")
+        res = self._execute_action(user_id, parsed_result, transcription or caption or "")
+        reply = res.get("reply", "") if isinstance(res, dict) else res
+        tx_id = res.get("transaction_id") if isinstance(res, dict) else None
+        tx = res.get("transaction") if isinstance(res, dict) else None
+        telemetry = res.get("telemetry") if isinstance(res, dict) else None
 
         return {
             "transcription": transcription,
             "reply": reply,
             "success": action != "unknown",
             "parsed_data": parsed_result,
+            "transaction_id": tx_id,
+            "transaction": tx,
+            "telemetry": telemetry,
         }
 
 
