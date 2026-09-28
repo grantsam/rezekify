@@ -1,20 +1,19 @@
 """Pydantic schemas and live validation logic for user settings and AI BYOK."""
 
 from decimal import Decimal
-from typing import Dict, List, Optional
-from pydantic import BaseModel, Field
-from rezekify.db.models import AIProvider
+from typing import Optional
 
-AVAILABLE_MODELS: Dict[str, List[str]] = {
-    "GEMINI": [
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-    ],
-    "GROQ": [
-        "meta-llama/llama-4-scout-17b-16e-instruct",
-        "llama-3.3-70b-versatile",
-    ],
-}
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from rezekify.agent.providers import (
+    AuthError,
+    BYOKConfig,
+    CapabilityUnsupported,
+    RateLimitError,
+    get_adapter,
+    validate_base_url,
+)
+from rezekify.db.models import AIProtocol, AIProvider
 
 
 class TelegramSettingsResponse(BaseModel):
@@ -26,10 +25,11 @@ class TelegramSettingsResponse(BaseModel):
 class AISettingsResponse(BaseModel):
     is_custom_ai_enabled: bool
     provider: AIProvider
+    protocol: Optional[AIProtocol] = None
+    base_url: Optional[str] = None
     model: str
     has_api_key: bool
     key_hint: Optional[str] = None
-    available_models: Dict[str, List[str]] = Field(default_factory=lambda: AVAILABLE_MODELS)
 
 
 class UserProfileResponse(BaseModel):
@@ -52,9 +52,15 @@ class SettingsResponse(BaseModel):
 
 
 class AIKeyValidateRequest(BaseModel):
-    provider: AIProvider
+    protocol: AIProtocol
+    base_url: str
     api_key: str = Field(..., min_length=8, description="Raw API key to test")
     model: Optional[str] = None
+
+    @field_validator("base_url")
+    @classmethod
+    def _validate_base_url(cls, v: str) -> str:
+        return validate_base_url(v)
 
 
 class AIKeyValidateResponse(BaseModel):
@@ -65,11 +71,24 @@ class AIKeyValidateResponse(BaseModel):
 class AISettingsUpdateRequest(BaseModel):
     is_custom_ai_enabled: bool
     provider: AIProvider
+    protocol: Optional[AIProtocol] = None
+    base_url: Optional[str] = None
     model: str
     api_key: Optional[str] = Field(
         None,
         description="New raw API key to store. If omitted or empty, preserves existing stored key.",
     )
+
+    @model_validator(mode="after")
+    def _require_custom_fields(self) -> "AISettingsUpdateRequest":
+        if self.is_custom_ai_enabled and self.provider == AIProvider.CUSTOM:
+            if self.protocol is None:
+                raise ValueError("protocol wajib diisi untuk AI kustom (BYOK).")
+            if not self.base_url:
+                raise ValueError("base_url wajib diisi untuk AI kustom (BYOK).")
+            # https + SSRF check (hermetic: IP-literal only, no DNS in schema).
+            validate_base_url(self.base_url)
+        return self
 
 
 class TelegramUnlinkResponse(BaseModel):
@@ -78,38 +97,40 @@ class TelegramUnlinkResponse(BaseModel):
 
 
 def validate_ai_credentials(
-    provider: AIProvider, api_key: str, model: Optional[str] = None
+    protocol: AIProtocol,
+    base_url: str,
+    api_key: str,
+    model: Optional[str] = None,
 ) -> tuple[bool, str]:
-    """Tests an API key against the provider with a lightweight ping probe."""
-    clean_key = api_key.strip()
+    """Tests BYOK credentials by pinging the configured protocol adapter.
+
+    Enforces the https + SSRF policy (with DNS resolution) before any request.
+    """
+    clean_key = (api_key or "").strip()
     if not clean_key:
         return False, "Kunci API tidak boleh kosong."
 
-    if provider == AIProvider.GEMINI:
-        try:
-            from google import genai
-            gemini_client = genai.Client(api_key=clean_key)
-            target_model = model or "gemini-2.5-flash"
-            gemini_client.models.generate_content(
-                model=target_model,
-                contents="ping",
-            )
-            return True, "Koneksi ke Google Gemini berhasil diverifikasi."
-        except Exception as e:
-            return False, f"Kunci API Google Gemini tidak valid: {str(e)}"
+    try:
+        safe_url = validate_base_url(base_url, resolve=True)
+    except ValueError as e:
+        return False, str(e)
 
-    elif provider == AIProvider.GROQ:
-        try:
-            from groq import Groq
-            groq_client = Groq(api_key=clean_key)
-            target_model = "llama-3.3-70b-versatile"
-            groq_client.chat.completions.create(
-                model=target_model,
-                messages=[{"role": "user", "content": "ping"}],
-                max_tokens=1,
-            )
-            return True, "Koneksi ke Groq Cloud berhasil diverifikasi."
-        except Exception as e:
-            return False, f"Kunci API Groq tidak valid: {str(e)}"
-
-    return False, "Provider SYSTEM tidak memerlukan validasi kunci kustom."
+    protocol_value = getattr(protocol, "value", str(protocol))
+    config = BYOKConfig(
+        protocol=protocol_value,
+        base_url=safe_url,
+        model=(model or "").strip(),
+        api_key=clean_key,
+    )
+    try:
+        adapter = get_adapter(config)
+        adapter.ping()
+        return True, f"Koneksi ke endpoint {protocol_value} berhasil diverifikasi."
+    except AuthError:
+        return False, "Kunci API ditolak (401 Unauthorized). Periksa kembali API key Anda."
+    except RateLimitError:
+        return False, "Endpoint membatasi permintaan (429 Rate Limit). Coba lagi nanti."
+    except CapabilityUnsupported as e:
+        return False, str(e)
+    except Exception as e:
+        return False, f"Gagal terhubung ke endpoint: {str(e)}"

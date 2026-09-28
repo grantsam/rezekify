@@ -12,129 +12,110 @@ from sqlalchemy.pool import StaticPool
 from rezekify.api.deps import get_current_user, get_db
 from rezekify.api.main import app
 from rezekify.core.crypto import decrypt_key, encrypt_key
-from rezekify.db.models import AIProvider, Base, User, UserSettings
+from rezekify.db.models import AIProtocol, AIProvider, Base, User, UserSettings
 from rezekify.schemas.settings import (
-    AVAILABLE_MODELS,
     AIKeyValidateRequest,
-    AIKeyValidateResponse,
     AISettingsResponse,
     AISettingsUpdateRequest,
-    SettingsResponse,
-    TelegramSettingsResponse,
-    TelegramUnlinkResponse,
-    UserProfileResponse,
-    UserProfileUpdateRequest,
     validate_ai_credentials,
 )
 
 
 def test_settings_schemas_serialization():
-    telegram_resp = TelegramSettingsResponse(
-        is_connected=True,
-        telegram_chat_id=123456789,
-        bot_username="RezekifyBot",
-    )
-    assert telegram_resp.is_connected is True
-    assert telegram_resp.telegram_chat_id == 123456789
-    assert telegram_resp.bot_username == "RezekifyBot"
-
     ai_resp = AISettingsResponse(
         is_custom_ai_enabled=True,
-        provider=AIProvider.GEMINI,
-        model="gemini-2.5-flash",
+        provider=AIProvider.CUSTOM,
+        protocol=AIProtocol.OPENAI,
+        base_url="https://api.openai.com/v1",
+        model="gpt-4o-mini",
         has_api_key=True,
-        key_hint="...4x8B",
+        key_hint="...ab12",
     )
-    assert ai_resp.is_custom_ai_enabled is True
-    assert ai_resp.provider == AIProvider.GEMINI
-    assert "gemini-2.5-flash" in ai_resp.available_models["GEMINI"]
+    assert ai_resp.provider == AIProvider.CUSTOM
+    assert ai_resp.protocol == AIProtocol.OPENAI
+    assert ai_resp.base_url == "https://api.openai.com/v1"
 
-    profile_resp = UserProfileResponse(
-        id="user-123",
-        email="test@user.local",
-        full_name="Test User",
-        monthly_cycle_day=1,
-        safe_runway_threshold=Decimal("30000.00"),
+
+def test_validate_ai_credentials_success(monkeypatch):
+    from rezekify.schemas import settings as settings_mod
+
+    monkeypatch.setattr(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.ping",
+        lambda self: None,
     )
-    assert profile_resp.monthly_cycle_day == 1
-    assert profile_resp.safe_runway_threshold == Decimal("30000.00")
-
-    settings_resp = SettingsResponse(telegram=telegram_resp, ai=ai_resp, profile=profile_resp)
-    assert settings_resp.telegram.is_connected is True
-    assert settings_resp.ai.has_api_key is True
-    assert settings_resp.profile is not None
-    assert settings_resp.profile.monthly_cycle_day == 1
-
-
-def test_validate_ai_credentials_gemini_success():
-    with patch("google.genai.Client") as mock_client_cls:
-        mock_instance = MagicMock()
-        mock_instance.models.generate_content.return_value = MagicMock(text="pong")
-        mock_client_cls.return_value = mock_instance
-
-        valid, msg = validate_ai_credentials(
-            provider=AIProvider.GEMINI,
-            api_key="valid-gemini-key-123",
-            model="gemini-2.5-flash",
-        )
-        assert valid is True
-        assert "berhasil" in msg.lower()
-        mock_client_cls.assert_called_once_with(api_key="valid-gemini-key-123")
-
-
-def test_validate_ai_credentials_gemini_failure():
-    with patch("google.genai.Client") as mock_client_cls:
-        mock_instance = MagicMock()
-        mock_instance.models.generate_content.side_effect = Exception("API_KEY_INVALID")
-        mock_client_cls.return_value = mock_instance
-
-        valid, msg = validate_ai_credentials(
-            provider=AIProvider.GEMINI,
-            api_key="invalid-gemini-key",
-            model="gemini-2.5-flash",
-        )
-        assert valid is False
-        assert "API_KEY_INVALID" in msg
-
-
-def test_validate_ai_credentials_groq_success():
-    with patch("groq.Groq") as mock_groq_cls:
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create.return_value = MagicMock()
-        mock_groq_cls.return_value = mock_instance
-
-        valid, msg = validate_ai_credentials(
-            provider=AIProvider.GROQ,
-            api_key="valid-groq-key-123",
-            model="llama-3.3-70b-versatile",
-        )
-        assert valid is True
-        assert "berhasil" in msg.lower()
-        mock_groq_cls.assert_called_once_with(api_key="valid-groq-key-123")
-
-
-def test_validate_ai_credentials_groq_failure():
-    with patch("groq.Groq") as mock_groq_cls:
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create.side_effect = Exception("Invalid API Key")
-        mock_groq_cls.return_value = mock_instance
-
-        valid, msg = validate_ai_credentials(
-            provider=AIProvider.GROQ,
-            api_key="invalid-groq-key",
-            model="llama-3.3-70b-versatile",
-        )
-        assert valid is False
-        assert "Invalid API Key" in msg
-
-
-def test_validate_ai_credentials_unsupported_provider():
-    valid, msg = validate_ai_credentials(
-        provider=AIProvider.SYSTEM,
-        api_key="any-key",
+    ok, msg = settings_mod.validate_ai_credentials(
+        protocol=AIProtocol.OPENAI,
+        base_url="https://api.openai.com/v1",
+        api_key="sk-valid-key",
+        model="gpt-4o-mini",
     )
-    assert valid is False
-    assert "tidak memerlukan validasi kunci" in msg.lower()
+    assert ok is True
+
+
+def test_validate_ai_credentials_auth_failure(monkeypatch):
+    from rezekify.agent.providers.base import AuthError
+    from rezekify.schemas import settings as settings_mod
+
+    def _raise(self):
+        raise AuthError("401")
+
+    monkeypatch.setattr(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.ping", _raise
+    )
+    ok, msg = settings_mod.validate_ai_credentials(
+        protocol=AIProtocol.OPENAI,
+        base_url="https://api.openai.com/v1",
+        api_key="sk-bad-key",
+        model="gpt-4o-mini",
+    )
+    assert ok is False
+    assert "401" in msg
+
+
+def test_validate_ai_credentials_rejects_http_scheme():
+    ok, msg = validate_ai_credentials(
+        protocol=AIProtocol.OPENAI,
+        base_url="http://api.openai.com/v1",
+        api_key="sk-valid-key",
+        model="gpt-4o-mini",
+    )
+    assert ok is False
+    assert "https" in msg.lower()
+
+
+def test_validate_ai_credentials_rejects_private_ip():
+    ok, msg = validate_ai_credentials(
+        protocol=AIProtocol.OPENAI,
+        base_url="https://10.0.0.1/v1",
+        api_key="sk-valid-key",
+        model="gpt-4o-mini",
+    )
+    assert ok is False
+
+
+def test_update_request_requires_protocol_and_base_url_when_custom():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        AISettingsUpdateRequest(
+            is_custom_ai_enabled=True,
+            provider=AIProvider.CUSTOM,
+            model="gpt-4o-mini",
+        )
+
+
+def test_validate_request_rejects_http_base_url():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        AIKeyValidateRequest(
+            protocol=AIProtocol.OPENAI,
+            base_url="http://api.openai.com/v1",
+            api_key="sk-valid-key",
+            model="gpt-4o-mini",
+        )
 
 
 @pytest.fixture

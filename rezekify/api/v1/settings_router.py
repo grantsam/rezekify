@@ -11,7 +11,6 @@ from rezekify.core.crypto import encrypt_key, mask_key
 from rezekify.core.rate_limit import RateLimiter
 from rezekify.db.models import AIProvider, User, UserSettings
 from rezekify.schemas.settings import (
-    AVAILABLE_MODELS,
     AIKeyValidateRequest,
     AIKeyValidateResponse,
     AISettingsResponse,
@@ -152,14 +151,6 @@ def update_ai_settings(
 ) -> AISettingsResponse:
     """Updates AI provider, model, BYOK toggle, and optionally encrypts a new API key."""
     settings_rec = _get_or_create_settings(db, current_user.id)
-
-    # Validate provider models
-    valid_models = AVAILABLE_MODELS.get(payload.provider.value, [])
-    if payload.provider != AIProvider.SYSTEM and payload.model not in valid_models:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Model '{payload.model}' tidak valid untuk provider {payload.provider.value}.",
-        )
 
     # Check key requirement when enabling BYOK or switching provider
     has_existing_key = bool(settings_rec.encrypted_api_key)
