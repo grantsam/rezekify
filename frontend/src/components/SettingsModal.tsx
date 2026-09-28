@@ -5,8 +5,6 @@ import {
   ModalHeader,
   ModalBody,
   Button,
-  Select,
-  SelectItem,
 } from '@heroui/react';
 import {
   Bot,
@@ -31,7 +29,7 @@ import {
   getTelegramPairingCode,
   updateUserProfile,
 } from '../services/apiClient';
-import { SettingsResponse, AIProviderType } from '../types/api';
+import { SettingsResponse, AIProviderType, AIProtocolType } from '../types/api';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -59,8 +57,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // AI BYOK form state
   const [isCustomAi, setIsCustomAi] = useState<boolean>(false);
-  const [provider, setProvider] = useState<AIProviderType>('GEMINI');
-  const [model, setModel] = useState<string>('gemini-2.5-flash');
+  const [provider, setProvider] = useState<AIProviderType>('SYSTEM');
+  const [protocol, setProtocol] = useState<AIProtocolType>('OPENAI');
+  const [baseUrl, setBaseUrl] = useState<string>('');
+  const [model, setModel] = useState<string>('');
   const [apiKey, setApiKey] = useState<string>('');
   const [showKey, setShowKey] = useState<boolean>(false);
   const [isValidating, setIsValidating] = useState<boolean>(false);
@@ -74,8 +74,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const data = await getSettings();
       setSettings(data);
       setIsCustomAi(data.ai.is_custom_ai_enabled);
-      setProvider(data.ai.provider === 'SYSTEM' ? 'GEMINI' : data.ai.provider);
-      setModel(data.ai.model || 'gemini-2.5-flash');
+      setProvider(data.ai.provider);
+      setProtocol(data.ai.protocol ?? 'OPENAI');
+      setBaseUrl(data.ai.base_url ?? '');
+      setModel(data.ai.model ?? '');
       if (data.profile) {
         setMonthlyCycleDay(data.profile.monthly_cycle_day ?? 1);
         setSafeRunwayThreshold(data.profile.safe_runway_threshold ?? 30000);
@@ -140,13 +142,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setValidationResult({ valid: false, message: 'Kunci API wajib diisi untuk menguji koneksi.' });
       return;
     }
+    if (!baseUrl.trim()) {
+      setValidationResult({ valid: false, message: 'Base URL wajib diisi untuk menguji koneksi.' });
+      return;
+    }
+    if (!baseUrl.trim().startsWith('https://')) {
+      setValidationResult({ valid: false, message: 'Base URL harus menggunakan protokol HTTPS (https://).' });
+      return;
+    }
     try {
       setIsValidating(true);
       setValidationResult(null);
       const res = await validateAIKey({
-        provider,
+        protocol,
+        base_url: baseUrl.trim(),
+        model: model.trim() || undefined,
         api_key: apiKey.trim(),
-        model,
       });
       setValidationResult(res);
     } catch (err: any) {
@@ -157,13 +168,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleSaveAISettings = async () => {
+    if (isCustomAi) {
+      if (!baseUrl.trim()) {
+        setFeedbackMsg({ isError: true, text: 'Base URL wajib diisi saat mengaktifkan endpoint custom.' });
+        return;
+      }
+      if (!baseUrl.trim().startsWith('https://')) {
+        setFeedbackMsg({ isError: true, text: 'Base URL harus diawali dengan https://' });
+        return;
+      }
+      if (!model.trim()) {
+        setFeedbackMsg({ isError: true, text: 'Nama model wajib diisi saat mengaktifkan endpoint custom.' });
+        return;
+      }
+    }
     try {
       setIsSaving(true);
       setFeedbackMsg(null);
       await updateAISettings({
         is_custom_ai_enabled: isCustomAi,
-        provider: isCustomAi ? provider : 'SYSTEM',
-        model,
+        provider: isCustomAi ? 'CUSTOM' : 'SYSTEM',
+        protocol: isCustomAi ? protocol : undefined,
+        base_url: isCustomAi ? baseUrl.trim() : undefined,
+        model: model.trim(),
         api_key: apiKey.trim() || undefined,
       });
       setFeedbackMsg({ isError: false, text: 'Pengaturan AI berhasil disimpan.' });
@@ -206,12 +233,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setIsSavingProfile(false);
     }
   };
-
-  const availableModelsList = settings?.ai?.available_models?.[provider] || (
-    provider === 'GEMINI'
-      ? ['gemini-2.5-flash', 'gemini-2.5-pro']
-      : ['meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.3-70b-versatile']
-  );
 
   return (
     <Modal
@@ -422,94 +443,103 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <div className="flex items-center gap-2 mb-1.5">
                         <Radio className={`w-4 h-4 ${isCustomAi ? 'text-indigo-400' : 'text-zinc-400'}`} />
                         <span className="text-xs font-bold text-white">Bring Your Own Key</span>
+                        {isCustomAi && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            {provider}
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] text-zinc-400 leading-relaxed font-normal whitespace-normal">
-                        Gunakan kuota API pribadi Anda (Gemini/Groq) untuk kapasitas tak terbatas.
+                        Gunakan custom endpoint (OpenAI/Anthropic-compatible) dengan API key pribadi Anda.
                       </p>
                     </Button>
                   </div>
 
                   {isCustomAi && (
                     <div className="space-y-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
-                      {/* Provider Selector */}
+                      {/* Protocol Selector */}
                       <div>
-                        <label className="block text-xs font-medium text-zinc-400 mb-1.5">Provider AI</label>
-                        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Provider AI">
-                          {(['GEMINI', 'GROQ'] as const).map((p) => (
-                            <Button
-                              key={p}
-                              role="radio"
-                              aria-checked={provider === p}
-                              onPress={() => {
-                                setProvider(p);
-                                setModel(p === 'GEMINI' ? 'gemini-2.5-flash' : 'llama-3.3-70b-versatile');
-                                setValidationResult(null);
-                              }}
-                              className={`py-2 rounded-xl text-xs font-semibold border transition-all min-h-[38px] ${
-                                provider === p
-                                  ? 'bg-zinc-800 text-white border-indigo-500 shadow-sm'
-                                  : 'bg-zinc-800/50 text-zinc-400 border-zinc-800 hover:text-white'
-                              }`}
-                            >
-                              {p === 'GEMINI' ? 'Google Gemini' : 'Groq Cloud'}
-                            </Button>
-                          ))}
+                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                          Protokol Endpoint
+                        </label>
+                        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Protokol Endpoint">
+                          <Button
+                            role="radio"
+                            aria-checked={protocol === 'OPENAI'}
+                            onPress={() => {
+                              setProtocol('OPENAI');
+                              setValidationResult(null);
+                            }}
+                            className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all min-h-[40px] flex items-center justify-center ${
+                              protocol === 'OPENAI'
+                                ? 'bg-zinc-800 text-white border-indigo-500 shadow-sm'
+                                : 'bg-zinc-800/50 text-zinc-400 border-zinc-800 hover:text-white'
+                            }`}
+                          >
+                            OpenAI-compatible
+                          </Button>
+                          <Button
+                            role="radio"
+                            aria-checked={protocol === 'ANTHROPIC'}
+                            onPress={() => {
+                              setProtocol('ANTHROPIC');
+                              setValidationResult(null);
+                            }}
+                            className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all min-h-[40px] flex items-center justify-center ${
+                              protocol === 'ANTHROPIC'
+                                ? 'bg-zinc-800 text-white border-indigo-500 shadow-sm'
+                                : 'bg-zinc-800/50 text-zinc-400 border-zinc-800 hover:text-white'
+                            }`}
+                          >
+                            Anthropic-compatible
+                          </Button>
                         </div>
                       </div>
 
-                      {/* Model Selector */}
+                      {/* Base URL Input */}
                       <div>
-                        <label htmlFor="model-select" className="block text-xs font-medium text-zinc-400 mb-1.5">
-                          Model AI
+                        <label htmlFor="base-url-input" className="block text-xs font-medium text-zinc-300 mb-1.5">
+                          Base URL Endpoint
                         </label>
-                        <Select
-                          id="model-select"
-                          role="combobox"
-                          aria-label="Model AI"
-                          data-testid="model-select"
-                          selectedKeys={model ? [model] : []}
-                          onSelectionChange={(keys) => {
-                            const selected = Array.from(keys)[0] as string;
-                            if (selected) setModel(selected);
-                          }}
-                          onChange={(e) => {
-                            if (e.target.value) setModel(e.target.value);
-                          }}
-                          disallowEmptySelection
-                          className="w-full"
-                          classNames={{
-                            trigger: 'bg-[#141417] border border-zinc-800 hover:border-zinc-700 data-[hover=true]:border-zinc-700 text-zinc-100 text-xs rounded-xl min-h-[38px]',
-                            popoverContent: 'bg-[#141417] border border-zinc-800 text-zinc-200',
-                            value: 'text-zinc-100 text-xs',
-                          }}
-                        >
-                          {[
-                            ...(model && !availableModelsList.includes(model) ? [
-                              <SelectItem key={model} textValue={model} className="text-zinc-200 hover:bg-zinc-800/80">
-                                {model}
-                              </SelectItem>
-                            ] : []),
-                            ...availableModelsList.map((m) => (
-                              <SelectItem
-                                key={m}
-                                textValue={m}
-                                className="text-zinc-200 hover:bg-zinc-800/80 data-[hover=true]:bg-zinc-800/80 data-[selected=true]:bg-indigo-600/20 data-[selected=true]:text-indigo-400"
-                              >
-                                {m}
-                              </SelectItem>
-                            )),
-                          ]}
-                        </Select>
+                        <input
+                          id="base-url-input"
+                          type="url"
+                          value={baseUrl}
+                          onChange={(e) => setBaseUrl(e.target.value)}
+                          placeholder={protocol === 'ANTHROPIC' ? 'https://api.anthropic.com' : 'https://api.openai.com/v1'}
+                          className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-zinc-600 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 min-h-[38px]"
+                        />
+                        <p className="text-[11px] text-zinc-500 mt-1">
+                          Harus diawali https:// (contoh: {protocol === 'ANTHROPIC' ? 'https://api.anthropic.com' : 'https://api.openai.com/v1, https://api.groq.com/openai/v1'})
+                        </p>
+                      </div>
+
+                      {/* Model Input */}
+                      <div>
+                        <label htmlFor="model-input" className="block text-xs font-medium text-zinc-300 mb-1.5">
+                          Nama Model
+                        </label>
+                        <input
+                          id="model-input"
+                          type="text"
+                          value={model}
+                          onChange={(e) => setModel(e.target.value)}
+                          placeholder={protocol === 'ANTHROPIC' ? 'claude-3-5-haiku-20241022' : 'gpt-4o-mini'}
+                          className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-zinc-600 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 min-h-[38px]"
+                        />
+                        <p className="text-[11px] text-zinc-500 mt-1">
+                          Contoh: {protocol === 'ANTHROPIC' ? 'claude-3-5-haiku-20241022, claude-3-7-sonnet-20250219' : 'gpt-4o-mini, llama-3.3-70b-versatile, deepseek-chat'}
+                        </p>
                       </div>
 
                       {/* API Key Input */}
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <label htmlFor="api-key-input" className="text-xs font-medium text-zinc-400">
-                            Kunci API {provider === 'GEMINI' ? 'Google Gemini' : 'Groq'}
+                          <label htmlFor="api-key-input" className="text-xs font-medium text-zinc-300">
+                            Kunci API (API Key)
                           </label>
                           {settings?.ai?.has_api_key && (
-                            <span className="text-[11px] text-emerald-400">
+                            <span className="text-[11px] text-emerald-400 font-mono">
                               Tersimpan ({settings.ai.key_hint || '...'})
                             </span>
                           )}
@@ -525,7 +555,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 ? 'Biarkan kosong jika tidak ingin mengubah'
                                 : 'Masukkan kunci API Anda'
                             }
-                            className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none pr-10"
+                            className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-zinc-600 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 pr-10 min-h-[38px]"
                           />
                           <Button
                             isIconOnly
@@ -533,25 +563,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             variant="light"
                             onPress={() => setShowKey(!showKey)}
                             aria-label={showKey ? 'Sembunyikan API key' : 'Tampilkan API key'}
-                            className="absolute right-3 top-2.5 text-zinc-400 hover:text-white min-w-0 w-6 h-6 p-0 bg-transparent min-h-0"
+                            className="absolute right-2 top-1.5 text-zinc-400 hover:text-white min-w-[32px] w-8 h-8 p-0 bg-transparent min-h-[32px]"
                           >
                             {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </Button>
                         </div>
                         <div className="mt-1 flex justify-end">
-                          <a
-                            href={
-                              provider === 'GEMINI'
-                                ? 'https://aistudio.google.com/app/apikey'
-                                : 'https://console.groq.com/keys'
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] text-indigo-400 hover:underline inline-flex items-center gap-1"
-                          >
-                            Dapatkan API Key di {provider === 'GEMINI' ? 'Google AI Studio' : 'Groq Console'}
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
+                          {protocol === 'ANTHROPIC' ? (
+                            <a
+                              href="https://console.anthropic.com/settings/keys"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-indigo-400 hover:underline inline-flex items-center gap-1"
+                            >
+                              Dapatkan API Key di Anthropic Console
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          ) : (
+                            <span className="text-[11px] text-zinc-500 inline-flex items-center gap-1">
+                              Dapatkan API Key di penyedia endpoint Anda (mis.{' '}
+                              <a
+                                href="https://platform.openai.com/api-keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-indigo-400 hover:underline inline-flex items-center gap-0.5"
+                              >
+                                OpenAI <ExternalLink className="w-2 h-2" />
+                              </a>
+                              ,{' '}
+                              <a
+                                href="https://console.groq.com/keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-indigo-400 hover:underline inline-flex items-center gap-0.5"
+                              >
+                                Groq <ExternalLink className="w-2 h-2" />
+                              </a>
+                              )
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -574,10 +624,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           size="sm"
                           variant="flat"
                           onPress={handleValidateKey}
-                          isDisabled={isValidating || !apiKey.trim()}
-                          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold"
+                          isDisabled={isValidating || !apiKey.trim() || !baseUrl.trim()}
+                          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold min-h-[38px] px-4"
                         >
-                          {isValidating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Uji Koneksi'}
+                          {isValidating ? (
+                            <span className="flex items-center gap-1.5">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Menguji...
+                            </span>
+                          ) : (
+                            'Uji Koneksi'
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -590,7 +646,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       isDisabled={isSaving}
                       className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs px-5 min-h-[38px]"
                     >
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Pengaturan'}
+                      {isSaving ? (
+                        <span className="flex items-center gap-1.5">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                        </span>
+                      ) : (
+                        'Simpan Pengaturan'
+                      )}
                     </Button>
                   </div>
                 </div>

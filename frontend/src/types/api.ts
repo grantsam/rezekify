@@ -194,7 +194,8 @@ export interface TransactionUpdateRequest {
   transaction_date?: string;
 }
 
-export type AIProviderType = 'SYSTEM' | 'GEMINI' | 'GROQ';
+export type AIProviderType = 'SYSTEM' | 'CUSTOM';
+export type AIProtocolType = 'OPENAI' | 'ANTHROPIC';
 
 export interface TelegramSettingsResponse {
   is_connected: boolean;
@@ -205,10 +206,11 @@ export interface TelegramSettingsResponse {
 export interface AISettingsResponse {
   is_custom_ai_enabled: boolean;
   provider: AIProviderType;
+  protocol?: AIProtocolType | null;
+  base_url?: string | null;
   model: string;
   has_api_key: boolean;
   key_hint?: string | null;
-  available_models: Record<string, string[]>;
 }
 
 export interface UserProfileResponse {
@@ -231,7 +233,8 @@ export interface SettingsResponse {
 }
 
 export interface AIKeyValidateRequest {
-  provider: AIProviderType;
+  protocol: AIProtocolType;
+  base_url: string;
   api_key: string;
   model?: string;
 }
@@ -244,6 +247,8 @@ export interface AIKeyValidateResponse {
 export interface AISettingsUpdateRequest {
   is_custom_ai_enabled: boolean;
   provider: AIProviderType;
+  protocol?: AIProtocolType | null;
+  base_url?: string | null;
   model: string;
   api_key?: string | null;
 }
