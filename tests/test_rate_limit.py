@@ -162,7 +162,12 @@ def test_settings_ai_validate_rate_limit_exceeded():
     try:
         with patch("rezekify.api.v1.settings_router.validate_ai_credentials") as mock_val:
             mock_val.return_value = (True, "Valid")
-            payload = {"provider": "GEMINI", "api_key": "AIzaSyDummy12345678", "model": "gemini-2.5-flash"}
+            payload = {
+                "protocol": "OPENAI",
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "AIzaSyDummy12345678",
+                "model": "gemini-2.5-flash",
+            }
 
             for _ in range(ai_validate_limiter.max_requests):
                 res = client.post("/api/v1/settings/ai/validate", json=payload)

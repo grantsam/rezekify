@@ -9,7 +9,7 @@ from rezekify.api.deps import get_current_user, get_db
 from rezekify.core.config import settings as app_settings
 from rezekify.core.crypto import encrypt_key, mask_key
 from rezekify.core.rate_limit import RateLimiter
-from rezekify.db.models import AIProvider, User, UserSettings
+from rezekify.db.models import AIProvider, AIProtocol, User, UserSettings
 from rezekify.schemas.settings import (
     AIKeyValidateRequest,
     AIKeyValidateResponse,
@@ -61,6 +61,8 @@ def get_settings(
     ai_resp = AISettingsResponse(
         is_custom_ai_enabled=settings_rec.is_custom_ai_enabled,
         provider=settings_rec.ai_provider,
+        protocol=settings_rec.ai_protocol,
+        base_url=settings_rec.ai_base_url,
         model=settings_rec.ai_model,
         has_api_key=bool(settings_rec.encrypted_api_key),
         key_hint=settings_rec.key_hint,
@@ -129,17 +131,15 @@ def validate_ai_key(
     payload: AIKeyValidateRequest,
     current_user: User = Depends(get_current_user),
 ) -> AIKeyValidateResponse:
-    """Performs live connectivity verification against the specified AI provider."""
+    """Performs live connectivity verification against the user's custom AI endpoint."""
     valid, message = validate_ai_credentials(
-        provider=payload.provider,
+        protocol=payload.protocol,
+        base_url=payload.base_url,
         api_key=payload.api_key,
         model=payload.model,
     )
     if not valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=message,
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
     return AIKeyValidateResponse(valid=True, message=message)
 
 
@@ -149,10 +149,9 @@ def update_ai_settings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> AISettingsResponse:
-    """Updates AI provider, model, BYOK toggle, and optionally encrypts a new API key."""
+    """Updates AI provider (SYSTEM/CUSTOM), protocol, endpoint, model, BYOK toggle, and optional key."""
     settings_rec = _get_or_create_settings(db, current_user.id)
 
-    # Check key requirement when enabling BYOK or switching provider
     has_existing_key = bool(settings_rec.encrypted_api_key)
     has_new_key = bool(payload.api_key and payload.api_key.strip())
 
@@ -162,18 +161,6 @@ def update_ai_settings(
             detail="Kunci API wajib diisi untuk mengaktifkan AI kustom (BYOK).",
         )
 
-    if (
-        payload.is_custom_ai_enabled
-        and settings_rec.ai_provider != AIProvider.SYSTEM
-        and payload.provider != settings_rec.ai_provider
-        and not has_new_key
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Kunci API baru wajib diisi saat mengganti provider AI.",
-        )
-
-    # Encrypt and store key if new one provided
     if has_new_key:
         raw_key = payload.api_key.strip()
         settings_rec.encrypted_api_key = encrypt_key(raw_key)
@@ -183,12 +170,21 @@ def update_ai_settings(
     settings_rec.ai_provider = payload.provider
     settings_rec.ai_model = payload.model
 
+    if payload.provider == AIProvider.CUSTOM:
+        settings_rec.ai_protocol = payload.protocol
+        settings_rec.ai_base_url = payload.base_url
+    else:
+        settings_rec.ai_protocol = None
+        settings_rec.ai_base_url = None
+
     db.commit()
     db.refresh(settings_rec)
 
     return AISettingsResponse(
         is_custom_ai_enabled=settings_rec.is_custom_ai_enabled,
         provider=settings_rec.ai_provider,
+        protocol=settings_rec.ai_protocol,
+        base_url=settings_rec.ai_base_url,
         model=settings_rec.ai_model,
         has_api_key=bool(settings_rec.encrypted_api_key),
         key_hint=settings_rec.key_hint,

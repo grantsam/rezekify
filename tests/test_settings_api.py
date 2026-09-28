@@ -177,6 +177,8 @@ def test_get_settings_auto_creates_default_and_omits_secrets(api_test_client):
     assert "ai" in data
     assert data["ai"]["is_custom_ai_enabled"] is False
     assert data["ai"]["provider"] == "SYSTEM"
+    assert data["ai"]["protocol"] is None
+    assert data["ai"]["base_url"] is None
     assert data["ai"]["model"] == "gemini-2.5-flash"
     assert data["ai"]["has_api_key"] is False
     assert data["ai"]["key_hint"] is None
@@ -186,21 +188,43 @@ def test_get_settings_auto_creates_default_and_omits_secrets(api_test_client):
 def test_post_validate_ai_key_endpoint(api_test_client):
     client, _, _ = api_test_client
     with patch("rezekify.api.v1.settings_router.validate_ai_credentials") as mock_val:
-        mock_val.return_value = (True, "Koneksi berhasil diverifikasi.")
+        mock_val.return_value = (True, "OK")
         res = client.post(
             "/api/v1/settings/ai/validate",
-            json={"provider": "GEMINI", "api_key": "AIzaSyTest12345678", "model": "gemini-2.5-flash"},
+            json={
+                "protocol": "OPENAI",
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "sk-Test12345678",
+                "model": "gpt-4o-mini",
+            },
         )
         assert res.status_code == 200
         assert res.json()["valid"] is True
 
-        mock_val.return_value = (False, "API_KEY_INVALID")
-        res_fail = client.post(
+        mock_val.return_value = (False, "bad key")
+        res = client.post(
             "/api/v1/settings/ai/validate",
-            json={"provider": "GEMINI", "api_key": "bad-key-12345678"},
+            json={
+                "protocol": "OPENAI",
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "bad-key-12345678",
+            },
         )
-        assert res_fail.status_code == 400
-        assert "API_KEY_INVALID" in res_fail.json()["detail"]
+        assert res.status_code == 400
+
+
+def test_post_validate_ai_key_rejects_http(api_test_client):
+    client, _, _ = api_test_client
+    res = client.post(
+        "/api/v1/settings/ai/validate",
+        json={
+            "protocol": "OPENAI",
+            "base_url": "http://api.openai.com/v1",
+            "api_key": "sk-Test12345678",
+            "model": "gpt-4o-mini",
+        },
+    )
+    assert res.status_code == 422  # Pydantic field validation rejects http scheme
 
 
 def test_put_ai_settings_requires_key_when_enabling_byok(api_test_client):
@@ -209,39 +233,61 @@ def test_put_ai_settings_requires_key_when_enabling_byok(api_test_client):
         "/api/v1/settings/ai",
         json={
             "is_custom_ai_enabled": True,
-            "provider": "GEMINI",
-            "model": "gemini-2.5-flash",
-            "api_key": None,
+            "provider": "CUSTOM",
+            "protocol": "OPENAI",
+            "base_url": "https://api.openai.com/v1",
+            "model": "gpt-4o-mini",
         },
     )
     assert res.status_code == 400
     assert "Kunci API wajib diisi" in res.json()["detail"]
 
 
-def test_put_ai_settings_updates_key_and_hint(api_test_client):
+def test_put_ai_settings_updates_key_and_stores_endpoint(api_test_client):
     client, user, SessionMaker = api_test_client
     res = client.put(
         "/api/v1/settings/ai",
         json={
             "is_custom_ai_enabled": True,
-            "provider": "GEMINI",
-            "model": "gemini-2.5-flash",
-            "api_key": "AIzaSyD-SuperSecret9999",
+            "provider": "CUSTOM",
+            "protocol": "OPENAI",
+            "base_url": "https://api.openai.com/v1",
+            "model": "gpt-4o-mini",
+            "api_key": "sk-brandNewKey123",
         },
     )
     assert res.status_code == 200
     data = res.json()
-    assert data["is_custom_ai_enabled"] is True
+    assert data["provider"] == "CUSTOM"
+    assert data["protocol"] == "OPENAI"
+    assert data["base_url"] == "https://api.openai.com/v1"
     assert data["has_api_key"] is True
-    assert data["key_hint"] == "...9999"
+    assert data["key_hint"] == "...y123"
 
-    # Verify encrypted key in DB
+    # Verify DB persistence
     db = SessionMaker()
     rec = db.query(UserSettings).filter_by(user_id=user.id).first()
     assert rec is not None
-    assert rec.encrypted_api_key is not None
-    assert decrypt_key(rec.encrypted_api_key) == "AIzaSyD-SuperSecret9999"
+    assert rec.ai_provider == AIProvider.CUSTOM
+    assert rec.ai_protocol == AIProtocol.OPENAI
+    assert rec.ai_base_url == "https://api.openai.com/v1"
+    assert decrypt_key(rec.encrypted_api_key) == "sk-brandNewKey123"
     db.close()
+
+
+def test_put_ai_settings_missing_protocol_returns_422(api_test_client):
+    client, _, _ = api_test_client
+    res = client.put(
+        "/api/v1/settings/ai",
+        json={
+            "is_custom_ai_enabled": True,
+            "provider": "CUSTOM",
+            "base_url": "https://api.openai.com/v1",
+            "model": "gpt-4o-mini",
+            "api_key": "sk-brandNewKey123",
+        },
+    )
+    assert res.status_code == 422  # model validator: protocol required
 
 
 def test_put_ai_settings_preserves_existing_key_when_omitted(api_test_client):
@@ -250,8 +296,10 @@ def test_put_ai_settings_preserves_existing_key_when_omitted(api_test_client):
     db = SessionMaker()
     rec = UserSettings(
         user_id=user.id,
-        ai_provider=AIProvider.GEMINI,
-        ai_model="gemini-2.5-flash",
+        ai_provider=AIProvider.CUSTOM,
+        ai_protocol=AIProtocol.OPENAI,
+        ai_base_url="https://api.openai.com/v1",
+        ai_model="gpt-4o-mini",
         encrypted_api_key=encrypt_key("existing-secret-key-1234"),
         key_hint="...1234",
         is_custom_ai_enabled=True,
@@ -265,14 +313,18 @@ def test_put_ai_settings_preserves_existing_key_when_omitted(api_test_client):
         "/api/v1/settings/ai",
         json={
             "is_custom_ai_enabled": True,
-            "provider": "GEMINI",
-            "model": "gemini-2.5-pro",
+            "provider": "CUSTOM",
+            "protocol": "OPENAI",
+            "base_url": "https://api.openai.com/v1",
+            "model": "gpt-4o",
             "api_key": "",
         },
     )
     assert res.status_code == 200
     data = res.json()
-    assert data["model"] == "gemini-2.5-pro"
+    assert data["model"] == "gpt-4o"
+    assert data["protocol"] == "OPENAI"
+    assert data["base_url"] == "https://api.openai.com/v1"
     assert data["has_api_key"] is True
     assert data["key_hint"] == "...1234"
 
@@ -281,52 +333,6 @@ def test_put_ai_settings_preserves_existing_key_when_omitted(api_test_client):
     db_rec = db.query(UserSettings).filter_by(user_id=user.id).first()
     assert decrypt_key(db_rec.encrypted_api_key) == "existing-secret-key-1234"
     db.close()
-
-
-def test_put_ai_settings_requires_new_key_when_switching_provider(api_test_client):
-    client, user, SessionMaker = api_test_client
-    # Pre-populate DB with existing GEMINI key
-    db = SessionMaker()
-    rec = UserSettings(
-        user_id=user.id,
-        ai_provider=AIProvider.GEMINI,
-        ai_model="gemini-2.5-flash",
-        encrypted_api_key=encrypt_key("existing-gemini-key"),
-        key_hint="...1234",
-        is_custom_ai_enabled=True,
-    )
-    db.merge(rec)
-    db.commit()
-    db.close()
-
-    # Attempt to switch to GROQ without new api_key
-    res = client.put(
-        "/api/v1/settings/ai",
-        json={
-            "is_custom_ai_enabled": True,
-            "provider": "GROQ",
-            "model": "llama-3.3-70b-versatile",
-            "api_key": None,
-        },
-    )
-    assert res.status_code == 400
-    assert "Kunci API baru wajib diisi saat mengganti provider AI." in res.json()["detail"]
-
-    # Now provide new key for GROQ - should succeed
-    res_ok = client.put(
-        "/api/v1/settings/ai",
-        json={
-            "is_custom_ai_enabled": True,
-            "provider": "GROQ",
-            "model": "llama-3.3-70b-versatile",
-            "api_key": "gsk_newgroqkey9999",
-        },
-    )
-    assert res_ok.status_code == 200
-    data = res_ok.json()
-    assert data["provider"] == "GROQ"
-    assert data["model"] == "llama-3.3-70b-versatile"
-    assert data["key_hint"] == "...9999"
 
 
 def test_unlink_telegram_endpoint(api_test_client):
