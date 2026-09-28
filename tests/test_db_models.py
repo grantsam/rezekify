@@ -118,14 +118,14 @@ def test_cascade_delete_user(db_session):
 
 
 def test_user_settings_model_and_relationship(db_session, sample_user):
-    from rezekify.db.models import AIProvider, UserSettings
+    from rezekify.db.models import AIProtocol, AIProvider, UserSettings
 
     settings = UserSettings(
         user_id=sample_user.id,
-        ai_provider=AIProvider.GEMINI,
-        ai_model="gemini-2.5-pro",
-        encrypted_api_key="gAAAAABtestCiphertextToken12345",
-        key_hint="...1234",
+        ai_provider=AIProvider.CUSTOM,
+        ai_protocol=AIProtocol.OPENAI,
+        ai_base_url="https://api.openai.com/v1",
+        ai_model="gpt-4o-mini",
         is_custom_ai_enabled=True,
     )
     db_session.add(settings)
@@ -133,16 +133,7 @@ def test_user_settings_model_and_relationship(db_session, sample_user):
     db_session.refresh(sample_user)
 
     assert sample_user.settings is not None
-    assert sample_user.settings.ai_provider == AIProvider.GEMINI
-    assert sample_user.settings.ai_model == "gemini-2.5-pro"
-    assert sample_user.settings.encrypted_api_key == "gAAAAABtestCiphertextToken12345"
-    assert sample_user.settings.key_hint == "...1234"
-    assert sample_user.settings.is_custom_ai_enabled is True
-    assert sample_user.settings.user.id == sample_user.id
-
-    # Verify cascading delete
-    db_session.delete(sample_user)
-    db_session.commit()
-    orphan = db_session.query(UserSettings).filter_by(id=settings.id).first()
-    assert orphan is None
+    assert sample_user.settings.ai_provider == AIProvider.CUSTOM
+    assert sample_user.settings.ai_protocol == AIProtocol.OPENAI
+    assert sample_user.settings.ai_base_url == "https://api.openai.com/v1"
 

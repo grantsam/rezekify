@@ -69,8 +69,12 @@ class VaultType(str, Enum):
 
 class AIProvider(str, Enum):
     SYSTEM = "SYSTEM"
-    GEMINI = "GEMINI"
-    GROQ = "GROQ"
+    CUSTOM = "CUSTOM"
+
+
+class AIProtocol(str, Enum):
+    OPENAI = "OPENAI"
+    ANTHROPIC = "ANTHROPIC"
 
 
 def utc_now():
@@ -194,6 +198,11 @@ class UserSettings(Base):
         nullable=False,
         default=AIProvider.SYSTEM,
     )
+    ai_protocol = Column(
+        SQLEnum(AIProtocol, native_enum=False),
+        nullable=True,
+    )
+    ai_base_url = Column(String(512), nullable=True)
     ai_model = Column(String(100), nullable=False, default="gemini-2.5-flash")
     encrypted_api_key = Column(Text, nullable=True)
     key_hint = Column(String(16), nullable=True)
