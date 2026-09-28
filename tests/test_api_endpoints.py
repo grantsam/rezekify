@@ -496,7 +496,7 @@ def test_ai_receipt_upload_endpoint(sample_user, db_session):
                 headers=headers,
             )
             assert res.status_code == 200
-            assert res.json() == {"reply": "✅ Tercatat: Rp 50,000 via BCA"}
+            assert res.json()["reply"] == "✅ Tercatat: Rp 50,000 via BCA"
             assert mock_handle.called
             call_kwargs = mock_handle.call_args.kwargs
             assert call_kwargs["text"] == "Catat struk ini"
@@ -513,7 +513,7 @@ def test_ai_receipt_upload_endpoint(sample_user, db_session):
                 headers=headers,
             )
             assert res_png.status_code == 200
-            assert res_png.json() == {"reply": "✅ Tercatat dari Struk"}
+            assert res_png.json()["reply"] == "✅ Tercatat dari Struk"
             assert mock_handle.called
             assert mock_handle.call_args.kwargs["text"] == "Foto struk kasir"
             assert mock_handle.call_args.kwargs["mime_type"] == "image/png"
@@ -537,7 +537,7 @@ def test_ai_receipt_upload_runs_in_threadpool(sample_user, db_session):
                 headers=headers,
             )
             assert res.status_code == 200
-            assert res.json() == {"reply": "✅ Sukses Struk"}
+            assert res.json()["reply"] == "✅ Sukses Struk"
             assert mock_handle.called
 
 
@@ -606,7 +606,9 @@ def test_ai_voice_upload_success(sample_user, db_session):
                 headers=headers,
             )
             assert res.status_code == 200
-            assert res.json() == {"reply": "Tercatat!", "transcription": "beli kopi 25rb"}
+            data = res.json()
+            assert data["reply"] == "Tercatat!"
+            assert data["transcription"] == "beli kopi 25rb"
             assert mock_handle.called
             call_kwargs = mock_handle.call_args.kwargs
             assert call_kwargs["user_id"] == sample_user.id

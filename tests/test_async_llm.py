@@ -359,7 +359,7 @@ def test_dashboard_ai_chat_async_endpoint(sample_user, db_session):
                 headers=headers,
             )
             assert res.status_code == 200
-            assert res.json() == {"reply": "✅ Berhasil dari AI"}
+            assert res.json()["reply"] == "✅ Berhasil dari AI"
     finally:
         if old_override is not None:
             app.dependency_overrides[get_db] = old_override
@@ -391,7 +391,7 @@ def test_dashboard_ai_receipt_async_endpoint(sample_user, db_session):
                 headers=headers,
             )
             assert res.status_code == 200
-            assert res.json() == {"reply": "✅ Struk diproses secara async"}
+            assert res.json()["reply"] == "✅ Struk diproses secara async"
     finally:
         if old_override is not None:
             app.dependency_overrides[get_db] = old_override
@@ -423,7 +423,9 @@ def test_dashboard_ai_voice_async_endpoint(sample_user, db_session):
                 headers=headers,
             )
             assert res.status_code == 200
-            assert res.json() == {"reply": "✅ Audio async", "transcription": "kopi susu"}
+            data = res.json()
+            assert data["reply"] == "✅ Audio async"
+            assert data["transcription"] == "kopi susu"
             assert mock_voice.called
     finally:
         if old_override is not None:

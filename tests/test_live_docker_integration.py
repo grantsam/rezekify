@@ -195,7 +195,7 @@ def test_full_stack_user_lifecycle_e2e(client: TestClient):
             data={"message": "Catat belanja mingguan"},
         )
         assert receipt_res.status_code == 200
-        assert receipt_res.json() == {"reply": mock_reply}
+        assert receipt_res.json()["reply"] == mock_reply
         assert mock_ocr.called
         call_kwargs = mock_ocr.call_args.kwargs
         assert call_kwargs["text"] == "Catat belanja mingguan"

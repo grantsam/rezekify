@@ -2,17 +2,24 @@
 
 from datetime import date
 from decimal import Decimal
+import json
 from typing import List, Literal, Optional, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from rezekify.agent.key_pool import RotaryKeyPool
 from rezekify.agent.orchestrator import AgentOrchestrator
 from rezekify.api.deps import get_current_user, get_db, get_gemini_key_pool
 from rezekify.core.rate_limit import RateLimiter
-from rezekify.db.models import User
+from rezekify.db.models import Account, Category, ChatMessage, EntryType, Transaction, User
+from rezekify.schemas.chat import (
+    ChatMessageResponse,
+    EnrichedChatResponse,
+    TelemetrySnapshot,
+    TransactionSummary,
+)
 from rezekify.services.runway import RunwayService
 
 dashboard_router = APIRouter()
@@ -148,29 +155,182 @@ def get_dashboard_summary(
     )
 
 
-@dashboard_router.post("/ai-chat", response_model=ChatResponse, dependencies=[Depends(ai_chat_limiter)])
+def _build_transaction_summary(tx: Transaction, db: Session) -> Optional[TransactionSummary]:
+    if not tx:
+        return None
+    amount = Decimal("0")
+    account_name = None
+    category_name = None
+    account_balance_after = None
+    tx_type = "EXPENSE"
+
+    for entry in tx.ledger_entries:
+        if entry.account_id:
+            acc = db.query(Account).filter(Account.id == entry.account_id).first()
+            if acc:
+                account_name = acc.name
+                account_balance_after = acc.current_balance
+            amount = entry.amount
+            if entry.entry_type == EntryType.CREDIT:
+                tx_type = "EXPENSE"
+            elif entry.entry_type == EntryType.DEBIT:
+                tx_type = "INCOME"
+        if entry.category_id:
+            cat = db.query(Category).filter(Category.id == entry.category_id).first()
+            if cat:
+                category_name = cat.name
+
+    return TransactionSummary(
+        id=tx.id,
+        amount=amount,
+        account_name=account_name,
+        category_name=category_name,
+        description=tx.description,
+        type=tx_type,
+        account_balance_after=account_balance_after,
+    )
+
+
+def _resolve_tx_summary(msg: ChatMessage, db: Session) -> Optional[TransactionSummary]:
+    if msg.metadata_json:
+        try:
+            data = json.loads(msg.metadata_json)
+            if isinstance(data, dict) and data.get("transaction"):
+                return TransactionSummary(**data["transaction"])
+        except Exception:
+            pass
+    tx = msg.transaction
+    if not tx and msg.transaction_id:
+        tx = db.query(Transaction).filter(Transaction.id == msg.transaction_id).first()
+    if tx:
+        return _build_transaction_summary(tx, db)
+    return None
+
+
+@dashboard_router.get("/ai-chat/messages", response_model=List[ChatMessageResponse])
+def get_chat_messages(
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> List[ChatMessageResponse]:
+    """Retrieves chronological chat message history for the authenticated user."""
+    query = (
+        db.query(ChatMessage)
+        .options(selectinload(ChatMessage.transaction).selectinload(Transaction.ledger_entries))
+        .filter(ChatMessage.user_id == current_user.id)
+        .order_by(ChatMessage.created_at.asc())
+        .offset(offset)
+        .limit(limit)
+    )
+    messages = query.all()
+    results = []
+    for msg in messages:
+        tx_summary = _resolve_tx_summary(msg, db)
+        meta = None
+        if msg.metadata_json:
+            try:
+                meta = json.loads(msg.metadata_json)
+            except Exception:
+                meta = {"raw": msg.metadata_json}
+        results.append(
+            ChatMessageResponse(
+                id=msg.id,
+                role=msg.role,
+                content=msg.content,
+                transaction_id=msg.transaction_id,
+                transaction=tx_summary,
+                metadata=meta,
+                created_at=msg.created_at,
+            )
+        )
+    return results
+
+
+@dashboard_router.delete("/ai-chat/messages")
+def clear_chat_messages(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Deletes all chat messages for current user without affecting underlying ledger transactions."""
+    db.query(ChatMessage).filter(ChatMessage.user_id == current_user.id).delete(synchronize_session=False)
+    db.commit()
+    return {"status": "cleared"}
+
+
+@dashboard_router.post("/ai-chat", response_model=EnrichedChatResponse, dependencies=[Depends(ai_chat_limiter)])
 async def ai_chat_omni_input(
     req: ChatRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     key_pool: RotaryKeyPool = Depends(get_gemini_key_pool),
-):
-    """Processes natural language omni-input into ledger mutations."""
+) -> EnrichedChatResponse:
+    """Processes natural language omni-input into ledger mutations and persists conversation history."""
+    user_msg = ChatMessage(
+        user_id=current_user.id,
+        role="user",
+        content=req.message,
+    )
+    db.add(user_msg)
+    db.commit()
+
     orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
     res = await orchestrator.handle_message_async(user_id=current_user.id, text=req.message)
-    reply = res["reply"] if isinstance(res, dict) else res
-    return ChatResponse(reply=reply)
+
+    reply = res["reply"] if isinstance(res, dict) else str(res)
+    tx_id = res.get("transaction_id") if isinstance(res, dict) else None
+    tx_dict = res.get("transaction") if isinstance(res, dict) else None
+    telemetry_dict = res.get("telemetry") if isinstance(res, dict) else None
+
+    if telemetry_dict is None:
+        try:
+            runway = RunwayService(db).calculate_runway(current_user.id)
+            telemetry_dict = {
+                "operational_free_cash": runway.operational_free_cash,
+                "daily_safe_runway": runway.daily_safe_runway,
+                "days_remaining": runway.days_remaining,
+                "health_status": runway.health_status,
+            }
+        except Exception:
+            telemetry_dict = None
+
+    meta_to_store = {}
+    if tx_dict:
+        meta_to_store["transaction"] = json.loads(json.dumps(tx_dict, default=str))
+    if telemetry_dict:
+        meta_to_store["telemetry"] = json.loads(json.dumps(telemetry_dict, default=str))
+
+    assistant_msg = ChatMessage(
+        user_id=current_user.id,
+        role="assistant",
+        content=reply,
+        transaction_id=tx_id,
+        metadata_json=json.dumps(meta_to_store) if meta_to_store else None,
+    )
+    db.add(assistant_msg)
+    db.commit()
+    db.refresh(assistant_msg)
+
+    tx_summary = TransactionSummary(**tx_dict) if tx_dict else None
+    telemetry_snap = TelemetrySnapshot(**telemetry_dict) if telemetry_dict else None
+
+    return EnrichedChatResponse(
+        reply=reply,
+        message_id=assistant_msg.id,
+        transaction=tx_summary,
+        telemetry=telemetry_snap,
+    )
 
 
-@dashboard_router.post("/ai-receipt", response_model=ChatResponse, dependencies=[Depends(ai_receipt_limiter)])
+@dashboard_router.post("/ai-receipt", response_model=EnrichedChatResponse, dependencies=[Depends(ai_receipt_limiter)])
 async def ai_receipt_upload(
     file: UploadFile = File(...),
     message: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     key_pool: RotaryKeyPool = Depends(get_gemini_key_pool),
-) -> ChatResponse:
-    """Processes multimodal receipt image uploads via Gemini Vision OCR."""
+) -> EnrichedChatResponse:
+    """Processes multimodal receipt image uploads via Gemini Vision OCR and persists conversation history."""
     if file.content_type not in ALLOWED_RECEIPT_MIMES:
         raise HTTPException(
             status_code=400,
@@ -189,26 +349,76 @@ async def ai_receipt_upload(
     if not (is_jpeg or is_png or is_webp):
         raise HTTPException(status_code=400, detail="Format file tidak didukung atau header file tidak valid.")
 
-    orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
     prompt_text = (message or "").strip() or "Foto struk kasir"
+    user_msg = ChatMessage(
+        user_id=current_user.id,
+        role="user",
+        content=prompt_text,
+        metadata_json=json.dumps({"type": "receipt", "filename": file.filename}),
+    )
+    db.add(user_msg)
+    db.commit()
+
+    orchestrator = AgentOrchestrator(db=db, key_pool=key_pool)
     res = await orchestrator.handle_message_async(
         user_id=current_user.id,
         text=prompt_text,
         image_bytes=content,
         mime_type=file.content_type,
     )
-    reply = res["reply"] if isinstance(res, dict) else res
-    return ChatResponse(reply=reply)
+    reply = res["reply"] if isinstance(res, dict) else str(res)
+    tx_id = res.get("transaction_id") if isinstance(res, dict) else None
+    tx_dict = res.get("transaction") if isinstance(res, dict) else None
+    telemetry_dict = res.get("telemetry") if isinstance(res, dict) else None
+
+    if telemetry_dict is None:
+        try:
+            runway = RunwayService(db).calculate_runway(current_user.id)
+            telemetry_dict = {
+                "operational_free_cash": runway.operational_free_cash,
+                "daily_safe_runway": runway.daily_safe_runway,
+                "days_remaining": runway.days_remaining,
+                "health_status": runway.health_status,
+            }
+        except Exception:
+            telemetry_dict = None
+
+    meta_to_store = {}
+    if tx_dict:
+        meta_to_store["transaction"] = json.loads(json.dumps(tx_dict, default=str))
+    if telemetry_dict:
+        meta_to_store["telemetry"] = json.loads(json.dumps(telemetry_dict, default=str))
+
+    assistant_msg = ChatMessage(
+        user_id=current_user.id,
+        role="assistant",
+        content=reply,
+        transaction_id=tx_id,
+        metadata_json=json.dumps(meta_to_store) if meta_to_store else None,
+    )
+    db.add(assistant_msg)
+    db.commit()
+    db.refresh(assistant_msg)
+
+    tx_summary = TransactionSummary(**tx_dict) if tx_dict else None
+    telemetry_snap = TelemetrySnapshot(**telemetry_dict) if telemetry_dict else None
+
+    return EnrichedChatResponse(
+        reply=reply,
+        message_id=assistant_msg.id,
+        transaction=tx_summary,
+        telemetry=telemetry_snap,
+    )
 
 
-@dashboard_router.post("/ai-voice", response_model=VoiceChatResponse)
+@dashboard_router.post("/ai-voice", response_model=EnrichedChatResponse)
 async def ai_voice_endpoint(
     file: UploadFile = File(...),
     message: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     key_pool: RotaryKeyPool = Depends(get_gemini_key_pool),
-) -> VoiceChatResponse:
+) -> EnrichedChatResponse:
     if file.content_type and file.content_type.lower() not in ALLOWED_VOICE_MIMES:
         raise HTTPException(
             status_code=400,
@@ -228,9 +438,61 @@ async def ai_voice_endpoint(
         caption=(message or "").strip() or None,
         mime_type=file.content_type or "audio/webm",
     )
-    return VoiceChatResponse(
-        reply=result.get("reply", ""),
-        transcription=result.get("transcription", ""),
+
+    reply = result.get("reply", "") if isinstance(result, dict) else str(result)
+    transcription = result.get("transcription", "") if isinstance(result, dict) else ""
+    tx_id = result.get("transaction_id") if isinstance(result, dict) else None
+    tx_dict = result.get("transaction") if isinstance(result, dict) else None
+    telemetry_dict = result.get("telemetry") if isinstance(result, dict) else None
+
+    user_content = (message or "").strip() or transcription or "Pesan Suara"
+    user_msg = ChatMessage(
+        user_id=current_user.id,
+        role="user",
+        content=user_content,
+        metadata_json=json.dumps({"type": "voice", "transcription": transcription}),
+    )
+    db.add(user_msg)
+    db.commit()
+
+    if telemetry_dict is None:
+        try:
+            runway = RunwayService(db).calculate_runway(current_user.id)
+            telemetry_dict = {
+                "operational_free_cash": runway.operational_free_cash,
+                "daily_safe_runway": runway.daily_safe_runway,
+                "days_remaining": runway.days_remaining,
+                "health_status": runway.health_status,
+            }
+        except Exception:
+            telemetry_dict = None
+
+    meta_to_store = {}
+    if tx_dict:
+        meta_to_store["transaction"] = json.loads(json.dumps(tx_dict, default=str))
+    if telemetry_dict:
+        meta_to_store["telemetry"] = json.loads(json.dumps(telemetry_dict, default=str))
+
+    assistant_msg = ChatMessage(
+        user_id=current_user.id,
+        role="assistant",
+        content=reply,
+        transaction_id=tx_id,
+        metadata_json=json.dumps(meta_to_store) if meta_to_store else None,
+    )
+    db.add(assistant_msg)
+    db.commit()
+    db.refresh(assistant_msg)
+
+    tx_summary = TransactionSummary(**tx_dict) if tx_dict else None
+    telemetry_snap = TelemetrySnapshot(**telemetry_dict) if telemetry_dict else None
+
+    return EnrichedChatResponse(
+        reply=reply,
+        message_id=assistant_msg.id,
+        transaction=tx_summary,
+        telemetry=telemetry_snap,
+        transcription=transcription,
     )
 
 
