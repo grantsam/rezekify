@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { Button } from '@heroui/react';
-import { apiFetch, submitVoice } from '../services/apiClient';
 import { useAuth } from '../context/AuthContext';
-import { ChatResponse } from '../types/api';
 import { useDashboardModals } from '../hooks/useDashboardModals';
 import { useTransactionsLedger } from '../hooks/useTransactionsLedger';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { AppLayout } from '../components/AppLayout';
-import { QuickCaptureBar } from '../components/QuickCaptureBar';
 import { OverviewView } from '../components/OverviewView';
 import { LedgerView } from '../components/LedgerView';
 import { VaultsView } from '../components/VaultsView';
+import { AIChatView } from '../components/AIChatView';
 const ManualTransactionModal = React.lazy(() => import('../components/ManualTransactionModal').then(m => ({ default: m.ManualTransactionModal })));
 const AccountModal = React.lazy(() => import('../components/AccountModal').then(m => ({ default: m.AccountModal })));
 const VaultModal = React.lazy(() => import('../components/VaultModal').then(m => ({ default: m.VaultModal })));
@@ -28,8 +26,7 @@ export const DashboardPage: React.FC = () => {
   const dashboard = useDashboardData();
 
   const [activeView, setActiveView] = useState<'overview' | 'ledger' | 'vaults' | 'chat' | 'settings'>('overview');
-  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
-  const [aiMessage, setAiMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [chatPrompt, setChatPrompt] = useState<string>('');
   const [txErrorMessage, setTxErrorMessage] = useState<string | null>(null);
 
   const activeTxError = txErrorMessage || ledger.error;
@@ -41,78 +38,6 @@ export const DashboardPage: React.FC = () => {
 
   const refreshAllData = async () => {
     await Promise.all([dashboard.refreshAll(), ledger.loadTransactions()]);
-  };
-
-  const handleAiSubmit = async (
-    input: string | { text: string; file: File | null },
-    fileArg?: File | null
-  ) => {
-    let text = '';
-    let file: File | null = null;
-    if (typeof input === 'object' && input !== null) {
-      text = input.text || '';
-      file = input.file || null;
-    } else {
-      text = input || '';
-      file = fileArg ?? null;
-    }
-
-    setIsAiLoading(true);
-    setAiMessage(null);
-    try {
-      if (file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        if (text.trim()) {
-          formData.append('message', text.trim());
-        }
-        const res = await apiFetch<ChatResponse>('/dashboard/ai-receipt', {
-          method: 'POST',
-          body: formData,
-        });
-        const isError = !res.reply || res.reply.startsWith('❌') || res.reply.includes('Gagal');
-        setAiMessage({
-          text: res.reply || (isError ? 'Gagal mencatat struk belanja.' : 'Struk berhasil dicatat ke dalam ledger!'),
-          isError,
-        });
-      } else {
-        const res = await apiFetch<ChatResponse>('/dashboard/ai-chat', {
-          method: 'POST',
-          body: JSON.stringify({ message: text.trim() }),
-        });
-        setAiMessage({ text: res.reply || 'Berhasil dicatat ke dalam ledger!' });
-      }
-
-      await refreshAllData();
-    } catch (err: any) {
-      setAiMessage({
-        text: err?.message || 'Gagal memproses input AI. Silakan coba lagi.',
-        isError: true,
-      });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
-  const handleVoiceSubmit = async (blob: Blob, caption?: string) => {
-    setIsAiLoading(true);
-    setAiMessage(null);
-    try {
-      const res = await submitVoice(blob, caption);
-      const isError = !res.reply || res.reply.startsWith('❌') || res.reply.includes('Gagal');
-      setAiMessage({
-        text: res.reply || (isError ? 'Gagal memproses pesan suara.' : 'Pesan suara berhasil dicatat ke dalam ledger!'),
-        isError,
-      });
-      await refreshAllData();
-    } catch (err: any) {
-      setAiMessage({
-        text: err?.message || 'Gagal memproses pesan suara. Silakan coba lagi.',
-        isError: true,
-      });
-    } finally {
-      setIsAiLoading(false);
-    }
   };
 
   const handleDeleteTransaction = async (id: string) => {
@@ -145,20 +70,12 @@ export const DashboardPage: React.FC = () => {
       onOpenCreateAccount={modals.openCreateAccount}
       onOpenSettings={modals.openSettingsModal}
       onQuickCapturePress={() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setChatPrompt('');
+        setActiveView('chat');
       }}
     >
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <h1 className="sr-only">Dashboard Keuangan Rezekify</h1>
-
-        {/* Precision 44px Command Bar */}
-        <QuickCaptureBar
-          onSubmit={handleAiSubmit}
-          onVoiceSubmit={handleVoiceSubmit}
-          isLoading={isAiLoading}
-          toastMessage={aiMessage}
-          onDismissToast={() => setAiMessage(null)}
-        />
 
         {/* In-surface Transaction Error Banner */}
         {activeTxError && (
@@ -195,6 +112,28 @@ export const DashboardPage: React.FC = () => {
             onNavigateToVaults={() => setActiveView('vaults')}
             onOpenCreateAccount={modals.openCreateAccount}
             onOpenSimulateModal={modals.openSimulateModal}
+            onOpenChat={(prompt) => {
+              if (prompt) setChatPrompt(prompt);
+              setActiveView('chat');
+            }}
+          />
+        )}
+
+        {activeView === 'chat' && (
+          <AIChatView
+            initialTelemetry={
+              dashboard.summary
+                ? {
+                    operational_free_cash: dashboard.summary.operational_free_cash,
+                    daily_safe_runway: dashboard.summary.daily_safe_runway,
+                    days_remaining: dashboard.summary.days_remaining,
+                    health_status: dashboard.summary.health_status as any,
+                  }
+                : null
+            }
+            initialPrompt={chatPrompt}
+            onNavigateToLedger={() => setActiveView('ledger')}
+            onDataMutated={refreshAllData}
           />
         )}
 

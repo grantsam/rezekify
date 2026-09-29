@@ -76,6 +76,20 @@ describe('DashboardPage Component', () => {
       }
       return res as any;
     });
+
+    vi.spyOn(apiClient, 'getChatMessages').mockImplementation(async () => []);
+    vi.spyOn(apiClient, 'submitChatMessage').mockImplementation(async () => ({
+      reply: 'Berhasil mencatat pengeluaran bensin Rp 35.000 dari BCA.',
+      message_id: 'msg-1',
+      transaction: {
+        id: 'tx-new',
+        description: 'Bensin 35rb BCA',
+        amount: 35000,
+        account_name: 'BCA Utama',
+        category_name: 'Transportasi',
+        type: 'EXPENSE',
+      },
+    }));
   });
 
   it('renders dashboard with navigation shell and overview cockpit', async () => {
@@ -134,30 +148,46 @@ describe('DashboardPage Component', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /\+ Tambah Vault/i })).toBeInTheDocument();
     });
+
+    // Switch to AI Copilot
+    const chatNavBtn = screen.getAllByRole('button', { name: /AI Copilot/i })[0];
+    fireEvent.click(chatNavBtn);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/tanya atau catat keuangan/i)).toBeInTheDocument();
+    });
   });
 
-  it('handles text submission via QuickCaptureBar to /dashboard/ai-chat', async () => {
-    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string, options?: any) => {
+  it('navigates to AIChatView with pre-filled prompt when clicking AISpotlightHero chip and handles chat submission', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
       if (endpoint === '/dashboard/summary') return mockSummary;
       if (endpoint.startsWith('/transactions')) return mockTransactions;
       if (endpoint === '/accounts') return mockAccounts;
       if (endpoint.includes('/analytics/spending-breakdown')) {
         return { period: 'daily', daily_safe_runway: 100000, total_spent_in_period: 35000, items: [] };
       }
-      if (endpoint === '/dashboard/ai-chat' && options?.method === 'POST') {
-        return { reply: 'Berhasil mencatat pengeluaran bensin Rp 35.000 dari BCA.' };
-      }
       return null;
     });
 
     render(<DashboardPage />);
 
-    const input = screen.getByPlaceholderText(/Ketik mutasi/i);
-    fireEvent.change(input, { target: { value: 'beli bensin 35rb bca' } });
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    await waitFor(() => {
+      expect(screen.getByText('Asisten AI Rezekify')).toBeInTheDocument();
+    });
+
+    const chip = screen.getByRole('button', { name: /🍜 Makan siang 35rb Gopay/i });
+    fireEvent.click(chip);
+
+    // Should switch to AIChatView with prompt populated
+    const omniInput = await screen.findByPlaceholderText(/tanya atau catat keuangan/i);
+    expect(omniInput).toHaveValue('🍜 Makan siang 35rb Gopay');
+
+    // Submit the message
+    const sendBtn = screen.getByRole('button', { name: /Kirim pesan/i });
+    fireEvent.click(sendBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Berhasil mencatat pengeluaran bensin Rp 35.000/i)).toBeInTheDocument();
+      expect(screen.getByText(/Berhasil mencatat pengeluaran bensin Rp 35\.000/i)).toBeInTheDocument();
     });
   });
 

@@ -14,6 +14,7 @@ import { DashboardSummaryResponse, Vault, Account } from '../types/api';
 import { RunwayMetricCard } from './RunwayMetricCard';
 import { ExpenseCharts } from './ExpenseCharts';
 import { UpcomingBillsCard } from './UpcomingBillsCard';
+import { AISpotlightHero } from './AISpotlightHero';
 
 export interface OverviewViewProps {
   summary: DashboardSummaryResponse | null;
@@ -24,6 +25,7 @@ export interface OverviewViewProps {
   onNavigateToVaults: () => void;
   onOpenCreateAccount: () => void;
   onOpenSimulateModal: () => void;
+  onOpenChat?: (prompt?: string) => void;
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
@@ -35,6 +37,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onNavigateToVaults,
   onOpenCreateAccount,
   onOpenSimulateModal,
+  onOpenChat,
 }) => {
   const activeAccounts = accounts.filter((acc) => acc.is_active !== false);
 
@@ -81,6 +84,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </CardBody>
         </Card>
       )}
+
+      {/* AI Spotlight Hero */}
+      <AISpotlightHero onOpenChat={onOpenChat ?? (() => {})} />
 
       {/* 3 Telemetry Hero Tiles */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

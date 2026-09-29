@@ -139,4 +139,30 @@ describe('OverviewView Component', () => {
     fireEvent.click(simBtn);
     expect(handleOpenSimulate).toHaveBeenCalledTimes(1);
   });
+
+  it('renders AISpotlightHero and invokes onOpenChat when prompt chips or copilot button clicked', () => {
+    const handleOpenChat = vi.fn();
+    render(
+      <OverviewView
+        summary={mockSummary}
+        vaults={mockVaults}
+        accounts={mockAccounts}
+        isLoading={false}
+        refreshTrigger={0}
+        onNavigateToVaults={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+        onOpenSimulateModal={vi.fn()}
+        onOpenChat={handleOpenChat}
+      />
+    );
+
+    expect(screen.getByText('Asisten AI Rezekify')).toBeInTheDocument();
+    const promptBtn = screen.getByRole('button', { name: /🍜 Makan siang 35rb Gopay/i });
+    fireEvent.click(promptBtn);
+    expect(handleOpenChat).toHaveBeenCalledWith('🍜 Makan siang 35rb Gopay');
+
+    const openCopilotBtn = screen.getByRole('button', { name: /Buka AI Copilot/i });
+    fireEvent.click(openCopilotBtn);
+    expect(handleOpenChat).toHaveBeenCalledTimes(2);
+  });
 });
