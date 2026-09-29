@@ -1,16 +1,16 @@
 import React from 'react';
 import { Card, CardBody, Button } from '@heroui/react';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Utensils, Receipt, Mic, TrendingUp } from 'lucide-react';
 
 export interface AISpotlightHeroProps {
   onOpenChat: (initialPrompt?: string) => void;
 }
 
 const PROMPT_SUGGESTIONS = [
-  '🍜 Makan siang 35rb Gopay',
-  '📸 Unggah struk kasir',
-  '🎙️ Catat via pesan suara',
-  '📊 Cek jatah aman hari ini',
+  { text: 'Makan siang 35rb Gopay', icon: Utensils },
+  { text: 'Unggah struk kasir', icon: Receipt },
+  { text: 'Catat via pesan suara', icon: Mic },
+  { text: 'Cek jatah aman hari ini', icon: TrendingUp },
 ];
 
 // ponytail: spotlight hero banner for AI copilot with quick prompt suggestions; upgrade with context-aware prompts based on monthly runway or unbudgeted alerts if telemetry rules expand.
@@ -64,16 +64,20 @@ export const AISpotlightHero: React.FC<AISpotlightHeroProps> = ({ onOpenChat }) 
           <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 mr-1 select-none">
             Coba:
           </span>
-          {PROMPT_SUGGESTIONS.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              onClick={() => onOpenChat(prompt)}
-              className="inline-flex items-center px-3 py-1.5 min-h-[38px] rounded-xl text-xs font-medium bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-            >
-              {prompt}
-            </button>
-          ))}
+          {PROMPT_SUGGESTIONS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.text}
+                type="button"
+                onClick={() => onOpenChat(item.text)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[38px] rounded-xl text-xs font-medium bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              >
+                <Icon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                <span>{item.text}</span>
+              </button>
+            );
+          })}
         </div>
       </CardBody>
     </Card>

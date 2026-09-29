@@ -74,14 +74,22 @@ export const DashboardPage: React.FC = () => {
         setActiveView('chat');
       }}
     >
-      <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main
+        className={
+          activeView === 'chat'
+            ? 'p-0 max-w-none w-full h-full flex flex-col'
+            : 'max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6'
+        }
+      >
         <h1 className="sr-only">Dashboard Keuangan Rezekify</h1>
 
         {/* In-surface Transaction Error Banner */}
         {activeTxError && (
           <div
             role="alert"
-            className="p-4 rounded-xl border bg-rose-500/10 border-rose-500/30 text-rose-300 flex items-start justify-between gap-3 text-sm"
+            className={`p-4 rounded-xl border bg-rose-500/10 border-rose-500/30 text-rose-300 flex items-start justify-between gap-3 text-sm ${
+              activeView === 'chat' ? 'm-4' : ''
+            }`}
           >
             <div>
               <p className="font-semibold text-xs uppercase tracking-wider mb-0.5 text-zinc-400">

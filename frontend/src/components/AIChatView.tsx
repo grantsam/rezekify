@@ -24,6 +24,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [telemetry, setTelemetry] = useState<TelemetrySnapshot | null>(initialTelemetry || null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(true);
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [activePrompt, setActivePrompt] = useState<string>(initialPrompt || '');
 
@@ -54,6 +55,10 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         }
       } catch (err) {
         console.error('Failed to load chat messages:', err);
+      } finally {
+        if (isMounted) {
+          setIsHistoryLoading(false);
+        }
       }
     };
     loadHistory();
@@ -116,7 +121,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
       const errorMsg: ChatMessageItem = {
         id: `err-${Date.now()}`,
         role: 'assistant',
-        content: `❌ Gagal memproses permintaan: ${err?.message || 'Terjadi kesalahan sistem.'}`,
+        content: `Gagal memproses permintaan: ${err?.message || 'Terjadi kesalahan sistem.'}`,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -130,8 +135,8 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
 
     const tempUserMsgId = `user-voice-${Date.now()}`;
     const userMsgContent = caption
-      ? `🎤 [Pesan Suara]: ${caption}`
-      : '🎤 [Pesan Suara]';
+      ? `[Pesan Suara]: ${caption}`
+      : '[Pesan Suara]';
 
     const userMsg: ChatMessageItem = {
       id: tempUserMsgId,
@@ -166,7 +171,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
       const errorMsg: ChatMessageItem = {
         id: `err-${Date.now()}`,
         role: 'assistant',
-        content: `❌ Gagal memproses rekaman suara: ${err?.message || 'Terjadi kesalahan sistem.'}`,
+        content: `Gagal memproses rekaman suara: ${err?.message || 'Terjadi kesalahan sistem.'}`,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -212,6 +217,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         <ChatMessageList
           messages={messages}
           isAiLoading={isLoading}
+          isHistoryLoading={isHistoryLoading}
           onCancelTransaction={handleCancelTransaction}
           onViewLedger={onNavigateToLedger}
           onSelectPrompt={(prompt) => setActivePrompt(prompt)}

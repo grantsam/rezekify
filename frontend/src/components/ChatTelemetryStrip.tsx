@@ -37,7 +37,7 @@ export const ChatTelemetryStrip: React.FC<ChatTelemetryStripProps> = ({
           {/* Saldo Bebas */}
           <div className="flex flex-col">
             <span className="text-[10px] uppercase font-medium tracking-wider text-zinc-500">Saldo Bebas</span>
-            <span className="font-semibold text-zinc-100">{formatCurrency(telemetry.operational_free_cash)}</span>
+            <span className="font-semibold font-mono tabular-nums text-zinc-100">{formatCurrency(telemetry.operational_free_cash)}</span>
           </div>
 
           {/* Jatah Aman + Health Badge */}
@@ -52,15 +52,15 @@ export const ChatTelemetryStrip: React.FC<ChatTelemetryStripProps> = ({
                 {telemetry.health_status}
               </span>
             </div>
-            <span className="font-semibold text-zinc-100">
-              {formatCurrency(telemetry.daily_safe_runway)} <span className="text-zinc-500 font-normal">/ hari</span>
+            <span className="font-semibold font-mono tabular-nums text-zinc-100">
+              {formatCurrency(telemetry.daily_safe_runway)} <span className="text-zinc-500 font-normal font-sans">/ hari</span>
             </span>
           </div>
 
           {/* Sisa Siklus */}
           <div className="flex flex-col">
             <span className="text-[10px] uppercase font-medium tracking-wider text-zinc-500">Sisa Siklus</span>
-            <span className="font-semibold text-zinc-200">{telemetry.days_remaining} hari tersisa</span>
+            <span className="font-semibold font-mono tabular-nums text-zinc-200">{telemetry.days_remaining} hari tersisa</span>
           </div>
         </div>
       ) : (

@@ -302,7 +302,7 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
                 type="button"
                 onClick={handleRemoveFile}
                 aria-label="Hapus lampiran"
-                className="p-1 min-w-[28px] min-h-[28px] inline-flex items-center justify-center rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/60 transition-colors"
+                className="p-2 min-w-[38px] min-h-[38px] inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/60 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

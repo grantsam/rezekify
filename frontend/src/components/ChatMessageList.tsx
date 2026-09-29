@@ -6,6 +6,7 @@ import { ChatTransactionCard } from './ChatTransactionCard';
 export interface ChatMessageListProps {
   messages: ChatMessageItem[];
   isAiLoading?: boolean;
+  isHistoryLoading?: boolean;
   onCancelTransaction: (transactionId: string) => Promise<void> | void;
   onViewLedger?: () => void;
   onSelectPrompt?: (prompt: string) => void;
@@ -33,10 +34,39 @@ const formatTime = (isoString?: string): string => {
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   messages,
   isAiLoading = false,
+  isHistoryLoading = false,
   onCancelTransaction,
   onViewLedger,
   onSelectPrompt,
 }) => {
+  if (isHistoryLoading) {
+    return (
+      <div
+        role="status"
+        aria-label="Memuat riwayat percakapan..."
+        className="space-y-4 py-4 animate-pulse"
+      >
+        <div className="flex items-start gap-3 max-w-[80%]">
+          <div className="w-7 h-7 rounded-lg bg-zinc-800 shrink-0" />
+          <div className="space-y-2 flex-1">
+            <div className="h-4 bg-zinc-800 rounded w-3/4" />
+            <div className="h-3 bg-zinc-800/60 rounded w-1/2" />
+          </div>
+        </div>
+        <div className="flex flex-col items-end">
+          <div className="h-10 bg-zinc-800/80 rounded-2xl w-48" />
+        </div>
+        <div className="flex items-start gap-3 max-w-[80%]">
+          <div className="w-7 h-7 rounded-lg bg-zinc-800 shrink-0" />
+          <div className="space-y-2 flex-1">
+            <div className="h-4 bg-zinc-800 rounded w-2/3" />
+            <div className="h-3 bg-zinc-800/60 rounded w-1/3" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (messages.length === 0 && !isAiLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center">
@@ -75,7 +105,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div role="log" aria-live="polite" className="space-y-4">
       {messages.map((msg) => {
         const isUser = msg.role === 'user';
         const formattedTime = formatTime(msg.created_at);

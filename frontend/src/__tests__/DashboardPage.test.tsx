@@ -175,12 +175,12 @@ describe('DashboardPage Component', () => {
       expect(screen.getByText('Asisten AI Rezekify')).toBeInTheDocument();
     });
 
-    const chip = screen.getByRole('button', { name: /🍜 Makan siang 35rb Gopay/i });
+    const chip = screen.getByRole('button', { name: /Makan siang 35rb Gopay/i });
     fireEvent.click(chip);
 
     // Should switch to AIChatView with prompt populated
     const omniInput = await screen.findByPlaceholderText(/tanya atau catat keuangan/i);
-    expect(omniInput).toHaveValue('🍜 Makan siang 35rb Gopay');
+    expect(omniInput).toHaveValue('Makan siang 35rb Gopay');
 
     // Submit the message
     const sendBtn = screen.getByRole('button', { name: /Kirim pesan/i });

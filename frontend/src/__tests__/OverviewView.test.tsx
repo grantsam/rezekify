@@ -157,9 +157,9 @@ describe('OverviewView Component', () => {
     );
 
     expect(screen.getByText('Asisten AI Rezekify')).toBeInTheDocument();
-    const promptBtn = screen.getByRole('button', { name: /🍜 Makan siang 35rb Gopay/i });
+    const promptBtn = screen.getByRole('button', { name: /Makan siang 35rb Gopay/i });
     fireEvent.click(promptBtn);
-    expect(handleOpenChat).toHaveBeenCalledWith('🍜 Makan siang 35rb Gopay');
+    expect(handleOpenChat).toHaveBeenCalledWith('Makan siang 35rb Gopay');
 
     const openCopilotBtn = screen.getByRole('button', { name: /Buka AI Copilot/i });
     fireEvent.click(openCopilotBtn);

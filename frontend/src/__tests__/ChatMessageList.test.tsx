@@ -22,6 +22,19 @@ describe('ChatMessageList Component', () => {
     expect(onSelectPrompt).toHaveBeenCalledWith('Berapa saldo bebas saya hari ini?');
   });
 
+  it('renders loading skeleton when isHistoryLoading is true', () => {
+    render(
+      <ChatMessageList
+        messages={[]}
+        isHistoryLoading={true}
+        onCancelTransaction={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText(/Memuat riwayat percakapan/i)).toBeInTheDocument();
+    expect(screen.queryByText('Asisten Finansial AI')).not.toBeInTheDocument();
+  });
+
   it('renders user and assistant messages with timestamps', () => {
     const messages: ChatMessageItem[] = [
       {

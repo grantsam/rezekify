@@ -56,7 +56,7 @@ export const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({
   }
 
   return (
-    <div className="bg-[#18181b] sm:bg-[#141417] border border-zinc-800 rounded-xl p-3.5 space-y-3 transition-colors shadow-sm max-w-sm">
+    <div className="bg-[#18181b] sm:bg-[#1c1c21] border border-zinc-800/80 rounded-xl p-3.5 space-y-3 transition-colors shadow-sm max-w-sm">
       {/* Category and Account Pills */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -77,7 +77,7 @@ export const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({
 
       {/* Amount and Description */}
       <div>
-        <div className={`text-lg sm:text-xl font-bold tracking-tight ${amountColor}`}>
+        <div className={`text-lg sm:text-xl font-bold font-mono tabular-nums tracking-tight ${amountColor}`}>
           {prefix}{formatCurrency(transaction.amount)}
         </div>
         <p className="text-sm font-medium text-zinc-200 mt-0.5 break-words">
@@ -89,7 +89,7 @@ export const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({
       {transaction.account_balance_after != null && (
         <div className="text-xs text-zinc-400 flex items-center justify-between pt-2 border-t border-zinc-800/70">
           <span>Sisa saldo {transaction.account_name}:</span>
-          <span className="font-semibold text-zinc-200">
+          <span className="font-semibold font-mono tabular-nums text-zinc-200">
             {formatCurrency(transaction.account_balance_after)}
           </span>
         </div>
