@@ -134,9 +134,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
             aria-label="Sedang mengetik..."
             className="rounded-2xl rounded-tl-sm bg-[#141417] border border-zinc-800 px-4 py-3 flex items-center gap-1.5 shadow-sm"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.3s]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.15s]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '300ms' }} />
             <span className="text-xs text-zinc-400 ml-2 font-medium">Sedang menganalisis...</span>
           </div>
         </div>
