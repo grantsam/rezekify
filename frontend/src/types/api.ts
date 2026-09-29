@@ -262,5 +262,40 @@ export interface TelegramPairingCodeResponse {
   pairing_code: string;
 }
 
+export interface TransactionSummary {
+  id: string;
+  amount: number;
+  account_name: string;
+  category_name: string;
+  description: string;
+  type: string; // 'EXPENSE' | 'INCOME' | 'TRANSFER'
+  account_balance_after?: number | null;
+}
+
+export interface TelemetrySnapshot {
+  operational_free_cash: number;
+  daily_safe_runway: number;
+  days_remaining: number;
+  health_status: 'HEALTHY' | 'WARNING' | 'CRITICAL';
+}
+
+export interface EnrichedChatResponse {
+  reply: string;
+  message_id?: string | null;
+  transaction?: TransactionSummary | null;
+  telemetry?: TelemetrySnapshot | null;
+  transcription?: string | null;
+}
+
+export interface ChatMessageItem {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  transaction_id?: string | null;
+  transaction?: TransactionSummary | null;
+  metadata?: Record<string, any> | null;
+  created_at: string;
+}
+
 
 

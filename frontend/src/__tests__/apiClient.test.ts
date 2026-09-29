@@ -26,6 +26,11 @@ import {
   submitVoice,
   refreshAuthToken,
   executeTokenRefresh,
+  getChatMessages,
+  clearChatMessages,
+  submitChatMessage,
+  submitChatReceipt,
+  submitChatVoice,
 } from '../services/apiClient';
 import {
   Account,
@@ -37,6 +42,8 @@ import {
   Category,
   CategoryCreateRequest,
   CategoryUpdateRequest,
+  ChatMessageItem,
+  EnrichedChatResponse,
 } from '../types/api';
 
 describe('apiClient authentication headers and utilities', () => {
@@ -1073,6 +1080,215 @@ describe('submitVoice API Client function', () => {
     expect(body).toBeInstanceOf(FormData);
     expect(body.get('file')).toBeInstanceOf(Blob);
     expect(body.get('message')).toBeNull();
+  });
+});
+
+describe('apiClient chat endpoints', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    setAuthToken('chat-auth-token');
+  });
+
+  it('getChatMessages calls GET /dashboard/ai-chat/messages with query params', async () => {
+    const mockMessages: ChatMessageItem[] = [
+      {
+        id: 'msg-1',
+        role: 'user',
+        content: 'Beli kopi 25rb',
+        created_at: '2026-09-29T10:00:00Z',
+      },
+      {
+        id: 'msg-2',
+        role: 'assistant',
+        content: 'Tercatat: Rp 25.000 via BCA',
+        transaction_id: 'tx-123',
+        transaction: {
+          id: 'tx-123',
+          amount: 25000,
+          account_name: 'BCA',
+          category_name: 'Kopi',
+          description: 'Beli kopi',
+          type: 'EXPENSE',
+          account_balance_after: 500000,
+        },
+        metadata: { source: 'chat' },
+        created_at: '2026-09-29T10:00:01Z',
+      },
+    ];
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockMessages,
+    });
+
+    const res = await getChatMessages(50, 0);
+    expect(res).toEqual(mockMessages);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/dashboard/ai-chat/messages?limit=50&offset=0',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer chat-auth-token',
+        }),
+      })
+    );
+  });
+
+  it('clearChatMessages sends DELETE to /dashboard/ai-chat/messages', async () => {
+    const mockResponse = { status: 'cleared' };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const res = await clearChatMessages();
+    expect(res).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/dashboard/ai-chat/messages',
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer chat-auth-token',
+        }),
+      })
+    );
+  });
+
+  it('submitChatMessage sends POST to /dashboard/ai-chat with JSON message body', async () => {
+    const mockResponse: EnrichedChatResponse = {
+      reply: 'Tercatat: Nasi Padang Rp 20.000',
+      message_id: 'msg-asst-1',
+      transaction: {
+        id: 'tx-2',
+        amount: 20000,
+        account_name: 'Cash',
+        category_name: 'Makanan',
+        description: 'Nasi Padang',
+        type: 'EXPENSE',
+      },
+      telemetry: {
+        operational_free_cash: 1500000,
+        daily_safe_runway: 50000,
+        days_remaining: 30,
+        health_status: 'HEALTHY',
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const res = await submitChatMessage('Makan siang 20rb');
+    expect(res).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/dashboard/ai-chat',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ message: 'Makan siang 20rb' }),
+        headers: expect.objectContaining({
+          Authorization: 'Bearer chat-auth-token',
+          'Content-Type': 'application/json',
+        }),
+      })
+    );
+  });
+
+  it('submitChatReceipt sends POST to /dashboard/ai-receipt with FormData file and optional message', async () => {
+    const mockFile = new File(['fake image data'], 'receipt.jpg', { type: 'image/jpeg' });
+    const mockResponse: EnrichedChatResponse = {
+      reply: 'Struk berhasil diproses: Rp 150.000',
+      message_id: 'msg-receipt-1',
+      transaction: {
+        id: 'tx-receipt-1',
+        amount: 150000,
+        account_name: 'BCA',
+        category_name: 'Belanja',
+        description: 'Superindo',
+        type: 'EXPENSE',
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const res = await submitChatReceipt(mockFile, 'Belanja bulanan');
+    expect(res).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/dashboard/ai-receipt',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer chat-auth-token',
+        }),
+      })
+    );
+
+    const callArgs = (global.fetch as any).mock.calls[0];
+    const body = callArgs[1].body as FormData;
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get('file')).toBeInstanceOf(File);
+    expect(body.get('message')).toBe('Belanja bulanan');
+  });
+
+  it('submitChatReceipt works without optional message', async () => {
+    const mockFile = new File(['fake image data'], 'receipt.png', { type: 'image/png' });
+    const mockResponse: EnrichedChatResponse = {
+      reply: 'Struk diproses',
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const res = await submitChatReceipt(mockFile);
+    expect(res).toEqual(mockResponse);
+
+    const callArgs = (global.fetch as any).mock.calls[0];
+    const body = callArgs[1].body as FormData;
+    expect(body.get('message')).toBeNull();
+  });
+
+  it('submitChatVoice sends POST to /dashboard/ai-voice with FormData and returns EnrichedChatResponse', async () => {
+    const mockBlob = new Blob(['voice-data'], { type: 'audio/webm' });
+    const mockResponse: EnrichedChatResponse = {
+      reply: 'Voice note diproses',
+      transcription: 'Beli bensin 30rb',
+      message_id: 'msg-voice-1',
+      transaction: {
+        id: 'tx-voice-1',
+        amount: 30000,
+        account_name: 'Cash',
+        category_name: 'Bensin',
+        description: 'Beli bensin',
+        type: 'EXPENSE',
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const res = await submitChatVoice(mockBlob, 'caption test');
+    expect(res).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/dashboard/ai-voice',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer chat-auth-token',
+        }),
+      })
+    );
+
+    const callArgs = (global.fetch as any).mock.calls[0];
+    const body = callArgs[1].body as FormData;
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get('file')).toBeInstanceOf(Blob);
+    expect(body.get('message')).toBe('caption test');
   });
 });
 

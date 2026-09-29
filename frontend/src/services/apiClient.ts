@@ -24,6 +24,8 @@ import {
   UserProfileResponse,
   UserProfileUpdateRequest,
   VoiceChatResponse,
+  ChatMessageItem,
+  EnrichedChatResponse,
 } from '../types/api';
 
 const TOKEN_KEY = 'rezekify_auth_token';
@@ -302,6 +304,53 @@ export async function deactivateAccount(id: string): Promise<{ detail: string }>
   });
 }
 
+export async function getChatMessages(
+  limit: number = 50,
+  offset: number = 0
+): Promise<ChatMessageItem[]> {
+  const query = new URLSearchParams();
+  query.append('limit', String(limit));
+  query.append('offset', String(offset));
+  return apiFetch<ChatMessageItem[]>(`/dashboard/ai-chat/messages?${query.toString()}`);
+}
+
+export async function clearChatMessages(): Promise<{ status: string }> {
+  return apiFetch<{ status: string }>('/dashboard/ai-chat/messages', {
+    method: 'DELETE',
+  });
+}
+
+export async function submitChatMessage(message: string): Promise<EnrichedChatResponse> {
+  return apiFetch<EnrichedChatResponse>('/dashboard/ai-chat', {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  });
+}
+
+export async function submitChatReceipt(file: File, message?: string): Promise<EnrichedChatResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (message) {
+    formData.append('message', message);
+  }
+  return apiFetch<EnrichedChatResponse>('/dashboard/ai-receipt', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export async function submitChatVoice(blob: Blob, caption?: string): Promise<EnrichedChatResponse> {
+  const formData = new FormData();
+  formData.append('file', blob, 'voice-note.webm');
+  if (caption) {
+    formData.append('message', caption);
+  }
+  return apiFetch<EnrichedChatResponse>('/dashboard/ai-voice', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 export const apiClient = {
   updateAccount,
   deactivateAccount,
@@ -322,6 +371,11 @@ export const apiClient = {
   getTelegramPairingCode,
   updateUserProfile,
   submitVoice,
+  getChatMessages,
+  clearChatMessages,
+  submitChatMessage,
+  submitChatReceipt,
+  submitChatVoice,
   apiFetch,
   setAuthToken,
   getAuthToken,
