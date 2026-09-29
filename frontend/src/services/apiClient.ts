@@ -176,6 +176,12 @@ export async function updateTransaction(
   });
 }
 
+export async function deleteTransaction(id: string): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>(`/transactions/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function getTransactions(
   params?: TransactionFilterParams
 ): Promise<PaginatedTransactionsResponse> {
@@ -356,6 +362,7 @@ export const apiClient = {
   deactivateAccount,
   getTransactions,
   updateTransaction,
+  deleteTransaction,
   getVaults,
   toggleVaultLock,
   updateVault,

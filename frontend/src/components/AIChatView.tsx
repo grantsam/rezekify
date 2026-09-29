@@ -1,0 +1,233 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { TelemetrySnapshot, ChatMessageItem } from '../types/api';
+import * as apiClient from '../services/apiClient';
+import { ChatTelemetryStrip } from './ChatTelemetryStrip';
+import { ChatMessageList } from './ChatMessageList';
+import { ChatOmniInput } from './ChatOmniInput';
+
+export interface AIChatViewProps {
+  initialTelemetry?: TelemetrySnapshot | null;
+  initialPrompt?: string;
+  onNavigateToLedger: () => void;
+  onDataMutated: () => Promise<void> | void;
+  providerLabel?: string;
+}
+
+// ponytail: dedicated AI Copilot conversation view with persistent telemetry strip, enriched transaction feeds, and multimodal capture; upgrade to multi-session chats if conversation tabs are implemented.
+export const AIChatView: React.FC<AIChatViewProps> = ({
+  initialTelemetry = null,
+  initialPrompt,
+  onNavigateToLedger,
+  onDataMutated,
+  providerLabel,
+}) => {
+  const [messages, setMessages] = useState<ChatMessageItem[]>([]);
+  const [telemetry, setTelemetry] = useState<TelemetrySnapshot | null>(initialTelemetry || null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [activePrompt, setActivePrompt] = useState<string>(initialPrompt || '');
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sync initialPrompt prop if it changes
+  useEffect(() => {
+    if (initialPrompt !== undefined) {
+      setActivePrompt(initialPrompt);
+    }
+  }, [initialPrompt]);
+
+  // Sync initialTelemetry prop if it changes
+  useEffect(() => {
+    if (initialTelemetry) {
+      setTelemetry(initialTelemetry);
+    }
+  }, [initialTelemetry]);
+
+  // Load chat history on mount
+  useEffect(() => {
+    let isMounted = true;
+    const loadHistory = async () => {
+      try {
+        const history = await apiClient.getChatMessages();
+        if (isMounted && Array.isArray(history)) {
+          setMessages(history);
+        }
+      } catch (err) {
+        console.error('Failed to load chat messages:', err);
+      }
+    };
+    loadHistory();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Smooth scroll to latest message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+  }, [messages, isLoading]);
+
+  const handleSubmit = async (text: string, file: File | null) => {
+    const trimmed = text.trim();
+    if (!trimmed && !file) return;
+
+    setActivePrompt('');
+
+    const tempUserMsgId = `user-${Date.now()}`;
+    const userMsgContent = file
+      ? (trimmed ? `${trimmed}\n[Struk: ${file.name}]` : `[Struk: ${file.name}]`)
+      : trimmed;
+
+    const userMsg: ChatMessageItem = {
+      id: tempUserMsgId,
+      role: 'user',
+      content: userMsgContent,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsLoading(true);
+
+    try {
+      let res;
+      if (file) {
+        res = await apiClient.submitChatReceipt(file, trimmed || undefined);
+      } else {
+        res = await apiClient.submitChatMessage(trimmed);
+      }
+
+      const assistantMsg: ChatMessageItem = {
+        id: res.message_id || `asst-${Date.now()}`,
+        role: 'assistant',
+        content: res.reply,
+        transaction: res.transaction,
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      if (res.telemetry) {
+        setTelemetry(res.telemetry);
+      }
+      if (res.transaction || res.telemetry) {
+        await onDataMutated();
+      }
+    } catch (err: any) {
+      const errorMsg: ChatMessageItem = {
+        id: `err-${Date.now()}`,
+        role: 'assistant',
+        content: `❌ Gagal memproses permintaan: ${err?.message || 'Terjadi kesalahan sistem.'}`,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVoiceSubmit = async (blob: Blob, caption?: string) => {
+    setActivePrompt('');
+
+    const tempUserMsgId = `user-voice-${Date.now()}`;
+    const userMsgContent = caption
+      ? `🎤 [Pesan Suara]: ${caption}`
+      : '🎤 [Pesan Suara]';
+
+    const userMsg: ChatMessageItem = {
+      id: tempUserMsgId,
+      role: 'user',
+      content: userMsgContent,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsLoading(true);
+
+    try {
+      const res = await apiClient.submitChatVoice(blob, caption);
+
+      const assistantMsg: ChatMessageItem = {
+        id: res.message_id || `asst-${Date.now()}`,
+        role: 'assistant',
+        content: res.reply,
+        transaction: res.transaction,
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      if (res.telemetry) {
+        setTelemetry(res.telemetry);
+      }
+      if (res.transaction || res.telemetry) {
+        await onDataMutated();
+      }
+    } catch (err: any) {
+      const errorMsg: ChatMessageItem = {
+        id: `err-${Date.now()}`,
+        role: 'assistant',
+        content: `❌ Gagal memproses rekaman suara: ${err?.message || 'Terjadi kesalahan sistem.'}`,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetChat = async () => {
+    setIsResetting(true);
+    try {
+      await apiClient.clearChatMessages();
+      setMessages([]);
+    } catch (err) {
+      console.error('Failed to clear chat history:', err);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleCancelTransaction = async (transactionId: string) => {
+    try {
+      await apiClient.deleteTransaction(transactionId);
+      await onDataMutated();
+    } catch (err) {
+      console.error('Failed to cancel transaction:', err);
+      throw err;
+    }
+  };
+
+  return (
+    <div className="h-[calc(100vh-4rem)] md:h-screen flex flex-col min-w-0 bg-[#0c0c0e]">
+      {/* Sticky Telemetry Strip */}
+      <ChatTelemetryStrip
+        telemetry={telemetry}
+        onResetChat={handleResetChat}
+        isResetting={isResetting}
+        providerLabel={providerLabel}
+      />
+
+      {/* Middle Scrollable Feed */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <ChatMessageList
+          messages={messages}
+          isAiLoading={isLoading}
+          onCancelTransaction={handleCancelTransaction}
+          onViewLedger={onNavigateToLedger}
+          onSelectPrompt={(prompt) => setActivePrompt(prompt)}
+        />
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Pinned Bottom Omni Input */}
+      <div className="p-3 sm:p-4 bg-[#0c0c0e] border-t border-zinc-800/80">
+        <ChatOmniInput
+          onSubmit={handleSubmit}
+          onVoiceSubmit={handleVoiceSubmit}
+          isLoading={isLoading}
+          initialPrompt={activePrompt}
+        />
+      </div>
+    </div>
+  );
+};
