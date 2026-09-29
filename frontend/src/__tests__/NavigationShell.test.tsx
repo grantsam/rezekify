@@ -56,6 +56,11 @@ describe('Navigation Shell Components', () => {
     fireEvent.click(screen.getByText('Buku Besar'));
     expect(handleViewChange).toHaveBeenCalledWith('ledger');
 
+    // AI Copilot navigation item
+    expect(screen.getByRole('button', { name: /AI Copilot/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /AI Copilot/i }));
+    expect(handleViewChange).toHaveBeenCalledWith('chat');
+
     // Click add account
     fireEvent.click(screen.getByRole('button', { name: /\+ Rekening/i }));
     expect(handleOpenCreateAccount).toHaveBeenCalledTimes(1);
@@ -95,7 +100,7 @@ describe('Navigation Shell Components', () => {
     expect(screen.queryByText('Ringkasan')).not.toBeInTheDocument();
   });
 
-  it('renders BottomDock with 4 tabs and elevated center quick capture button', () => {
+  it('renders BottomDock with 4 tabs and elevated center AI Copilot button with onQuickCapturePress', () => {
     const handleViewChange = vi.fn();
     const handleQuickCapture = vi.fn();
 
@@ -112,7 +117,7 @@ describe('Navigation Shell Components', () => {
     expect(screen.getByRole('button', { name: /Vaults/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Pengaturan/i })).toBeInTheDocument();
 
-    const quickCaptureBtn = screen.getByRole('button', { name: /Quick Capture/i });
+    const quickCaptureBtn = screen.getByRole('button', { name: /ai copilot/i });
     expect(quickCaptureBtn).toBeInTheDocument();
 
     fireEvent.click(quickCaptureBtn);
@@ -120,6 +125,40 @@ describe('Navigation Shell Components', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Vaults/i }));
     expect(handleViewChange).toHaveBeenCalledWith('vaults');
+  });
+
+  it('renders Sidebar "AI Copilot" navigation item and triggers onViewChange("chat") when clicked', () => {
+    const handleViewChange = vi.fn();
+    render(
+      <Sidebar
+        activeView="overview"
+        onViewChange={handleViewChange}
+        accounts={[]}
+        user={null}
+        onLogout={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+      />
+    );
+
+    const copilotBtn = screen.getByRole('button', { name: /ai copilot/i });
+    expect(copilotBtn).toBeInTheDocument();
+    fireEvent.click(copilotBtn);
+    expect(handleViewChange).toHaveBeenCalledWith('chat');
+  });
+
+  it('triggers onViewChange("chat") when BottomDock center elevated button is clicked without onQuickCapturePress', () => {
+    const handleViewChange = vi.fn();
+    render(
+      <BottomDock
+        activeView="overview"
+        onViewChange={handleViewChange}
+      />
+    );
+
+    const copilotBtn = screen.getByRole('button', { name: /ai copilot/i });
+    expect(copilotBtn).toBeInTheDocument();
+    fireEvent.click(copilotBtn);
+    expect(handleViewChange).toHaveBeenCalledWith('chat');
   });
 
   it('renders AppLayout with Sidebar, BottomDock, and children (Review Focus 5)', () => {

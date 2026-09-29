@@ -1,10 +1,10 @@
 import React from 'react';
 import { Button } from '@heroui/react';
-import { LayoutDashboard, ReceiptText, ShieldCheck, Settings, Plus } from 'lucide-react';
+import { LayoutDashboard, ReceiptText, ShieldCheck, Settings, Sparkles } from 'lucide-react';
 
 export interface BottomDockProps {
-  activeView: 'overview' | 'ledger' | 'vaults' | 'settings';
-  onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'settings') => void;
+  activeView: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings';
+  onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings') => void;
   onQuickCapturePress?: () => void;
 }
 
@@ -42,15 +42,21 @@ export const BottomDock: React.FC<BottomDockProps> = ({
         <span className="text-[10px]">Buku Besar</span>
       </Button>
 
-      {/* Elevated center quick capture button */}
+      {/* Elevated center AI Copilot button */}
       <div className="relative -top-3">
         <Button
           isIconOnly
-          onPress={onQuickCapturePress}
-          aria-label="Quick Capture"
-          className="w-12 h-12 min-w-[48px] rounded-full bg-white text-zinc-950 shadow-lg shadow-white/10 hover:bg-zinc-200 active:scale-95 transition-transform flex items-center justify-center border border-zinc-200"
+          onPress={() => {
+            if (onQuickCapturePress) {
+              onQuickCapturePress();
+            } else {
+              onViewChange('chat');
+            }
+          }}
+          aria-label="AI Copilot"
+          className="w-12 h-12 min-w-[48px] rounded-full bg-emerald-500 hover:bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform flex items-center justify-center border border-emerald-400/50"
         >
-          <Plus className="w-6 h-6 stroke-[2.5]" />
+          <Sparkles className="w-6 h-6" />
         </Button>
       </div>
 

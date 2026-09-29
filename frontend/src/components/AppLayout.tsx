@@ -4,8 +4,8 @@ import { BottomDock } from './BottomDock';
 import { Account, User } from '../types/api';
 
 export interface AppLayoutProps {
-  activeView: 'overview' | 'ledger' | 'vaults' | 'settings';
-  onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'settings') => void;
+  activeView: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings';
+  onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings') => void;
   accounts: Account[];
   transactionCount?: number;
   user: User | null;

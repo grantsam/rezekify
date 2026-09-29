@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@heroui/react';
 import {
   LayoutDashboard,
+  Sparkles,
   ReceiptText,
   ShieldCheck,
   Settings,
@@ -13,8 +14,8 @@ import {
 import { Account, User } from '../types/api';
 
 export interface SidebarProps {
-  activeView: 'overview' | 'ledger' | 'vaults' | 'settings';
-  onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'settings') => void;
+  activeView: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings';
+  onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings') => void;
   accounts: Account[];
   transactionCount?: number;
   user: User | null;
@@ -48,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems = [
     { id: 'overview' as const, label: 'Ringkasan', icon: LayoutDashboard },
+    { id: 'chat' as const, label: 'AI Copilot', icon: Sparkles },
     {
       id: 'ledger' as const,
       label: 'Buku Besar',

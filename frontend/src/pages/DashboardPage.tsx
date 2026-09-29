@@ -27,7 +27,7 @@ export const DashboardPage: React.FC = () => {
   const ledger = useTransactionsLedger();
   const dashboard = useDashboardData();
 
-  const [activeView, setActiveView] = useState<'overview' | 'ledger' | 'vaults' | 'settings'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'ledger' | 'vaults' | 'chat' | 'settings'>('overview');
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
   const [aiMessage, setAiMessage] = useState<{ text: string; isError?: boolean } | null>(null);
   const [txErrorMessage, setTxErrorMessage] = useState<string | null>(null);
