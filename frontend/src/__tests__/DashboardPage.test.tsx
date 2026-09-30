@@ -108,7 +108,7 @@ describe('DashboardPage Component', () => {
     expect(screen.getAllByText(/Rezekify/i)[0]).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getAllByText(/DAILY SAFE RUNWAY/i)[0]).toBeInTheDocument();
+      expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
       expect(screen.getAllByText(/Rp 100\.000/i)[0]).toBeInTheDocument();
       expect(screen.getByText(/Internet & WiFi/i)).toBeInTheDocument();
     });
@@ -129,7 +129,7 @@ describe('DashboardPage Component', () => {
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('DAILY SAFE RUNWAY')).toBeInTheDocument();
+      expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
     });
 
     // Switch to Buku Besar
@@ -205,7 +205,7 @@ describe('DashboardPage Component', () => {
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('DAILY SAFE RUNWAY')).toBeInTheDocument();
+      expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
     });
 
     const openBtn = screen.getByRole('button', { name: /\+ Rekening/i });
