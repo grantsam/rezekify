@@ -50,6 +50,7 @@ class RunwayReport(NamedTuple):
     daily_safe_runway: Decimal
     health_status: str
     upcoming_bills: List[UpcomingBill]
+    today_spent: Decimal = Decimal("0.00")
 
 
 class SimulationReport(NamedTuple):
@@ -206,6 +207,20 @@ class RunwayService:
 
         upcoming_bills = self.get_upcoming_bills(user_id=user_id, today=today)
 
+        today_str = today.isoformat()
+        today_spent = (
+            self.db.query(func.coalesce(func.sum(LedgerEntry.amount), Decimal("0.00")))
+            .join(Transaction, LedgerEntry.transaction_id == Transaction.id)
+            .outerjoin(Category, LedgerEntry.category_id == Category.id)
+            .filter(
+                Transaction.user_id == user_id,
+                LedgerEntry.entry_type == EntryType.DEBIT,
+                or_(Category.category_type == CategoryType.EXPENSE, Category.id.is_(None)),
+                func.date(Transaction.transaction_date) == today_str,
+            )
+            .scalar()
+        ) or Decimal("0.00")
+
         report = RunwayReport(
             total_liquid_cash=liquid_sum,
             vault_locked_cash=vault_sum,
@@ -214,6 +229,7 @@ class RunwayService:
             daily_safe_runway=daily_safe,
             health_status=status,
             upcoming_bills=upcoming_bills,
+            today_spent=today_spent,
         )
         _runway_cache[(user_id, today)] = (report, time.time())
         return report
