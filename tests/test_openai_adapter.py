@@ -3,7 +3,14 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from rezekify.agent.providers.base import AuthError, BYOKConfig, RateLimitError
+from rezekify.agent.providers.base import (
+    AuthError,
+    BYOKConfig,
+    CapabilityUnsupported,
+    ProviderError,
+    ProviderTimeoutError,
+    RateLimitError,
+)
 from rezekify.agent.providers.openai_compatible import OpenAICompatibleAdapter
 
 
@@ -103,4 +110,49 @@ def test_process_input_empty_choices_returns_unknown():
         out = adapter.process_input("halo")
     assert out["action"] == "unknown"
     assert "choices" in out["raw"]
+
+
+def test_process_input_maps_504_to_providetimeouterror():
+    adapter = OpenAICompatibleAdapter(_cfg())
+    with patch("httpx.Client.post", return_value=_chat_response("Gateway Timeout", status_code=504)):
+        with pytest.raises(ProviderTimeoutError) as exc_info:
+            adapter.process_input("halo")
+        assert "504" in str(exc_info.value)
+
+
+def test_process_input_httpx_timeout_maps_to_providetimeouterror():
+    adapter = OpenAICompatibleAdapter(_cfg())
+    with patch("httpx.Client.post", side_effect=httpx.ReadTimeout("Read timed out")):
+        with pytest.raises(ProviderTimeoutError) as exc_info:
+            adapter.process_input("halo")
+        assert "timeout" in str(exc_info.value).lower()
+
+
+def test_process_input_400_with_vision_error_maps_to_capabilityunsupported():
+    adapter = OpenAICompatibleAdapter(_cfg(model="deepseek-chat"))
+    err_resp = httpx.Response(
+        status_code=400,
+        text="The model deepseek-chat does not support image input.",
+        request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+    )
+    with patch("httpx.Client.post", return_value=err_resp):
+        with pytest.raises(CapabilityUnsupported) as exc_info:
+            adapter.process_input("struk", image_bytes=b"bytes")
+        assert "deepseek-chat" in str(exc_info.value)
+        assert "gambar/vision" in str(exc_info.value)
+
+
+def test_process_input_400_generic_maps_to_providererror():
+    adapter = OpenAICompatibleAdapter(_cfg())
+    err_resp = httpx.Response(
+        status_code=400,
+        text="Bad request format",
+        request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+    )
+    with patch("httpx.Client.post", return_value=err_resp):
+        with pytest.raises(ProviderError) as exc_info:
+            adapter.process_input("halo")
+        assert exc_info.value.status_code == 400
+        assert "Bad request format" in exc_info.value.message
+
 

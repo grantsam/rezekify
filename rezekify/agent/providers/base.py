@@ -13,6 +13,19 @@ class CapabilityUnsupported(Exception):
     """Raised when a protocol/endpoint does not support a requested modality."""
 
 
+class ProviderTimeoutError(Exception):
+    """Raised when a BYOK endpoint times out or returns 502/503/504."""
+
+
+class ProviderError(Exception):
+    """Raised on non-auth/rate HTTP errors from a BYOK endpoint."""
+
+    def __init__(self, status_code: int, message: str = ""):
+        super().__init__(f"HTTP {status_code}: {message}")
+        self.status_code = status_code
+        self.message = message
+
+
 class AuthError(Exception):
     """Raised on HTTP 401 from a BYOK endpoint."""
 

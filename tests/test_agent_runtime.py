@@ -457,7 +457,9 @@ def test_react_agent_process_audio_byok_unsupported_capability():
         side_effect=CapabilityUnsupported("no audio"),
     ):
         res = agent.process_audio(b"audio", mime_type="audio/webm")
-        assert res == {"action": "byok_error", "reason": "unsupported_capability"}
+        assert res["action"] == "byok_error"
+        assert res["reason"] == "unsupported_capability"
+        assert res["detail"] == "no audio"
 
 
 
