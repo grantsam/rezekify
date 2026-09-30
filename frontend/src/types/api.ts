@@ -92,6 +92,7 @@ export interface DashboardSummaryResponse {
   operational_free_cash: number;
   days_remaining: number;
   daily_safe_runway: number;
+  today_spent?: number;
   health_status: HealthStatus;
   upcoming_bills: UpcomingBill[];
 }
@@ -110,9 +111,14 @@ export interface Transaction {
   description: string;
   source_channel: string;
   transaction_date: string;
+  created_at?: string;
   raw_input_text?: string | null;
   receipt_image_url?: string | null;
   ledger_entries?: LedgerEntry[];
+  amount?: number;
+  type?: 'EXPENSE' | 'INCOME' | 'TRANSFER';
+  category_name?: string | null;
+  account_name?: string | null;
 }
 
 export interface PaginatedTransactionsResponse {

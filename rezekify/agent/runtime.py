@@ -12,6 +12,8 @@ from rezekify.agent.providers import (
     AuthError,
     BYOKConfig,
     CapabilityUnsupported,
+    ProviderError,
+    ProviderTimeoutError,
     RateLimitError,
     extract_json,
     get_adapter,
@@ -83,10 +85,14 @@ class ReActAgent:
             return {"action": "byok_error", "status_code": 401}
         except RateLimitError:
             return {"action": "byok_error", "status_code": 429}
-        except CapabilityUnsupported:
-            return {"action": "byok_error", "reason": "unsupported_capability"}
-        except Exception:
-            return {"action": "byok_error"}
+        except CapabilityUnsupported as e:
+            return {"action": "byok_error", "reason": "unsupported_capability", "detail": str(e)}
+        except ProviderTimeoutError as e:
+            return {"action": "byok_error", "reason": "timeout", "detail": str(e), "model": getattr(self.byok, "model", "")}
+        except ProviderError as e:
+            return {"action": "byok_error", "status_code": e.status_code, "detail": e.message, "model": getattr(self.byok, "model", "")}
+        except Exception as e:
+            return {"action": "byok_error", "detail": str(e)}
 
     def _byok_process_audio(
         self, audio_bytes: bytes, mime_type: str = "audio/webm", text_context: Optional[str] = None
@@ -99,10 +105,14 @@ class ReActAgent:
             return {"action": "byok_error", "status_code": 401}
         except RateLimitError:
             return {"action": "byok_error", "status_code": 429}
-        except CapabilityUnsupported:
-            return {"action": "byok_error", "reason": "unsupported_capability"}
-        except Exception:
-            return {"action": "byok_error"}
+        except CapabilityUnsupported as e:
+            return {"action": "byok_error", "reason": "unsupported_capability", "detail": str(e)}
+        except ProviderTimeoutError as e:
+            return {"action": "byok_error", "reason": "timeout", "detail": str(e), "model": getattr(self.byok, "model", "")}
+        except ProviderError as e:
+            return {"action": "byok_error", "status_code": e.status_code, "detail": e.message, "model": getattr(self.byok, "model", "")}
+        except Exception as e:
+            return {"action": "byok_error", "detail": str(e)}
 
     def process_input(
         self,

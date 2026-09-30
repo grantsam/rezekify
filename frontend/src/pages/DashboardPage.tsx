@@ -115,8 +115,10 @@ export const DashboardPage: React.FC = () => {
             summary={dashboard.summary}
             vaults={dashboard.vaults}
             accounts={dashboard.accounts}
+            transactions={ledger.transactions}
             isLoading={dashboard.isLoading}
             refreshTrigger={dashboard.refreshTrigger}
+            onNavigateToLedger={() => setActiveView('ledger')}
             onNavigateToVaults={() => setActiveView('vaults')}
             onOpenCreateAccount={modals.openCreateAccount}
             onOpenSimulateModal={modals.openSimulateModal}

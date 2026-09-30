@@ -492,6 +492,67 @@ def test_handle_message_byok_429_error_feedback(db_session, sample_user):
     assert "Kuota kunci API AI kustom Anda telah habis" in reply
 
 
+def test_handle_message_byok_timeout_error_feedback(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "byok_error",
+            "reason": "timeout",
+            "model": "deepseek-chat",
+            "detail": "HTTP 504 Gateway Timeout / Service Unavailable",
+        }
+    )
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="struk", image_bytes=b"bytes")
+    assert "deepseek-chat" in reply
+    assert "batas waktu tunggu (Timeout/504)" in reply
+    assert "Silakan gunakan model yang mendukung vision atau gunakan input teks." in reply
+
+
+def test_handle_message_byok_unsupported_capability_with_detail(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "byok_error",
+            "reason": "unsupported_capability",
+            "detail": "Model 'deepseek-chat' tidak mendukung input gambar/vision.",
+        }
+    )
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="struk", image_bytes=b"bytes")
+    assert "Model 'deepseek-chat' tidak mendukung input gambar/vision." in reply
+
+
+def test_handle_message_byok_provider_error_with_vision_detail(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "byok_error",
+            "status_code": 400,
+            "detail": "image input is unsupported",
+            "model": "my-text-model",
+        }
+    )
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="struk", image_bytes=b"bytes")
+    assert "my-text-model" in reply
+    assert "tidak mendukung input gambar/vision" in reply
+    assert "gpt-4o" in reply
+
+
+def test_handle_message_byok_generic_provider_error(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={
+            "action": "byok_error",
+            "status_code": 500,
+            "detail": "Internal server crash",
+            "model": "custom-model",
+        }
+    )
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="test")
+    assert "HTTP 500" in reply
+    assert "Terjadi kendala pada endpoint AI kustom Anda" in reply
+
+
+
 def test_resolve_or_create_category_sanitizes_wildcards(db_session):
     from uuid import uuid4
     from rezekify.db.models import Category, CategoryType, User

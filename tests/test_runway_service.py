@@ -479,6 +479,34 @@ def test_unlocked_vault_not_counted_in_locked_cash(db_session, sample_user):
     assert report.operational_free_cash == Decimal("800000.00")
 
 
+def test_calculate_runway_includes_today_spent(db_session, sample_user):
+    from datetime import date, datetime
+    from decimal import Decimal
+    from rezekify.services.ledger import LedgerService
+    from rezekify.services.runway import RunwayService
+    from rezekify.db.models import Account, AccountType
+
+    acc = Account(user_id=sample_user.id, name="Kas", account_type=AccountType.CASH, current_balance=Decimal("500000.00"))
+    db_session.add(acc)
+    db_session.commit()
+
+    ledger = LedgerService(db_session)
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("45000.00"),
+        description="Makan siang",
+        transaction_date=datetime.now(),
+    )
+
+    runway_service = RunwayService(db_session)
+    report = runway_service.calculate_runway(user_id=sample_user.id, today=date.today())
+    assert hasattr(report, "today_spent")
+    assert report.today_spent == Decimal("45000.00")
+
+
+
 def test_runway_month_end_cycle_day_short_month(db_session, sample_user):
     """Verifies that monthly_cycle_day=31 on Feb 20 correctly caps at 28 days returning 8 days remaining."""
     sample_user.monthly_cycle_day = 31

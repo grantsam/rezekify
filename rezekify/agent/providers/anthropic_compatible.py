@@ -9,6 +9,8 @@ from rezekify.agent.providers.base import (
     AuthError,
     BYOKConfig,
     CapabilityUnsupported,
+    ProviderError,
+    ProviderTimeoutError,
     RateLimitError,
     extract_json,
 )
@@ -31,12 +33,34 @@ class AnthropicCompatibleAdapter:
             "content-type": "application/json",
         }
 
-    @staticmethod
-    def _raise_for_auth_rate(resp: httpx.Response) -> None:
+    def _raise_for_http_error(self, resp: httpx.Response) -> None:
         if resp.status_code == 401:
             raise AuthError("401 Unauthorized")
         if resp.status_code == 429:
             raise RateLimitError("429 Too Many Requests")
+        if resp.status_code in (502, 503, 504):
+            raise ProviderTimeoutError(
+                f"HTTP {resp.status_code} Gateway Timeout / Service Unavailable"
+            )
+        if resp.status_code == 400:
+            err_text = resp.text.lower()
+            if any(
+                phrase in err_text
+                for phrase in (
+                    "vision",
+                    "image",
+                    "multimodal",
+                    "does not support image",
+                    "not support image",
+                    "image_url",
+                )
+            ):
+                raise CapabilityUnsupported(
+                    f"Model '{self.config.model}' tidak mendukung input gambar/vision."
+                )
+            raise ProviderError(status_code=400, message=resp.text)
+        if resp.status_code >= 400:
+            raise ProviderError(status_code=resp.status_code, message=resp.text)
 
     def process_input(
         self,
@@ -60,17 +84,20 @@ class AnthropicCompatibleAdapter:
             "system": SYSTEM_PROMPT,
             "messages": [{"role": "user", "content": content}],
         }
-        with httpx.Client(timeout=self.timeout) as client:
-            resp = client.post(
-                f"{self.config.base_url}/v1/messages",
-                json=payload,
-                headers=self._headers(),
-            )
-            self._raise_for_auth_rate(resp)
-            resp.raise_for_status()
-            blocks = resp.json().get("content", [])
-            text_out = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
-            return extract_json(text_out)
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                resp = client.post(
+                    f"{self.config.base_url}/v1/messages",
+                    json=payload,
+                    headers=self._headers(),
+                )
+                self._raise_for_http_error(resp)
+                resp.raise_for_status()
+                blocks = resp.json().get("content", [])
+                text_out = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+                return extract_json(text_out)
+        except httpx.TimeoutException as e:
+            raise ProviderTimeoutError("Koneksi ke endpoint AI kustom mengalami timeout.") from e
 
     def process_audio(
         self,

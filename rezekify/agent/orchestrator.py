@@ -154,11 +154,19 @@ class AgentOrchestrator:
 
         if action == "byok_error":
             reason = entities.get("reason")
+            detail = entities.get("detail", "")
+            model_name = entities.get("model", "")
             if reason == "unsupported_capability":
                 reply = (
-                    "❌ Endpoint AI kustom Anda tidak mendukung jenis input ini "
-                    "(misalnya audio pada protokol Anthropic). Silakan gunakan input teks atau gambar, "
-                    "atau ganti protokol/endpoint di menu Pengaturan."
+                    f"❌ {detail}"
+                    if detail
+                    else "❌ Endpoint AI kustom Anda tidak mendukung jenis input ini. Silakan gunakan model yang mendukung vision atau gunakan input teks."
+                )
+            elif reason == "timeout":
+                reply = (
+                    f"⏱️ Permintaan ke endpoint AI kustom Anda ({model_name or 'server'}) mengalami batas waktu tunggu (Timeout/504). "
+                    "Hal ini biasanya terjadi jika model tidak mendukung input gambar atau server sedang sibuk. "
+                    "Silakan gunakan model yang mendukung vision atau gunakan input teks."
                 )
             else:
                 status_code = entities.get("status_code", 400)
@@ -170,7 +178,13 @@ class AgentOrchestrator:
                         "Silakan periksa kuota Anda di dashboard provider atau nonaktifkan BYOK untuk menggunakan kuota bersama."
                     )
                 else:
-                    reply = "❌ Terjadi kendala pada kunci API AI kustom Anda. Silakan periksa di menu Pengaturan."
+                    if detail and any(w in detail.lower() for w in ("image", "vision", "multimodal", "unsupported")):
+                        reply = (
+                            f"❌ Model AI kustom Anda ({model_name or 'saat ini'}) tidak mendukung input gambar/vision. "
+                            "Silakan ganti dengan model yang mendukung vision (seperti gpt-4o, gemini-1.5-flash) atau gunakan input teks."
+                        )
+                    else:
+                        reply = f"❌ Terjadi kendala pada endpoint AI kustom Anda (HTTP {status_code}). Silakan periksa di menu Pengaturan."
             return {
                 "reply": reply,
                 "transaction_id": None,
