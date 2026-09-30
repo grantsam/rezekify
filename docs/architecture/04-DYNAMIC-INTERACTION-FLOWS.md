@@ -1,6 +1,6 @@
-# Rezekify — Dynamic Interaction Flows & Sequence Specifications
+# Rezekify — Dynamic Interaction Flows &amp; Sequence Specifications
 
-**Document ID:** ARCH-004 | **Version:** 1.0.0 | **Framework:** Concurrency Models, Sequence Diagrams & FSM  
+**Document ID:** ARCH-004 | **Version:** 1.0.0 | **Framework:** Concurrency Models, Sequence Diagrams &amp; FSM  
 **Target Environment:** Docker Compose (PostgreSQL 16 + FastAPI + Nginx) | **Status:** Active  
 
 ---
@@ -13,11 +13,11 @@ Rezekify handles multi-modal ingress traffic from two primary entry points: web 
 
 ```
                         ┌─────────────────────────────────────────────────────────────┐
-  End User (SPA) ──HTTPS──► │ Nginx :80 (Container: rezekify-nginx)                     │
+  End User (SPA) ──HTTPS──► │ Nginx :80 (Container: rezekify-nginx)                   │
   [Browser Fetch / SPA] │   ├─ Static Assets (/usr/share/nginx/html)                  │
                         │   └─ /api/v1/* ──reverse proxy──►                           │
                         │                                                             │
-  Telegram API ──POST──► │ Uvicorn :8000 (2 workers, asyncio, rezekify-backend)       │
+  Telegram API ──POST──►│ Uvicorn :8000 (2 workers, asyncio, rezekify-backend)        │
   [/gateway/telegram]   │   ├─ Async Handlers (FastAPI Event Loop)                    │
                         │   │   ├─ POST /dashboard/ai-chat                            │
                         │   │   ├─ POST /dashboard/ai-receipt                         │
@@ -40,10 +40,10 @@ Rezekify handles multi-modal ingress traffic from two primary entry points: web 
                         │   │        └─ RotaryKeyPool.cooldowns (Epoch Timestamps)    │
                         │   │                                                         │
                         │   └─ SQLAlchemy Session (psycopg2 sync driver) ──►          │
-                        │        pool_size=3, max_overflow=2, pool_recycle=1800s     │
+                        │        pool_size=3, max_overflow=2, pool_recycle=1800s      │
                         │        pool_pre_ping=True, pool_timeout=10s                 │
                         │                                                             │
-                        │ PostgreSQL 16 :5432 (Container: rezekify-db)               │
+                        │ PostgreSQL 16 :5432 (Container: rezekify-db)                │
                         │   max_connections=30 (Dedicated Storage Engine)             │
                         └─────────────────────────────────────────────────────────────┘
 ```
@@ -52,22 +52,24 @@ Rezekify handles multi-modal ingress traffic from two primary entry points: web 
 
 The system intentionally segregates operations across asynchronous non-blocking event loops, synchronous threadpools, and transactional database boundaries to maximize throughput while guaranteeing absolute double-entry accounting integrity.
 
-| Boundary | Sync / Async | Underlying Mechanism | Timeout / Limits | Purpose & Fail-Safe Invariants |
-| :--- | :--- | :--- | :--- | :--- |
-| **Browser SPA → Nginx** | Async | HTTP/1.1 over TCP / TLS | Keep-Alive 65s | Static React bundle delivery and reverse proxy ingress forwarding. |
-| **Nginx → Uvicorn** | Async | HTTP reverse proxy pass | `proxy_read_timeout 90s` | Buffers incoming client uploads; supports long-running multi-modal inference. |
-| **Browser → apiClient** | Async | Fetch API (`AbortController`) | Default: 90s, Refresh: 15s | Protects client UI against hanging network states; aborts stale telemetry. |
-| **Route Handler → Database** | Sync | SQLAlchemy `SessionLocal` via `psycopg2` | `pool_timeout=10s`, `statement_timeout` | Executes in threadpool; strict row locking via `with_for_update()`. |
-| **Async Routes → Gemini / Groq** | Async | `httpx.AsyncClient` | `timeout=20.0s` | Non-blocking LLM/Vision/STT requests without stalling Uvicorn event loop. |
-| **Sync Routes → Gemini / Groq** | Sync | `google-genai` / `groq` SDK | SDK Network Default | Runs inside threadpool for Telegram webhook processing. |
-| **FastAPI Startup → PostgreSQL** | Sync | `sqlalchemy.engine.connect()` retry loop | 30 attempts × 2.0s delay | Prevents application crash loops during Docker container orchestration boot. |
-| **Frontend Token Refresh** | Async | Singleton Promise Pattern | `timeout=15.0s` | De-duplicates concurrent 401 token refresh requests into a single flight. |
+
+| Boundary                         | Sync / Async | Underlying Mechanism                     | Timeout / Limits                        | Purpose &amp; Fail-Safe Invariants                                            |
+| :-------------------------------- | :------------ | :---------------------------------------- | :--------------------------------------- | :----------------------------------------------------------------------------- |
+| **Browser SPA → Nginx**          | Async        | HTTP/1.1 over TCP / TLS                  | Keep-Alive 65s                          | Static React bundle delivery and reverse proxy ingress forwarding.            |
+| **Nginx → Uvicorn**              | Async        | HTTP reverse proxy pass                  | `proxy_read_timeout 90s`                | Buffers incoming client uploads; supports long-running multi-modal inference. |
+| **Browser → apiClient**          | Async        | Fetch API (`AbortController`)            | Default: 90s, Refresh: 15s              | Protects client UI against hanging network states; aborts stale telemetry.    |
+| **Route Handler → Database**     | Sync         | SQLAlchemy `SessionLocal` via `psycopg2` | `pool_timeout=10s`, `statement_timeout` | Executes in threadpool; strict row locking via `with_for_update()`.           |
+| **Async Routes → Gemini / Groq** | Async        | `httpx.AsyncClient`                      | `timeout=20.0s`                         | Non-blocking LLM/Vision/STT requests without stalling Uvicorn event loop.     |
+| **Sync Routes → Gemini / Groq**  | Sync         | `google-genai` / `groq` SDK              | SDK Network Default                     | Runs inside threadpool for Telegram webhook processing.                       |
+| **FastAPI Startup → PostgreSQL** | Sync         | `sqlalchemy.engine.connect()` retry loop | 30 attempts × 2.0s delay                | Prevents application crash loops during Docker container orchestration boot.  |
+| **Frontend Token Refresh**       | Async        | Singleton Promise Pattern                | `timeout=15.0s`                         | De-duplicates concurrent 401 token refresh requests into a single flight.     |
+
 
 ---
 
 ## Section 2: Exhaustive Sequence Diagrams
 
-### SD-01: User Registration & First Login
+### SD-01: User Registration &amp; First Login
 
 This sequence captures full user onboarding: form submission, input validation, bcrypt password hashing, double token emission (short-lived access token and HttpOnly refresh cookie), and redirection to the application dashboard.
 
@@ -122,7 +124,7 @@ sequenceDiagram
             security-->>auth_router: refresh_token (exp: 30d)
             
             auth_router->>auth_router: set_refresh_cookie(response, refresh_token)
-            auth_router-->>apiClient: HTTP 200 OK + Set-Cookie: refresh_token (HttpOnly, SameSite=Lax)<br/>{"access_token": "...", "user": {...}}
+            auth_router-->>apiClient: HTTP 200 OK (access_token + HttpOnly refresh_token cookie)
             
             apiClient->>apiClient: setAuthToken(access_token) [localStorage]
             apiClient-->>AuthPage: RegisterResponse
@@ -154,7 +156,7 @@ sequenceDiagram
 
     User->>AIChatView: Enter text: "Makan siang Padang 35000 potong GoPay"
     AIChatView->>apiClient: submitChatMessage("Makan siang Padang 35000 potong GoPay")
-    apiClient->>dashboard_router: POST /api/v1/dashboard/ai-chat<br/>Authorization: Bearer <token><br/>{"message": "Makan siang Padang 35000 potong GoPay"}
+    apiClient->>dashboard_router: POST /api/v1/dashboard/ai-chat (Bearer JWT, payload: "Makan siang Padang 35000 potong GoPay")
     
     dashboard_router->>DB: add(ChatMessage(user_id=uid, role="user", content="..."))
     dashboard_router->>DB: commit()
@@ -257,7 +259,7 @@ sequenceDiagram
     ReActAgent->>GroqPool: get_current_key()
     GroqPool-->>ReActAgent: groq_key_1
     ReActAgent->>ReActAgent: _call_groq_vision_rest_async(groq_key_1, text, image_bytes, "image/jpeg")
-    ReActAgent->>GroqVisionAPI: POST /openai/v1/chat/completions<br/>{"model": "meta-llama/llama-4-scout-17b-16e-instruct", "messages": [...base64 image...]}
+    ReActAgent->>GroqVisionAPI: POST /openai/v1/chat/completions (model: llama-4-scout-17b, base64 image)
     GroqVisionAPI-->>ReActAgent: HTTP 200 OK: {"choices": [{"message": {"content": "{\"action\": \"expense\", \"amount\": 148500, \"account_name\": \"BCA\", \"category_name\": \"Belanja\", \"note\": \"Superindo Belanja Mingguan\"}"}}]}
     
     ReActAgent->>ReActAgent: _clean_json_response()
@@ -311,11 +313,11 @@ sequenceDiagram
     Note over ReActAgent, GroqLLM: Hop 1 Failed. Initiating 2-Hop Groq Pipeline.
     
     Note over ReActAgent, GroqWhisper: Hop 2a: Whisper Audio Transcription
-    ReActAgent->>GroqWhisper: POST /openai/v1/audio/transcriptions<br/>model="whisper-large-v3", language="id", file="voice.webm"
+    ReActAgent->>GroqWhisper: POST /openai/v1/audio/transcriptions (whisper-large-v3, voice.webm)
     GroqWhisper-->>ReActAgent: HTTP 200 OK: {"text": "Beli bensin Pertamax 50.000 cash"}
     
     Note over ReActAgent, GroqLLM: Hop 2b: Text Entity Extraction
-    ReActAgent->>GroqLLM: POST /openai/v1/chat/completions<br/>Prompt: Extract JSON from "Beli bensin Pertamax 50.000 cash"
+    ReActAgent->>GroqLLM: POST /openai/v1/chat/completions (Extract JSON from transcription)
     GroqLLM-->>ReActAgent: HTTP 200 OK: {"action": "expense", "amount": 50000, "account_name": "Cash", "category_name": "Transport", "note": "Bensin Pertamax"}
     
     ReActAgent-->>AgentOrchestrator: {transcription: "Beli bensin Pertamax 50.000 cash", action: "expense", ...}
@@ -361,7 +363,7 @@ sequenceDiagram
     auth_router-->>apiClient: HTTP 401 Unauthorized (expired_token)
     auth_router-->>apiClient: HTTP 401 Unauthorized (expired_token)
     
-    Note over apiClient: First 401 initiates executeTokenRefresh()<br/>Second 401 attaches to existing refreshPromise
+    Note over apiClient: First 401 runs executeTokenRefresh(); Second 401 awaits same refreshPromise
     
     apiClient->>auth_router: POST /api/v1/auth/refresh (Cookie: refresh_token=XYZ)
     
@@ -379,7 +381,7 @@ sequenceDiagram
         auth_router->>auth_router: create_access_token({"sub": user.id, "email": user.email})
         auth_router->>auth_router: create_refresh_token({"sub": user.id, "email": user.email, "type": "refresh"})
         auth_router->>auth_router: set_refresh_cookie(response, new_refresh_token)
-        auth_router-->>apiClient: HTTP 200 OK + Set-Cookie: refresh_token=NEW_XYZ<br/>{"access_token": "NEW_ACCESS_TOKEN"}
+        auth_router-->>apiClient: HTTP 200 OK (new access_token + rotated refresh_token cookie)
         
         apiClient->>apiClient: setAuthToken("NEW_ACCESS_TOKEN")
         apiClient->>apiClient: Resolve refreshPromise
@@ -399,7 +401,7 @@ sequenceDiagram
 
 ---
 
-### SD-06: Telegram Bot Pairing & First Message
+### SD-06: Telegram Bot Pairing &amp; First Message
 
 This sequence displays the Telegram onboarding flow: pairing code generation in the Web SPA, pairing command dispatch via Telegram webhook, brute-force rate limit evaluation, account linking, and subsequent financial message execution.
 
@@ -431,7 +433,7 @@ sequenceDiagram
     
     User->>TelegramApp: Send message: "/start DK-A8F201"
     TelegramApp->>TelegramServers: Post message to @rezekify_bot
-    TelegramServers->>gateway_router: POST /api/v1/gateway/telegram<br/>X-Telegram-Bot-Api-Secret-Token: <SECRET><br/>{"update_id": 99281, "message": {"chat": {"id": 12345678}, "text": "/start DK-A8F201"}}
+    TelegramServers->>gateway_router: POST /api/v1/gateway/telegram/webhook (X-Telegram-Bot-Api-Secret-Token, text: "/start DK-A8F201")
     
     gateway_router->>gateway_router: Verify HMAC Secret Token Header
     gateway_router->>TelegramGateway: handle_update(payload)
@@ -490,7 +492,7 @@ sequenceDiagram
     User->>EditModal: Edit transaction (change amount from 50.000 to 75.000, new Category)
     User->>EditModal: Click "Simpan Perubahan"
     EditModal->>apiClient: updateTransaction(tx_id, payload)
-    apiClient->>tx_router: PUT /api/v1/transactions/{tx_id}<br/>{"amount": 75000, "description": "Makan Malam", "category_id": "...", "account_id": "..."}
+    apiClient->>tx_router: PUT /api/v1/transactions/{tx_id} (amount=75000, description="Makan Malam", ...)
     
     tx_router->>LedgerService: update_transaction(user_id, tx_id, amount=75000, ...)
     
@@ -542,7 +544,7 @@ sequenceDiagram
 
 ---
 
-### SD-08: BYOK Configuration & Validation
+### SD-08: BYOK Configuration &amp; Validation
 
 This sequence models the Bring-Your-Own-Key configuration workflow, including strict Server-Side Request Forgery (SSRF) hostname and IP validation, live endpoint pinging, and PBKDF2 Fernet encryption at rest.
 
@@ -622,7 +624,7 @@ A Rezekify transaction transitions from creation through balanced active state, 
 stateDiagram-v2
     [*] --> CREATED: Form Ingress or AI Extraction Triggered
 
-    CREATED --> ACTIVE: LedgerService.record_expense / income / transfer<br/>[Account locked, entries written, balance updated, DB commit]
+    CREATED --> ACTIVE: record_expense / income / transfer [atomic balanced mutation]
     
     state UPDATING {
         [*] --> REVERSING_OLD: Locate existing transaction via with_for_update
@@ -634,10 +636,10 @@ stateDiagram-v2
         CREATING_ENTRIES --> [*]: Insert new balanced Debit/Credit pairs
     }
 
-    ACTIVE --> UPDATING: PUT /api/v1/transactions/{id}<br/>[User requests transaction update]
+    ACTIVE --> UPDATING: PUT /api/v1/transactions/{id} [user edit request]
     UPDATING --> ACTIVE: Commit transaction update & clear runway cache
 
-    ACTIVE --> DELETED: DELETE /api/v1/transactions/{id}<br/>[Reverse balance modifications, delete tx, cascade purge entries]
+    ACTIVE --> DELETED: DELETE /api/v1/transactions/{id} [reverse balance & cascade purge]
     
     DELETED --> [*]
 ```
@@ -653,22 +655,22 @@ stateDiagram-v2
     [*] --> UNLOCKED: POST /api/v1/vaults [is_locked=False]
     [*] --> LOCKED: POST /api/v1/vaults [is_locked=True]
 
-    UNLOCKED --> LOCKED: PATCH /api/v1/vaults/{id}/toggle-lock<br/>Action: vault.is_locked = True
+    UNLOCKED --> LOCKED: PATCH /api/v1/vaults/{id}/toggle-lock [vault.is_locked = True]
 
-    LOCKED --> UNLOCKED: PATCH /api/v1/vaults/{id}/toggle-lock<br/>Action: vault.is_locked = False
+    LOCKED --> UNLOCKED: PATCH /api/v1/vaults/{id}/toggle-lock [vault.is_locked = False]
 
     state UNLOCKED {
         [*] --> EditFree
-        EditFree --> DecrementAllowed: PUT /api/v1/vaults/{id}<br/>[req.allocated_amount < vault.allocated_amount]
-        EditFree --> IncrementAllowed: PUT /api/v1/vaults/{id}<br/>[req.allocated_amount >= vault.allocated_amount]
-        EditFree --> DeletionAllowed: DELETE /api/v1/vaults/{id}<br/>[Removes vault allocation completely]
+        EditFree --> DecrementAllowed: PUT /api/v1/vaults/{id} [req.allocated < current]
+        EditFree --> IncrementAllowed: PUT /api/v1/vaults/{id} [req.allocated >= current]
+        EditFree --> DeletionAllowed: DELETE /api/v1/vaults/{id} [delete vault]
     }
 
     state LOCKED {
         [*] --> EditGuarded
-        EditGuarded --> AllocationBlocked: PUT /api/v1/vaults/{id}<br/>[req.allocated_amount < vault.allocated_amount]<br/>Guard: HTTP 400 Bad Request Raised
-        EditGuarded --> IncrementPermitted: PUT /api/v1/vaults/{id}<br/>[req.allocated_amount >= vault.allocated_amount]
-        EditGuarded --> DeleteBlocked: DELETE /api/v1/vaults/{id}<br/>Guard: HTTP 400 Bad Request Raised
+        EditGuarded --> AllocationBlocked: PUT /api/v1/vaults/{id} [req.allocated < current -> HTTP 400]
+        EditGuarded --> IncrementPermitted: PUT /api/v1/vaults/{id} [req.allocated >= current]
+        EditGuarded --> DeleteBlocked: DELETE /api/v1/vaults/{id} [delete locked vault -> HTTP 400]
     }
 
     UNLOCKED --> [*]: Vault Deleted
@@ -688,7 +690,7 @@ stateDiagram-v2
     REGISTERING --> ANONYMOUS: Registration validation error (HTTP 400)
     REGISTERING --> AUTHENTICATED: Hash password + issue access_token + set HttpOnly refresh_token
 
-    ANONYMOUS --> AUTHENTICATED: POST /api/v1/auth/login<br/>[Valid credentials verified]
+    ANONYMOUS --> AUTHENTICATED: POST /api/v1/auth/login [valid credentials verified]
 
     state AUTHENTICATED {
         [*] --> ACTIVE_TOKEN: access_token stored in memory / localStorage
@@ -696,7 +698,7 @@ stateDiagram-v2
         EXECUTING_REQUESTS --> ACTIVE_TOKEN: HTTP 200 OK
     }
 
-    AUTHENTICATED --> TOKEN_EXPIRED: Access token lifetime elapsed (60 minutes)
+    AUTHENTICATED --> TOKEN_EXPIRED: Access token lifetime elapsed (30 minutes)
 
     state TOKEN_EXPIRED {
         [*] --> AWAITING_REFRESH: apiFetch receives HTTP 401 Unauthorized
@@ -710,13 +712,13 @@ stateDiagram-v2
     AUTHENTICATED --> TELEGRAM_PAIRED: POST /auth/telegram-pairing-code + bot /start command verified
     TELEGRAM_PAIRED --> AUTHENTICATED: POST /settings/telegram/unlink
 
-    AUTHENTICATED --> LOGGED_OUT: POST /api/v1/auth/logout<br/>Action: clearAuthToken() + clear_refresh_cookie()
+    AUTHENTICATED --> LOGGED_OUT: POST /api/v1/auth/logout [clearAuthToken + clear cookie]
     LOGGED_OUT --> ANONYMOUS: Redirection to /login
 ```
 
 ---
 
-### FSM-04: ReActAgent Failover Chain (Text & Vision)
+### FSM-04: ReActAgent Failover Chain (Text &amp; Vision)
 
 This state machine specifies the multi-tier failover mechanics executed during entity extraction across rotary pools and provider adapters.
 
@@ -834,7 +836,7 @@ stateDiagram-v2
 
 ---
 
-## Section 4: Concurrency, Contention & Deadlock Avoidance
+## Section 4: Concurrency, Contention &amp; Deadlock Avoidance
 
 ### 4.1 Database Row-Level Locking Strategy
 
@@ -865,12 +867,14 @@ acc2 = (
 ```
 
 **Deadlock Avoidance Proof**:
+
 1. Suppose Transaction $T_1$ transfers funds from Account $A$ to Account $B$ ($A < B$).
 2. Concurrently, Transaction $T_2$ transfers funds from Account $B$ to Account $A$ ($B > A$).
 3. Under unsorted locking, $T_1$ acquires Lock($A$) and waits for Lock($B$), while $T_2$ acquires Lock($B$) and waits for Lock($A$), creating a circular wait condition (deadlock).
 4. By sorting IDs such that $A < B$, both $T_1$ and $T_2$ are required to acquire Lock($A$) before requesting Lock($B$). $T_2$ blocks on Lock($A$) until $T_1$ completes its commit, converting an unsafe circular wait into a serialized queue.
 
 In `LedgerService.update_transaction()`, a two-phase ordered locking model is applied:
+
 - **Phase 1 (Reversal)**: Accounts associated with old ledger entries are locked with `with_for_update()` to restore historical balances.
 - **Phase 2 (Re-post)**: Accounts associated with new entries are validated and locked in sorted ID order prior to applying updated balance debits/credits.
 
@@ -895,6 +899,7 @@ Database connection resources are strictly budgeted to prevent pool exhaustion a
 ```
 
 **Resilience Parameters**:
+
 - `pool_pre_ping=True`: Tests connections for liveness using `SELECT 1` prior to checkout, transparently discarding connections dropped by the database or intermediate firewalls.
 - `pool_recycle=1800`: Recycles connections after 30 minutes, mitigating silent TCP connection drops on cloud container networks.
 - `pool_timeout=10`: If all 5 connections in a worker pool are saturated, subsequent checkout requests block for at most 10 seconds before raising `TimeoutError`, preventing indefinite client hanging.
@@ -904,13 +909,15 @@ Database connection resources are strictly budgeted to prevent pool exhaustion a
 ### 4.3 In-Memory Cache Thread Safety
 
 Rezekify employs module-level dictionaries for high-speed ephemeral state:
+
 1. `_runway_cache`: Stores precomputed `RunwayReport` tuples keyed by `(user_id, date)`.
 2. `RateLimiter._history`: Stores sliding-window `deque[float]` timestamps keyed by user/IP.
 3. `_processed_update_ids`: Deduplicates Telegram webhook deliveries keyed by `update_id`.
 4. `TelegramGateway.failed_pairing_attempts`: Tracks brute-force pairing attempts.
 5. `RotaryKeyPool.cooldowns`: Stores per-key cooldown expiration epochs.
 
-**Thread Safety Analysis (CPython GIL & Multi-Worker Architecture)**:
+**Thread Safety Analysis (CPython GIL &amp; Multi-Worker Architecture)**:
+
 - **Process Isolation**: Each Uvicorn worker process maintains its own independent memory space. No cache state is shared across process boundaries without explicit serialization.
 - **GIL Atomic Operations**: In CPython 3.12, dictionary lookups (`dict.get`), assignments (`dict[k] = v`), deletions (`dict.pop`), and deque mutations (`deque.append`, `deque.popleft`) are atomic bytecode instructions (`BINARY_SUBSCR`, `STORE_SUBSCR`, `DELETE_SUBSCR`).
 - **ponytail**: Current dictionary and deque structures are thread-safe under CPython's Global Interpreter Lock for single-node deployments; upgrade to Redis with centralized key expiration when scaling horizontally across multi-node clusters.
@@ -963,6 +970,7 @@ export async function refreshAuthToken(): Promise<string | null> {
 ```
 
 **Race Prevention Invariant**:
+
 - Only the first 401 error dispatches an HTTP request to `/auth/refresh`.
 - All other concurrent 401 handlers await the identical `refreshPromise`.
 - Once the token is refreshed, all stalled requests are retried concurrently with the newly issued access token.
@@ -977,17 +985,19 @@ To prevent file descriptor exhaustion, memory leaks, and hanging worker threads,
 1. **HTTP Client Lifecycle**: All external HTTP calls in `ReActAgent` use `async with httpx.AsyncClient(timeout=20.0) as client:`. This ensures network sockets, TLS sessions, and connection pools are closed immediately upon block exit.
 2. **Database Session Scope**: All database sessions are injected via FastAPI dependencies (`rezekify/db/session.py`):
    ```python
-   def get_db() -> Generator[Session, None, None]:
-       db = SessionLocal()
-       try:
-           yield db
-       finally:
-           db.close()
+    def get_db() -> Generator[Session, None, None]:
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
    ```
-   The `finally` block guarantees that checked-out connections are returned to the pool even when unhandled exceptions occur during route execution.
+
+    The `finally` block guarantees that checked-out connections are returned to the pool even when unhandled exceptions occur during route execution.
 3. **Frontend Request Timeouts**: In `apiClient.ts`, all outgoing HTTP requests instantiate an `AbortController` coupled to a `setTimeout(..., 90_000)` timer. The timer is cleared in a `finally` block (`clearTimeout(timeoutId)`), preventing timer leaks in the browser event loop.
 4. **Memory Leak Protection in Caches**:
    - `_runway_cache`: Lazy sweep runs every 60s or when cache size reaches 5,000 items, evicting stale items and truncating excess entries.
    - `RateLimiter._history`: Sweeps expired timestamps and evicts inactive keys whenever the dictionary exceeds `max_tracked_keys` (5,000 entries).
    - `_processed_update_ids`: Evicts Telegram update records older than 300 seconds whenever the cache exceeds 10,000 entries.
 5. **Container Process Supervision**: The Docker Compose definition specifies `restart: unless-stopped` with standard health checks. If an unhandled thread crash occurs, Docker automatically restarts the container cleanly.
+

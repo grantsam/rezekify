@@ -5,11 +5,11 @@
 
 ---
 
-## Section 1: Executive Summary & Architectural Drivers
+## Section 1: Executive Summary &amp; Architectural Drivers
 
-### 1.1 System Identity & Core Purpose
+### 1.1 System Identity &amp; Core Purpose
 
-Rezekify is an **Autonomous Multi-Modal Personal Finance Manager & Deterministic Runway Engine**. The platform unifies unstructured user interactions—conversational Indonesian natural language, receipt photographs, and voice memos transmitted via web dashboard or Telegram—into mathematically deterministic, double-entry financial ledger records.
+Rezekify is an **Autonomous Multi-Modal Personal Finance Manager &amp; Deterministic Runway Engine**. The platform unifies unstructured user interactions—conversational Indonesian natural language, receipt photographs, and voice memos transmitted via web dashboard or Telegram—into mathematically deterministic, double-entry financial ledger records.
 
 At the core of personal financial failure is not a lack of accounting software, but the cognitive overhead of manual transaction entry and the inability to answer a simple daily question: *"How much money can I safely spend today without defaulting on my upcoming bills?"* Rezekify automates the ingestion pipeline via agentic multi-modal extraction while strictly preventing Large Language Models (LLMs) from executing financial arithmetic or directly mutating balances.
 
@@ -27,7 +27,7 @@ The entire system is governed by **Five Architectural Invariants**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       REZEKIFY ARCHITECTURAL DRIVERS                         │
+│                       REZEKIFY ARCHITECTURAL DRIVERS                        │
 ├───────────────────────┬─────────────────────────────────────────────────────┤
 │ 1. Determinism        │ Strict separation: LLM entity extraction vs.        │
 │                       │ decimal.Decimal double-entry balanced arithmetic.   │
@@ -38,7 +38,7 @@ The entire system is governed by **Five Architectural Invariants**:
 │ 3. Zero-Cost Rotary AI│ High-resilience key pool with cooldown management   │
 │                       │ spanning Gemini 2.5 Flash & Groq (Whisper + Llama). │
 ├───────────────────────┼─────────────────────────────────────────────────────┤
-│ 4. Multi-Tenant Safety│ Row-level tenant isolation (WHERE user_id = :uid),   │
+│ 4. Multi-Tenant Safety│ Row-level tenant isolation (WHERE user_id = :uid),  │
 │                       │ JWT access/refresh rotation, Fernet key encryption. │
 ├───────────────────────┼─────────────────────────────────────────────────────┤
 │ 5. Zero-Bloat Domain  │ Focused metric engine: Daily Safe Runway + H-7      │
@@ -52,31 +52,35 @@ The entire system is governed by **Five Architectural Invariants**:
 
 The architecture of Rezekify optimizes for the following quality attributes, prioritized according to system safety and real-time user feedback:
 
-| Quality Attribute | Quality Scenario | Priority | Architectural Mechanism |
-|---|---|---|---|
-| **Correctness** | A user records high-frequency expenses and transfers across e-wallets and bank accounts. | **P0 (Absolute)** | `LedgerService` enforces `decimal.Decimal(15, 2)` arithmetic, database-level `with_for_update()` row-level locking on balance rows, and atomic paired debit/credit `LedgerEntry` generation inside ACID transactions. |
-| **Tenant Isolation** | An authenticated user attempts to access or mutate ledger entries, vaults, or settings belonging to another tenant. | **P0 (Absolute)** | Mandatory dependency injection `get_current_user()` validating JWT subject (`sub`), combined with hard-coded `user_id = current_user.id` predicates across all SQLAlchemy queries in services and API routers. |
-| **Availability** | External free-tier AI APIs (Google Gemini) hit 429 Rate Limits or transient network outages during transaction parsing. | **P1 (High)** | `RotaryKeyPool` key rotation across multiple configured API keys, dynamic cooldown tracking with exponential backoff, and automatic fallback from Gemini 2.5 Flash to Groq (`llama-3.3-70b-versatile` / `whisper-large-v3`). |
-| **Security** | A malicious tenant configures a custom BYOK provider pointing to local network metadata endpoints (e.g., `http://169.254.169.254/`). | **P1 (High)** | `validate_base_url()` in `rezekify/agent/providers/base.py` enforces HTTPS and rejects loopback, RFC 1918 private, link-local, and reserved IP ranges via `ipaddress` parsing before HTTP dispatch. |
-| **Performance** | Repeated dashboard loading requests for Runway computation under concurrent user activity. | **P1 (High)** | In-memory TTL caching (`RunwayService._cache`) with 15-second expiration, max 5,000 entries, and lazy amortized eviction sweeps every 60 seconds; composite index `idx_transactions_user_date`. |
-| **Modifiability** | Integration of alternative proprietary or self-hosted LLM backends by advanced users. | **P2 (Medium)** | Decoupled BYOK adapter architecture (`OpenAICompatibleAdapter`, `AnthropicCompatibleAdapter`) implementing `BaseAIProvider` protocol, configurable per-user via `UserSettings`. |
-| **Usability** | Casual users submit messy Indonesian colloquial voice messages (e.g., *"Beli nasi padang 25 ribu pake gopay tadi siang"*). | **P2 (Medium)** | Indonesian-localized system prompts in `ReActAgent`, 1-Hop direct native Gemini audio parsing with 2-Hop Groq Whisper STT + LLM entity resolution fallback, fuzzy account name matching. |
-| **Testability** | Regression testing of ledger logic, purchase simulations, and parsing without consuming live LLM API credits. | **P2 (Medium)** | Unit-testable separation between deterministic services (`LedgerService`, `RunwayService`) and AI agent layer; mockable provider protocols and in-memory SQLite support via `StaticPool`. |
+
+| Quality Attribute    | Quality Scenario                                                                                                                     | Priority          | Architectural Mechanism                                                                                                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Correctness**      | A user records high-frequency expenses and transfers across e-wallets and bank accounts.                                             | **P0 (Absolute)** | `LedgerService` enforces `decimal.Decimal(15, 2)` arithmetic, database-level `with_for_update()` row-level locking on balance rows, and atomic paired debit/credit `LedgerEntry` generation inside ACID transactions.        |
+| **Tenant Isolation** | An authenticated user attempts to access or mutate ledger entries, vaults, or settings belonging to another tenant.                  | **P0 (Absolute)** | Mandatory dependency injection `get_current_user()` validating JWT subject (`sub`), combined with hard-coded `user_id = current_user.id` predicates across all SQLAlchemy queries in services and API routers.               |
+| **Availability**     | External free-tier AI APIs (Google Gemini) hit 429 Rate Limits or transient network outages during transaction parsing.              | **P1 (High)**     | `RotaryKeyPool` key rotation across multiple configured API keys, dynamic cooldown tracking with exponential backoff, and automatic fallback from Gemini 2.5 Flash to Groq (`llama-3.3-70b-versatile` / `whisper-large-v3`). |
+| **Security**         | A malicious tenant configures a custom BYOK provider pointing to local network metadata endpoints (e.g., `http://169.254.169.254/`). | **P1 (High)**     | `validate_base_url()` in `rezekify/agent/providers/base.py` enforces HTTPS and rejects loopback, RFC 1918 private, link-local, and reserved IP ranges via `ipaddress` parsing before HTTP dispatch.                          |
+| **Performance**      | Repeated dashboard loading requests for Runway computation under concurrent user activity.                                           | **P1 (High)**     | In-memory TTL caching (`RunwayService._cache`) with 15-second expiration, max 5,000 entries, and lazy amortized eviction sweeps every 60 seconds; composite index `idx_transactions_user_date`.                              |
+| **Modifiability**    | Integration of alternative proprietary or self-hosted LLM backends by advanced users.                                                | **P2 (Medium)**   | Decoupled BYOK adapter architecture (`OpenAICompatibleAdapter`, `AnthropicCompatibleAdapter`) implementing `BaseAIProvider` protocol, configurable per-user via `UserSettings`.                                              |
+| **Usability**        | Casual users submit messy Indonesian colloquial voice messages (e.g., *"Beli nasi padang 25 ribu pake gopay tadi siang"*).           | **P2 (Medium)**   | Indonesian-localized system prompts in `ReActAgent`, 1-Hop direct native Gemini audio parsing with 2-Hop Groq Whisper STT + LLM entity resolution fallback, fuzzy account name matching.                                     |
+| **Testability**      | Regression testing of ledger logic, purchase simulations, and parsing without consuming live LLM API credits.                        | **P2 (Medium)**   | Unit-testable separation between deterministic services (`LedgerService`, `RunwayService`) and AI agent layer; mockable provider protocols and in-memory SQLite support via `StaticPool`.                                    |
+
 
 ---
 
-### 1.4 Technical Constraints & Operating Limits
+### 1.4 Technical Constraints &amp; Operating Limits
 
-| Constraint | Specification / Operating Limit | Architectural Impact |
-|---|---|---|
-| **Runtime Language** | Python 3.12+ (Backend), TypeScript 5+ on Node 20 / Vite 5 (Frontend) | Leverages modern Python type hinting, `dataclasses`, `asyncio`, and strict TS interfaces for schema validation. |
-| **Database Engine** | PostgreSQL 16 on Alpine Linux | Relies on ACID transactions, `Numeric(15, 2)` column precision, and PostgreSQL-specific row-locking syntax (`FOR UPDATE`). |
-| **Connection Pooling** | `pool_size=3`, `max_overflow=2`, `pool_recycle=1800`, `pool_pre_ping=True` | Constrained connection footprint designed for low-memory micro-containers (VPS deployment). Max 5 concurrent DB connections per backend worker. |
-| **Password Hashing** | Bcrypt with strict 72-byte pre-truncation | Passwords longer than 72 bytes are truncated in `rezekify/core/security.py` prior to hashing to prevent bcrypt truncation vulnerabilities. |
-| **Auth Tokens** | JWT HS256: 30-minute Access Token, 7-day Refresh Token | Access token transmitted in `Authorization: Bearer` header; Refresh token persisted in secure `HttpOnly`, `SameSite=Lax` cookie. |
-| **Payload Limits** | 10 MB maximum upload size on `/ai-receipt` and `/ai-voice` | Uploaded image and audio payloads validated via magic bytes (`image/jpeg`, `image/png`, `image/webp`) and processed strictly in-memory without disk persistence. |
-| **Rate Limiter Cap** | Sliding-window limiter tracking up to 5,000 distinct IP/User keys | Rate limits enforced: Auth (10 req/60s), AI Chat (15 req/60s), AI Receipt (5 req/60s), AI Validation (10 req/60s). |
-| **Secret Encryption** | Fernet encryption using PBKDF2 (600,000 SHA-256 iterations) | BYOK API keys encrypted before saving to `user_settings.encrypted_ai_api_key`; encryption key derived from `ENCRYPTION_KEY` or `SECRET_KEY`. |
+
+| Constraint             | Specification / Operating Limit                                            | Architectural Impact                                                                                                                                             |
+| ---------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Runtime Language**   | Python 3.12+ (Backend), TypeScript 5+ on Node 20 / Vite 5 (Frontend)       | Leverages modern Python type hinting, `dataclasses`, `asyncio`, and strict TS interfaces for schema validation.                                                  |
+| **Database Engine**    | PostgreSQL 16 on Alpine Linux                                              | Relies on ACID transactions, `Numeric(15, 2)` column precision, and PostgreSQL-specific row-locking syntax (`FOR UPDATE`).                                       |
+| **Connection Pooling** | `pool_size=3`, `max_overflow=2`, `pool_recycle=1800`, `pool_pre_ping=True` | Constrained connection footprint designed for low-memory micro-containers (VPS deployment). Max 5 concurrent DB connections per backend worker.                  |
+| **Password Hashing**   | Bcrypt with strict 72-byte pre-truncation                                  | Passwords longer than 72 bytes are truncated in `rezekify/core/security.py` prior to hashing to prevent bcrypt truncation vulnerabilities.                       |
+| **Auth Tokens**        | JWT HS256: 30-minute Access Token, 7-day Refresh Token                     | Access token transmitted in `Authorization: Bearer` header; Refresh token persisted in secure `HttpOnly`, `SameSite=Lax` cookie.                                 |
+| **Payload Limits**     | 10 MB maximum upload size on `/ai-receipt` and `/ai-voice`                 | Uploaded image and audio payloads validated via magic bytes (`image/jpeg`, `image/png`, `image/webp`) and processed strictly in-memory without disk persistence. |
+| **Rate Limiter Cap**   | Sliding-window limiter tracking up to 5,000 distinct IP/User keys          | Rate limits enforced: Auth (10 req/60s), AI Chat (15 req/60s), AI Receipt (5 req/60s), AI Validation (10 req/60s).                                               |
+| **Secret Encryption**  | Fernet encryption using PBKDF2 (600,000 SHA-256 iterations)                | BYOK API keys encrypted before saving to `user_settings.encrypted_ai_api_key`; encryption key derived from `ENCRYPTION_KEY` or `SECRET_KEY`.                     |
+
 
 ---
 
@@ -93,16 +97,18 @@ The architecture of Rezekify optimizes for the following quality attributes, pri
 
 ---
 
-### 2.2 External Systems & Integrations
+### 2.2 External Systems &amp; Integrations
 
-| External System | Interface / Protocol | Direction | Operational Purpose |
-|---|---|---|---|
-| **Google Gemini API** | HTTPS / REST (`google-genai` SDK v0.1+) | Outbound | Text entity parsing, receipt image OCR parsing, native voice note audio comprehension. |
-| **Groq API** | HTTPS / REST (`groq` SDK v0.9+) | Outbound | High-speed fallback for text extraction and 2-Hop audio transcription via Whisper Large v3. |
-| **Telegram Bot API** | HTTPS / REST (Webhook POST) | Inbound & Outbound | Receives updates (text, audio, photo) via webhook; sends Markdown response messages to paired chats. |
-| **BYOK OpenAI Endpoints** | HTTPS / REST (`/v1/chat/completions`, `/v1/audio/transcriptions`) | Outbound | User-provided OpenAI-compatible endpoints for custom LLM processing. |
-| **BYOK Anthropic Endpoints**| HTTPS / REST (`/v1/messages`) | Outbound | User-provided Anthropic Claude endpoints for text-based entity extraction. |
-| **PostgreSQL Database** | TCP / PostgreSQL Wire Protocol (`psycopg2-binary`) | Internal | Relational persistence for double-entry ledger, accounts, vaults, categories, settings, and users. |
+
+| External System              | Interface / Protocol                                              | Direction              | Operational Purpose                                                                                  |
+| ---------------------------- | ----------------------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Google Gemini API**        | HTTPS / REST (`google-genai` SDK v0.1+)                           | Outbound               | Text entity parsing, receipt image OCR parsing, native voice note audio comprehension.               |
+| **Groq API**                 | HTTPS / REST (`groq` SDK v0.9+)                                   | Outbound               | High-speed fallback for text extraction and 2-Hop audio transcription via Whisper Large v3.          |
+| **Telegram Bot API**         | HTTPS / REST (Webhook POST)                                       | Inbound &amp; Outbound | Receives updates (text, audio, photo) via webhook; sends Markdown response messages to paired chats. |
+| **BYOK OpenAI Endpoints**    | HTTPS / REST (`/v1/chat/completions`, `/v1/audio/transcriptions`) | Outbound               | User-provided OpenAI-compatible endpoints for custom LLM processing.                                 |
+| **BYOK Anthropic Endpoints** | HTTPS / REST (`/v1/messages`)                                     | Outbound               | User-provided Anthropic Claude endpoints for text-based entity extraction.                           |
+| **PostgreSQL Database**      | TCP / PostgreSQL Wire Protocol (`psycopg2-binary`)                | Internal               | Relational persistence for double-entry ledger, accounts, vaults, categories, settings, and users.   |
+
 
 ---
 
@@ -126,7 +132,7 @@ C4Context
 
     Rel(user_web, rezekify_system, "Interacts via HTTPS / JSON", "Web SPA / REST API")
     Rel(user_tg, telegram_api, "Sends voice, photos, commands", "Telegram App")
-    Rel(telegram_api, rezekify_system, "Dispatches Webhook updates", "HTTPS POST /api/v1/telegram/webhook")
+    Rel(telegram_api, rezekify_system, "Dispatches Webhook updates", "HTTPS POST /api/v1/gateway/telegram/webhook")
     Rel(rezekify_system, telegram_api, "Dispatches chat responses", "HTTPS REST API")
 
     Rel(rezekify_system, gemini_api, "Multi-modal entity parsing & OCR", "HTTPS / JSON")
@@ -142,11 +148,13 @@ C4Context
 
 The deployment unit comprises three cohesive containers orchestrated via `docker-compose.yml` on an isolated bridge network (`rezekify_net`):
 
-| Container Name | Technology Base | Primary Responsibility | Exposed / Internal Port |
-|---|---|---|---|
-| **frontend** | Nginx 1.25+ Alpine, React 18 SPA (Vite, TS, Tailwind CSS) | Serves production web assets, terminates client HTTP, reverse-proxies `/api/` traffic to the backend container. | Host: `80:80` (or `8080:80`) |
-| **backend** | Python 3.12-slim, FastAPI, Uvicorn, SQLAlchemy 2.0 | Executes deterministic ledger/runway logic, manages AI key pools, handles webhooks, enforces auth and rate limits. | Internal: `8000` (Docker Network) |
-| **db** | PostgreSQL 16 Alpine | ACID relational storage, foreign key enforcement, row-level locking for double-entry records. | Internal: `5432` (Docker Network) |
+
+| Container Name | Technology Base                                           | Primary Responsibility                                                                                             | Exposed / Internal Port           |
+| -------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| **frontend**   | Nginx 1.25+ Alpine, React 18 SPA (Vite, TS, Tailwind CSS) | Serves production web assets, terminates client HTTP, reverse-proxies `/api/` traffic to the backend container.    | Host: `80:80` (or `8080:80`)      |
+| **backend**    | Python 3.12-slim, FastAPI, Uvicorn, SQLAlchemy 2.0        | Executes deterministic ledger/runway logic, manages AI key pools, handles webhooks, enforces auth and rate limits. | Internal: `8000` (Docker Network) |
+| **db**         | PostgreSQL 16 Alpine                                      | ACID relational storage, foreign key enforcement, row-level locking for double-entry records.                      | Internal: `5432` (Docker Network) |
+
 
 ---
 
@@ -172,7 +180,7 @@ C4Container
 
     Rel(web_user, nginx_fe, "Loads application & executes API calls", "HTTPS / 443, HTTP / 80")
     Rel(tg_user, tg_platform, "Sends messages, receipts, voice notes", "MTProto")
-    Rel(tg_platform, nginx_fe, "Forwards Telegram webhook events", "HTTPS POST /api/v1/telegram/webhook")
+    Rel(tg_platform, nginx_fe, "Forwards Telegram webhook events", "HTTPS POST /api/v1/gateway/telegram/webhook")
 
     Rel(nginx_fe, fastapi_be, "Proxies API calls (/api/v1/*)", "HTTP / 8000 (Internal Bridge)")
     Rel(fastapi_be, postgres_db, "Executes queries, updates balances with row locks", "psycopg2 / TCP 5432")
@@ -205,18 +213,21 @@ C4Container
 ### 3.4 Subsystem Specifications
 
 #### Container: `frontend`
+
 - **Inputs**: HTTP GET requests for static assets; WebSocket/HTTP API responses forwarded from backend.
 - **Outputs**: Rendered HTML5/CSS3/JavaScript bundle; user requests routed to `/api/v1/*`.
 - **Internal Storage**: Ephemeral browser `localStorage` (theme preferences, active view tabs); session state held in React Context (`AuthContext`). Refresh token stored in browser cookie jar.
 - **Protocol Contracts**: Consumes OpenAPI v3 JSON schema exposed by FastAPI; produces application/json or multipart/form-data.
 
 #### Container: `backend`
+
 - **Inputs**: JSON REST requests, `multipart/form-data` uploads (receipt images, voice memos), Telegram webhook payloads.
 - **Outputs**: JSON responses conforming to Pydantic schemas (`DashboardSummaryResponse`, `TransactionResponse`, `EnrichedChatResponse`); outbound Telegram Markdown replies.
 - **Internal Storage**: In-memory LRU/TTL caches (`RunwayService._cache`, `RateLimiter.buckets`, `TelegramGateway._dedup_cache`, `RotaryKeyPool._cooldowns`).
 - **Protocol Contracts**: Enforces HTTP status codes (200, 201, 400, 401, 403, 404, 422, 429, 500); provides healthcheck at `/healthz`.
 
 #### Container: `db`
+
 - **Inputs**: PostgreSQL wire protocol packets containing SQL statements (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `BEGIN`, `COMMIT`, `ROLLBACK`).
 - **Outputs**: Relational tabular recordsets; transaction status codes; error constraints.
 - **Internal Storage**: PostgreSQL data files mounted to host volume `rezekify_postgres_data` at `/var/lib/postgresql/data`.
@@ -244,7 +255,7 @@ rezekify/
 1. **Core Configuration (`rezekify/core/config.py`)**:
    - `Settings`: Pydantic BaseSettings class loading environment variables (`DATABASE_URL`, `SECRET_KEY`, `GEMINI_API_KEYS`, `GROQ_API_KEYS`, `TELEGRAM_BOT_TOKEN`, `ENCRYPTION_KEY`, `ALLOWED_ORIGINS`).
    - Production validation: Rejects default insecure `SECRET_KEY` when `ENVIRONMENT=production`.
-2. **Security & Cryptography (`rezekify/core/security.py`, `rezekify/core/crypto.py`)**:
+2. **Security &amp; Cryptography (`rezekify/core/security.py`, `rezekify/core/crypto.py`)**:
    - `hash_password()`, `verify_password()`: Bcrypt hashing with 72-byte pre-truncation.
    - `create_access_token()`, `create_refresh_token()`: HS256 JWT encoding with standard claims (`sub`, `exp`, `type`).
    - `encrypt_key()`, `decrypt_key()`, `mask_key()`: Fernet symmetric encryption derived via PBKDF2 (600,000 iterations of SHA-256).
@@ -261,7 +272,7 @@ rezekify/
    - Uses `with_for_update()` row locking on affected `Account` records (sorted by ID to prevent deadlocks).
 6. **Deterministic Runway Service (`rezekify/services/runway.py`)**:
    - `RunwayService`: Calculates daily safe runway:
-     $$\text{Daily Safe Runway} = \frac{\text{Liquid Cash} - \text{Vault Allocations}}{\text{Days Remaining in Cycle}}$$
+    $$\\text{Daily Safe Runway} = \\frac{\\text{Liquid Cash} - \\text{Vault Allocations}}{\\text{Days Remaining in Cycle}}$$
    - Projects purchase simulations (`simulate_purchase()`), computes category breakdowns, upcoming H-7 fixed bills, and manages an in-memory 15s TTL cache.
 7. **Authentication Service (`rezekify/services/auth.py`)**:
    - `AuthService`: Manages user registration, credential verification, pairing code generation (`DK-XXXXXX`), and Telegram chat ID association.
@@ -275,7 +286,7 @@ rezekify/
     - `base.py`: Protocol definition `BaseAIProvider`, `BYOKConfig`, error hierarchy (`AuthError`, `RateLimitError`, `CapabilityUnsupported`), and SSRF URL validator `validate_base_url()`.
     - `openai_compatible.py`: `OpenAICompatibleAdapter` implementing chat completions and Whisper audio transcriptions.
     - `anthropic_compatible.py`: `AnthropicCompatibleAdapter` implementing Claude messages API.
-12. **API Gateways & Routers (`rezekify/api/v1/`)**:
+12. **API Gateways &amp; Routers (`rezekify/api/v1/`)**:
     - 9 FastAPI routers (`auth_router`, `dashboard_router`, `transactions_router`, `accounts_router`, `categories_router`, `vaults_router`, `gateway_router`, `settings_router`).
 13. **Telegram Gateway (`rezekify/gateway/telegram_bot.py`)**:
     - `TelegramGateway`: Webhook handler parsing Telegram updates. Features 5-minute deduplication cache (10,000 update IDs) and OTP pairing rate limiting.
@@ -512,13 +523,13 @@ sequenceDiagram
 
 ## Section 5: Cross-Cutting Concerns
 
-### 5.1 Security, Authentication & Authorization
+### 5.1 Security, Authentication &amp; Authorization
 
 1. **Authentication Token Lifecycle**:
    - Access tokens (`access_token`) are short-lived JSON Web Tokens (30-minute validity) signed via HS256 containing user identity claims (`sub: <user_uuid>`, `type: "access"`). Transmitted via the `Authorization: Bearer <token>` header.
    - Refresh tokens (`refresh_token`) are long-lived (7-day validity) signed JWTs (`type: "refresh"`). Transmitted strictly within a hardened `HttpOnly`, `SameSite=Lax`, `Secure` (in production) HTTP cookie.
    - Token refresh via POST `/api/v1/auth/refresh` rotates both access and refresh tokens, invalidating compromised session chains.
-2. **Password Hashing & Ingestion Sanitization**:
+2. **Password Hashing &amp; Ingestion Sanitization**:
    - Password hashing is implemented in `rezekify/core/security.py` using direct `bcrypt`.
    - Passwords undergo explicit 72-byte truncation (`password.encode('utf-8')[:72]`) prior to hashing, mitigating password exhaustion attacks and library truncation mismatches.
 3. **Strict Row-Level Tenant Isolation**:
@@ -544,9 +555,9 @@ sequenceDiagram
 
 ---
 
-### 5.2 Secret & Credential Management
+### 5.2 Secret &amp; Credential Management
 
-1. **At-Rest Key Encryption via PBKDF2 & Fernet**:
+1. **At-Rest Key Encryption via PBKDF2 &amp; Fernet**:
    - User-provided BYOK keys (`encrypted_ai_api_key`) are never stored in plaintext.
    - `rezekify/core/crypto.py` utilizes Fernet symmetric encryption. The encryption key is derived using PBKDF2-HMAC-SHA256 with **600,000 derivation rounds** seeded by `settings.ENCRYPTION_KEY` or `settings.SECRET_KEY`.
    - Backward compatibility: Supports a legacy single-round SHA-256 fallback decryption path for zero-downtime key rotation.
@@ -559,7 +570,7 @@ sequenceDiagram
 
 ---
 
-### 5.3 Persistence & Data Integrity
+### 5.3 Persistence &amp; Data Integrity
 
 1. **Double-Entry Invariants**:
    - Every financial transaction produces balanced records in `ledger_entries`.
@@ -575,7 +586,7 @@ sequenceDiagram
      db.query(Account).filter(Account.id == second_id).with_for_update().first()
      ```
      This strictly eliminates database deadlocks caused by inverted locking sequences.
-3. **Deterministic Rounding & Storage**:
+3. **Deterministic Rounding &amp; Storage**:
    - All financial balances and entry amounts are stored as `Numeric(15, 2)` in PostgreSQL and handled strictly as `decimal.Decimal` in Python. Floating-point conversions are banned.
 4. **Database Migrations with Self-Healing Fallback**:
    - Database migrations are versioned via Alembic (`rezekify/db/migrations/versions/` contains migrations 001 through 006).
@@ -584,7 +595,7 @@ sequenceDiagram
 
 ---
 
-### 5.4 Fault Tolerance & Resilience
+### 5.4 Fault Tolerance &amp; Resilience
 
 ```
                                   [Input: Audio / Image / Text]
@@ -633,11 +644,11 @@ sequenceDiagram
    - `TelegramGateway`: Deduplication cache bounded at 10,000 update IDs with a 5-minute sliding window.
 4. **Indonesian Language Graceful Degradation**:
    - If all automated extraction providers fail, the system catches exceptions at the orchestrator boundary and responds with friendly, localized guidance:
-     *"Maaf, sistem AI sedang mengalami antrean tinggi. Silakan gunakan format teks: [Jumlah] [Nama Akun] [Keterangan]."*
+    *"Maaf, sistem AI sedang mengalami antrean tinggi. Silakan gunakan format teks: \[Jumlah\] \[Nama Akun\] \[Keterangan\]."*
 
 ---
 
-## Section 6: Deployment & Infrastructure
+## Section 6: Deployment &amp; Infrastructure
 
 ### 6.1 Runtime Execution Topology
 
@@ -684,16 +695,18 @@ The production and local deployment topology runs entirely within Docker Compose
 
 ---
 
-### 6.2 Resource Footprint & Allocation
+### 6.2 Resource Footprint &amp; Allocation
 
 The system is engineered for minimal hosting overhead, operating reliably within a 1 GB RAM Virtual Private Server (VPS):
 
-| Service | Container Image Base | Memory Limit | Memory Reservation | CPU Limit | Worker Concurrency |
-|---|---|---|---|---|---|
-| **db** | `postgres:16-alpine` | `512 MB` | `256 MB` | `1.0 CPU` | Max 30 connections (`shared_buffers=256MB`) |
-| **backend** | Multi-stage `python:3.12-slim` | `768 MB` | `384 MB` | `1.5 CPU` | 2 Uvicorn workers (`--limit-concurrency 30`) |
-| **frontend** | `nginx:alpine` | `128 MB` | `32 MB` | `0.5 CPU` | Nginx event-driven single process |
-| **Total Stack** | — | **~1.4 GB** (Burstable) | **~672 MB** (Baseline) | **~3.0 CPU** | Scaled for low-resource VPS nodes |
+
+| Service         | Container Image Base           | Memory Limit             | Memory Reservation      | CPU Limit     | Worker Concurrency                           |
+| --------------- | ------------------------------ | ------------------------ | ----------------------- | ------------- | -------------------------------------------- |
+| **db**          | `postgres:16-alpine`           | `512 MB`                 | `256 MB`                | `1.0 CPU`     | Max 30 connections (`shared_buffers=256MB`)  |
+| **backend**     | Multi-stage `python:3.12-slim` | `768 MB`                 | `384 MB`                | `1.5 CPU`     | 2 Uvicorn workers (`--limit-concurrency 30`) |
+| **frontend**    | `nginx:alpine`                 | `128 MB`                 | `32 MB`                 | `0.5 CPU`     | Nginx event-driven single process            |
+| **Total Stack** | —                              | **\~1.4 GB** (Burstable) | **\~672 MB** (Baseline) | **\~3.0 CPU** | Scaled for low-resource VPS nodes            |
+
 
 ---
 
@@ -709,7 +722,7 @@ The system is engineered for minimal hosting overhead, operating reliably within
 
 ---
 
-### 6.4 Startup Sequence & Orchestration
+### 6.4 Startup Sequence &amp; Orchestration
 
 The application lifecycle follows a deterministic dependency order orchestrated via Docker Compose health checks and entrypoint scripts:
 
@@ -732,7 +745,7 @@ sequenceDiagram
     Note over BE: docker-entrypoint.sh runs:
     BE->>DB: python -m rezekify.db.init_db
     activate DB
-    Note over DB: Runs Alembic migrations (versions 001-006)<br/>Reconciles schema columns
+    Note over DB: Runs Alembic migrations (v001-006) & reconciles schema
     DB-->>BE: Database schema synchronized
     deactivate DB
     BE->>BE: Exec uvicorn rezekify.api.main:app --host 0.0.0.0 --port 8000
@@ -751,17 +764,19 @@ sequenceDiagram
 
 ---
 
-## Section 7: Architectural Verification & Governance
+## Section 7: Architectural Verification &amp; Governance
 
 ### 7.1 Automated Invariant Enforcement
 
-| Architectural Invariant | Verification Mechanism | Test / Enforcement Location |
-|---|---|---|
-| **Deterministic Math** | Unit tests executing 1,000 randomized transactions validating zero float drift. | `tests/test_ledger.py`, `tests/test_runway.py` |
-| **Balanced Ledger** | Database-level assertions checking $\sum \text{Debit} = \sum \text{Credit}$ after every mutation. | `rezekify/services/ledger.py` (`assert_balanced_entries`) |
-| **Row-Level Tenant Isolation** | Automated cross-tenant penetration tests verifying User A cannot read/mutate User B records. | `tests/test_tenant_isolation.py` |
-| **SSRF Protection** | Unit test suite feeding cloud metadata and RFC 1918 IPs into URL validator. | `tests/test_byok_providers.py` (`validate_base_url`) |
-| **Zero Non-Essential Scope** | Strict code review and architectural gatekeeping blocking feature bloat. | `docs/architecture/` Governance Rules |
+
+| Architectural Invariant        | Verification Mechanism                                                                            | Test / Enforcement Location                               |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Deterministic Math**         | Unit tests executing 1,000 randomized transactions validating zero float drift.                   | `tests/test_ledger.py`, `tests/test_runway.py`            |
+| **Balanced Ledger**            | Database-level assertions checking $\sum \text{Debit} = \sum \text{Credit}$ after every mutation. | `rezekify/services/ledger.py` (`assert_balanced_entries`) |
+| **Row-Level Tenant Isolation** | Automated cross-tenant penetration tests verifying User A cannot read/mutate User B records.      | `tests/test_tenant_isolation.py`                          |
+| **SSRF Protection**            | Unit test suite feeding cloud metadata and RFC 1918 IPs into URL validator.                       | `tests/test_byok_providers.py` (`validate_base_url`)      |
+| **Zero Non-Essential Scope**   | Strict code review and architectural gatekeeping blocking feature bloat.                          | `docs/architecture/` Governance Rules                     |
+
 
 ---
 
