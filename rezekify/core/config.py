@@ -79,6 +79,15 @@ class Settings(BaseSettings):
     # Security & Encryption
     ENCRYPTION_KEY: Optional[str] = None
 
+    # SMTP Email Configuration
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: Optional[str] = None
+    SMTP_FROM_NAME: str = "Rezekify Security"
+    SMTP_TLS: bool = True
+
     @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":
         # ponytail: validates against development default; upgrade to entropy/min-length checks if needed.
