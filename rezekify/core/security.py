@@ -54,12 +54,16 @@ def generate_pairing_code() -> str:
 
 
 def hash_otp_code(otp_code: str) -> str:
-    """Computes SHA-256 hash of a numeric OTP code."""
-    return hashlib.sha256(otp_code.encode("utf-8")).hexdigest()
+    """Computes keyed HMAC-SHA256 hash of a numeric OTP code using application secret."""
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        otp_code.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def verify_otp_code(plain_otp: str, hashed_otp: str) -> bool:
-    """Verifies a plain OTP against its stored SHA-256 hash using constant-time comparison."""
+    """Verifies a plain OTP against its stored HMAC-SHA256 hash using constant-time comparison."""
     candidate_hash = hash_otp_code(plain_otp)
     return hmac.compare_digest(candidate_hash, hashed_otp)
 

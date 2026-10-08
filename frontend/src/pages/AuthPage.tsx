@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
 import {
@@ -33,13 +33,23 @@ export const AuthPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const { login, register, forgotPassword, resetPassword } = useAuth();
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleTabChange = (newMode: 'login' | 'register') => {
     setMode(newMode);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setResendCooldown(0);
   };
 
   const handleForgotPasswordClick = () => {
@@ -52,6 +62,7 @@ export const AuthPage: React.FC = () => {
     setMode('login');
     setErrorMessage(null);
     setSuccessMessage(null);
+    setResendCooldown(0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,8 +94,8 @@ export const AuthPage: React.FC = () => {
         if (!otpCode.trim() || otpCode.trim().length !== 6) {
           throw new Error('Kode verifikasi harus 6 digit angka.');
         }
-        if (!newPassword || newPassword.length < 6) {
-          throw new Error('Kata sandi baru minimal 6 karakter.');
+        if (!newPassword || newPassword.length < 8) {
+          throw new Error('Kata sandi baru minimal 8 karakter.');
         }
         if (!resetPassword) {
           throw new Error('Fitur pemulihan kata sandi tidak tersedia.');
@@ -94,6 +105,7 @@ export const AuthPage: React.FC = () => {
         setPassword('');
         setOtpCode('');
         setNewPassword('');
+        setResendCooldown(0);
         setSuccessMessage(msg || 'Kata sandi Anda berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.');
       }
     } catch (err: any) {
@@ -104,6 +116,7 @@ export const AuthPage: React.FC = () => {
   };
 
   const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
     setErrorMessage(null);
     setIsResending(true);
     try {
@@ -112,6 +125,7 @@ export const AuthPage: React.FC = () => {
       }
       const msg = await forgotPassword(email);
       setSuccessMessage(msg || 'Kode verifikasi baru telah dikirim.');
+      setResendCooldown(60);
     } catch (err: any) {
       setErrorMessage(err?.message || 'Gagal mengirim ulang kode.');
     } finally {
@@ -280,7 +294,7 @@ export const AuthPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleForgotPasswordClick}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer py-1"
+                    className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer py-1 min-h-[38px] flex items-center"
                   >
                     Lupa kata sandi?
                   </button>
@@ -361,6 +375,7 @@ export const AuthPage: React.FC = () => {
                     id="auth-otp"
                     type="text"
                     inputMode="numeric"
+                    autoComplete="one-time-code"
                     pattern="[0-9]*"
                     maxLength={6}
                     required
@@ -382,7 +397,8 @@ export const AuthPage: React.FC = () => {
                     id="auth-new-password"
                     type={showNewPassword ? 'text' : 'password'}
                     required
-                    minLength={6}
+                    minLength={8}
+                    maxLength={72}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Kata sandi baru"
@@ -417,16 +433,18 @@ export const AuthPage: React.FC = () => {
               <div className="flex items-center justify-between pt-2 text-xs">
                 <button
                   type="button"
-                  disabled={isResending}
+                  disabled={isResending || resendCooldown > 0}
                   onClick={handleResendOtp}
-                  className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5 py-1 px-2 min-h-[38px]"
+                  className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 py-1 px-2 min-h-[38px]"
                 >
                   {isResending ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <RotateCcw className="w-3.5 h-3.5" />
                   )}
-                  <span>Kirim ulang kode</span>
+                  <span>
+                    {resendCooldown > 0 ? `Kirim ulang kode (${resendCooldown}s)` : 'Kirim ulang kode'}
+                  </span>
                 </button>
                 <button
                   type="button"

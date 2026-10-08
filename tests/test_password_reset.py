@@ -203,3 +203,39 @@ def test_reset_password_invalid_password_length(test_user):
     )
     assert resp.status_code == 422
 
+
+def test_hmac_salted_otp_hashing():
+    import hashlib
+    import hmac
+    from rezekify.core.config import settings
+    from rezekify.core.security import hash_otp_code, verify_otp_code
+
+    otp = "654321"
+    expected = hmac.new(settings.SECRET_KEY.encode("utf-8"), otp.encode("utf-8"), hashlib.sha256).hexdigest()
+    assert hash_otp_code(otp) == expected
+    assert verify_otp_code(otp, expected) is True
+    assert verify_otp_code("111111", expected) is False
+
+
+def test_request_password_reset_background_tasks(test_user, db_session):
+    from fastapi import BackgroundTasks
+    from rezekify.services.auth import AuthService
+
+    auth = AuthService(db_session)
+    bg_tasks = BackgroundTasks()
+
+    with patch("rezekify.services.email.EmailService.send_password_reset_email") as mock_send:
+        auth.request_password_reset(test_user.email, background_tasks=bg_tasks)
+        # Background task queued, not executed synchronously yet
+        assert not mock_send.called
+        assert len(bg_tasks.tasks) == 1
+
+        # Execute queued task
+        import asyncio
+        for task in bg_tasks.tasks:
+            res = task()
+            if asyncio.iscoroutine(res):
+                asyncio.run(res)
+        assert mock_send.called
+
+

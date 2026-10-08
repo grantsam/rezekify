@@ -306,4 +306,78 @@ describe('AuthPage Component', () => {
 
     expect(screen.getByRole('button', { name: /Masuk ke Rezekify/i })).toBeInTheDocument();
   });
+
+  it('validates new password length >= 8 characters on reset password submit', async () => {
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
+      target: { value: 'user@rezekify.id' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/123456/i)).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(/123456/i), {
+      target: { value: '123456' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Kata sandi baru/i), {
+      target: { value: 'short' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Perbarui Kata Sandi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Kata sandi baru minimal 8 karakter.')).toBeInTheDocument();
+    });
+    expect(mockResetPassword).not.toHaveBeenCalled();
+  });
+
+  it('verifies accessibility and input constraints on OTP and reset password inputs', async () => {
+    render(<AuthPage />);
+
+    const forgotBtn = screen.getByRole('button', { name: /Lupa kata sandi\?/i });
+    expect(forgotBtn.className).toContain('min-h-[38px]');
+
+    fireEvent.click(forgotBtn);
+    fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
+      target: { value: 'user@rezekify.id' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/123456/i)).toBeInTheDocument();
+    });
+
+    const otpInput = screen.getByPlaceholderText(/123456/i);
+    expect(otpInput).toHaveAttribute('autocomplete', 'one-time-code');
+
+    const passwordInput = screen.getByPlaceholderText(/Kata sandi baru/i);
+    expect(passwordInput).toHaveAttribute('minlength', '8');
+    expect(passwordInput).toHaveAttribute('maxlength', '72');
+  });
+
+  it('activates 60-second cooldown timer on Kirim ulang kode button when clicked', async () => {
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
+      target: { value: 'user@rezekify.id' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Kirim ulang kode/i })).toBeInTheDocument();
+    });
+
+    const resendBtn = screen.getByRole('button', { name: /Kirim ulang kode/i });
+    expect(resendBtn).not.toBeDisabled();
+
+    fireEvent.click(resendBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Kirim ulang kode \(\d+s\)/i })).toBeDisabled();
+    });
+  });
 });

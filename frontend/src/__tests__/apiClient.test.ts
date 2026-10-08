@@ -443,6 +443,23 @@ describe('apiClient authentication headers and utilities', () => {
     await expect(apiFetch('/protected-endpoint')).rejects.toThrow('Invalid credentials');
   });
 
+  it('apiFetch parses FastAPI 422 validation error array in detail', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({
+        detail: [
+          { loc: ['body', 'email'], msg: 'value is not a valid email address', type: 'value_error' },
+          { loc: ['body', 'password'], msg: 'String should have at least 8 characters', type: 'string_too_short' },
+        ],
+      }),
+    });
+
+    await expect(apiFetch('/auth/register')).rejects.toThrow(
+      'value is not a valid email address, String should have at least 8 characters'
+    );
+  });
+
   it('apiFetch throws default error message when response has no detail', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,

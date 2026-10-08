@@ -131,7 +131,13 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
       if (isUnrefreshableAuth) {
         clearAuthToken();
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Request failed with status ${response.status}`);
+        let message = `Request failed with status ${response.status}`;
+        if (typeof errorData?.detail === 'string') {
+          message = errorData.detail;
+        } else if (Array.isArray(errorData?.detail)) {
+          message = errorData.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', ');
+        }
+        throw new Error(message);
       }
 
       const newToken = await executeTokenRefresh();
@@ -157,7 +163,13 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Request failed with status ${response.status}`);
+      let message = `Request failed with status ${response.status}`;
+      if (typeof errorData?.detail === 'string') {
+        message = errorData.detail;
+      } else if (Array.isArray(errorData?.detail)) {
+        message = errorData.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', ');
+      }
+      throw new Error(message);
     }
 
     return response.json();

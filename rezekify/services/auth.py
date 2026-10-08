@@ -2,8 +2,10 @@
 
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from uuid import UUID
 
+from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
 from rezekify.core.security import (
@@ -115,7 +117,7 @@ class AuthService:
         self.db.refresh(user)
         return user
 
-    def request_password_reset(self, email: str) -> None:
+    def request_password_reset(self, email: str, background_tasks: Optional[BackgroundTasks] = None) -> None:
         """Initiates password reset OTP generation and email delivery."""
         from rezekify.services.email import EmailService
         user = self.db.query(User).filter_by(email=email.lower().strip()).first()
@@ -129,7 +131,10 @@ class AuthService:
         self.db.commit()
 
         email_svc = EmailService()
-        email_svc.send_password_reset_email(user.email, otp)
+        if background_tasks is not None:
+            background_tasks.add_task(email_svc.send_password_reset_email, user.email, otp)
+        else:
+            email_svc.send_password_reset_email(user.email, otp)
 
     def reset_password_with_otp(self, email: str, otp_code: str, new_password: str) -> None:
         """Verifies OTP and resets user password with lockout protection."""

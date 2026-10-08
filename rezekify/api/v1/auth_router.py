@@ -2,7 +2,7 @@
 
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
 from jose import JWTError, jwt
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.orm import Session
@@ -189,9 +189,13 @@ def create_telegram_pairing_code(
 
 
 @auth_router.post("/forgot-password", response_model=MessageResponse, dependencies=[Depends(auth_limiter)])
-def forgot_password_endpoint(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password_endpoint(
+    req: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     auth = AuthService(db)
-    auth.request_password_reset(req.email)
+    auth.request_password_reset(req.email, background_tasks=background_tasks)
     return MessageResponse(message="Jika email terdaftar, kode verifikasi 6-digit telah dikirim ke kotak masuk Anda.")
 
 
