@@ -156,3 +156,50 @@ def test_reset_password_fifth_attempt_invalidates_otp(mock_send, test_user, db_s
     assert test_user.password_reset_otp_hash is None
     assert test_user.password_reset_expires_at is None
     assert test_user.password_reset_attempts == 0
+
+
+def test_reset_password_invalid_password_length(test_user):
+    # Too short password (< 8 chars)
+    resp = client.post(
+        "/api/v1/auth/reset-password",
+        json={
+            "email": test_user.email,
+            "otp_code": "123456",
+            "new_password": "short",
+        },
+    )
+    assert resp.status_code == 422
+
+    # Too long password (> 72 chars)
+    resp = client.post(
+        "/api/v1/auth/reset-password",
+        json={
+            "email": test_user.email,
+            "otp_code": "123456",
+            "new_password": "A" * 73,
+        },
+    )
+    assert resp.status_code == 422
+
+    # Non-6-digit OTP code (5 digits)
+    resp = client.post(
+        "/api/v1/auth/reset-password",
+        json={
+            "email": test_user.email,
+            "otp_code": "12345",
+            "new_password": "ValidPassword123!",
+        },
+    )
+    assert resp.status_code == 422
+
+    # Non-digit OTP code
+    resp = client.post(
+        "/api/v1/auth/reset-password",
+        json={
+            "email": test_user.email,
+            "otp_code": "abcdef",
+            "new_password": "ValidPassword123!",
+        },
+    )
+    assert resp.status_code == 422
+

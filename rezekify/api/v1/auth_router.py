@@ -91,7 +91,6 @@ class MessageResponse(BaseModel):
     message: str
 
 
-
 @auth_router.post("/register", response_model=RegisterResponse, dependencies=[Depends(auth_limiter)])
 def register(req: RegisterRequest, response: Response, db: Session = Depends(get_db)):
     """Registers a new user and sets HttpOnly refresh cookie."""

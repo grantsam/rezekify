@@ -1,7 +1,6 @@
 """Tests for EmailService and SMTP delivery."""
 
 from unittest.mock import MagicMock, patch
-import pytest
 from rezekify.services.email import EmailService
 
 

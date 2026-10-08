@@ -342,7 +342,7 @@ export const AuthPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleBackToLogin}
-                className="w-full text-zinc-400 hover:text-zinc-200 text-xs font-medium py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[44px] bg-transparent hover:bg-zinc-850"
+                className="w-full text-zinc-400 hover:text-zinc-200 text-xs font-medium py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[44px] bg-transparent hover:bg-zinc-800/50"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Kembali ke Masuk</span>
