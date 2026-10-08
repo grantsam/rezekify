@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardBody, Chip } from '@heroui/react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Calendar } from 'lucide-react';
+import { AlertTriangle, Calendar, ShieldCheck } from 'lucide-react';
 import { UpcomingBill } from '../types/api';
 
 interface Props {
@@ -30,7 +30,27 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
   }
 
   const urgentBills = bills.filter((b) => b.days_until_due <= 7);
-  if (urgentBills.length === 0) return null;
+  if (urgentBills.length === 0) {
+    return (
+      <div
+        data-testid="upcoming-bills-empty"
+        className="bg-[#141417] border border-zinc-800/80 rounded-2xl p-5 mb-6 text-zinc-300 shadow-sm flex items-center justify-between gap-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-zinc-100">Semua Komitmen Aman</h4>
+            <p className="text-xs text-zinc-400 mt-0.5">Tidak ada tagihan atau komitmen jatuh tempo dalam 7 hari kedepan.</p>
+          </div>
+        </div>
+        <Chip size="sm" variant="flat" color="success" className="text-xs font-medium shrink-0">
+          H-7 Bersih
+        </Chip>
+      </div>
+    );
+  }
 
   return (
     <motion.div

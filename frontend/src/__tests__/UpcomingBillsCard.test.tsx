@@ -46,8 +46,28 @@ describe('UpcomingBillsCard Component', () => {
     expect(skeleton).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('renders nothing when bills list is empty', () => {
-    const { container } = render(<UpcomingBillsCard bills={[]} />);
-    expect(container.firstChild).toBeNull();
+  it('renders reassurance card when bills list is empty', () => {
+    render(<UpcomingBillsCard bills={[]} />);
+    expect(screen.getByTestId('upcoming-bills-empty')).toBeInTheDocument();
+    expect(screen.getByText('Semua Komitmen Aman')).toBeInTheDocument();
+    expect(
+      screen.getByText('Tidak ada tagihan atau komitmen jatuh tempo dalam 7 hari kedepan.')
+    ).toBeInTheDocument();
+    expect(screen.getByText('H-7 Bersih')).toBeInTheDocument();
+  });
+
+  it('renders reassurance card when all bills are due beyond 7 days', () => {
+    const nonUrgentBills = [
+      {
+        name: 'Asuransi Tahunan',
+        target_amount: 3000000,
+        allocated_amount: 3000000,
+        target_date: '2026-10-30',
+        days_until_due: 14,
+      },
+    ];
+    render(<UpcomingBillsCard bills={nonUrgentBills} />);
+    expect(screen.getByTestId('upcoming-bills-empty')).toBeInTheDocument();
+    expect(screen.getByText('Semua Komitmen Aman')).toBeInTheDocument();
   });
 });
