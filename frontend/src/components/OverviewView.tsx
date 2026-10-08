@@ -9,10 +9,10 @@ import {
   Calculator,
   Wallet,
   Calendar,
-  CreditCard,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
+import { formatRupiah } from '../utils/formatters';
 import { ExpenseCharts } from './ExpenseCharts';
 import { UpcomingBillsCard } from './UpcomingBillsCard';
 import { RecentTransactionsCard } from './RecentTransactionsCard';
@@ -157,7 +157,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl sm:text-4xl md:text-5xl font-mono font-bold text-white tabular-nums tracking-tight">
-                  Rp {dailyRunway.toLocaleString('id-ID')}
+                  {formatRupiah(dailyRunway)}
                 </span>
                 <span className="text-zinc-400 text-sm sm:text-base font-normal">/ hari</span>
               </div>
@@ -173,20 +173,20 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-zinc-400 font-medium">Pengeluaran Hari Ini:</span>
                 <span className="text-zinc-200 font-mono font-semibold tabular-nums">
-                  Rp {todaySpent.toLocaleString('id-ID')}
+                  {formatRupiah(todaySpent)}
                 </span>
               </div>
 
               <div>
                 {isOverspent ? (
                   <span className="text-rose-400 font-semibold font-mono tabular-nums">
-                    Melebihi jatah: Rp {Math.abs(remainingBudget).toLocaleString('id-ID')}
+                    Melebihi jatah: {formatRupiah(Math.abs(remainingBudget))}
                   </span>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className="text-zinc-400 font-medium">Sisa Jatah Hari Ini:</span>
                     <span className="text-emerald-400 font-semibold font-mono tabular-nums">
-                      Rp {remainingBudget.toLocaleString('id-ID')}
+                      {formatRupiah(remainingBudget)}
                     </span>
                   </div>
                 )}
@@ -209,7 +209,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <Wallet className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="text-zinc-400">Saldo Bebas Pakai:</span>
                 <span className="text-white font-mono font-semibold tabular-nums">
-                  Rp {(summary?.operational_free_cash ?? 0).toLocaleString('id-ID')}
+                  {formatRupiah(summary?.operational_free_cash ?? 0)}
                 </span>
               </div>
               <div className="flex items-center gap-2 sm:justify-end">
@@ -247,21 +247,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Col 6: Upcoming Bills Card */}
         <div className="lg:col-span-6 w-full">
-          {summary?.upcoming_bills && summary.upcoming_bills.length > 0 ? (
-            <UpcomingBillsCard bills={summary.upcoming_bills} isLoading={isLoading} />
-          ) : (
-            <Card className="bg-[#141417] border border-zinc-800/80 rounded-2xl shadow-none">
-              <CardBody className="p-5 flex flex-col justify-between min-h-[160px]">
-                <div className="flex items-center gap-2 mb-2">
-                  <CreditCard className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-sm font-semibold text-white">Tagihan & Komitmen Mendesak</h3>
-                </div>
-                <div className="py-6 text-center text-xs text-zinc-500">
-                  Tidak ada tagihan atau komitmen jatuh tempo dalam 7 hari ke depan.
-                </div>
-              </CardBody>
-            </Card>
-          )}
+          <UpcomingBillsCard bills={summary?.upcoming_bills} isLoading={isLoading} />
         </div>
 
         {/* Col 6: Komitmen & Vaults Prioritas */}
@@ -335,8 +321,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono tabular-nums">
-                          <span>Rp {vault.allocated_amount.toLocaleString('id-ID')}</span>
-                          <span className="text-zinc-500">/ Rp {vault.target_amount.toLocaleString('id-ID')}</span>
+                          <span>{formatRupiah(vault.allocated_amount)}</span>
+                          <span className="text-zinc-500">/ {formatRupiah(vault.target_amount)}</span>
                         </div>
                       </div>
                     );

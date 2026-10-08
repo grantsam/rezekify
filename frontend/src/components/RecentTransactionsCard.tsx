@@ -2,19 +2,12 @@ import React from 'react';
 import { ArrowRight, Receipt, ArrowUpRight, ArrowDownLeft, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@heroui/react';
 import { Transaction } from '../types/api';
+import { formatRupiah } from '../utils/formatters';
 
 export interface RecentTransactionsCardProps {
   transactions: Transaction[];
   isLoading?: boolean;
   onViewAll?: () => void;
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 function formatDate(dateStr: string): string {
@@ -149,7 +142,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
                     }`}
                   >
                     {txType === 'INCOME' ? '+ ' : txType === 'TRANSFER' ? '↔ ' : '- '}
-                    Rp {formatCurrency(amount)}
+                    {formatRupiah(Math.abs(amount))}
                   </span>
                 </div>
               </div>

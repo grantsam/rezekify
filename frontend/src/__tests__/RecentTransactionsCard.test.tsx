@@ -36,8 +36,12 @@ describe('RecentTransactionsCard Component', () => {
     expect(screen.getByText('Transaksi Terakhir')).toBeInTheDocument();
     expect(screen.getByText('Makan Nasi Padang')).toBeInTheDocument();
     expect(screen.getByText('Transfer Gaji')).toBeInTheDocument();
-    expect(screen.getByText(/- Rp\s*35[.,]000/)).toBeInTheDocument();
-    expect(screen.getByText(/\+ Rp\s*5[.,]000[.,]000/)).toBeInTheDocument();
+    const expenseEl = screen.getByText(/- Rp\s*35[.,]000/);
+    const incomeEl = screen.getByText(/\+ Rp\s*5[.,]000[.,]000/);
+    expect(expenseEl).toBeInTheDocument();
+    expect(expenseEl).toHaveClass('tabular-nums');
+    expect(incomeEl).toBeInTheDocument();
+    expect(incomeEl).toHaveClass('tabular-nums');
 
     const viewAllBtn = screen.getByRole('button', { name: /lihat semua di buku besar/i });
     fireEvent.click(viewAllBtn);

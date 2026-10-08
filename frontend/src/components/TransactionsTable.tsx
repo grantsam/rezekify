@@ -3,6 +3,7 @@ import { Trash2, ArrowUpRight, ArrowDownLeft, Clock, Pencil, Search, X } from 'l
 import { Chip, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Select, SelectItem } from '@heroui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Account, Category, Transaction, TransactionFilterParams } from '../types/api';
+import { formatRupiah } from '../utils/formatters';
 
 interface Props {
   transactions: Transaction[];
@@ -316,7 +317,7 @@ export const TransactionsTable: React.FC<Props> = ({
     });
 
     const amount = tx.ledger_entries?.[0]?.amount ?? 0;
-    const formattedAmount = Number(amount).toLocaleString('id-ID');
+    const formattedAmount = formatRupiah(Math.abs(Number(amount)));
 
     const isAccountDebit = tx.ledger_entries?.some((e) => Boolean(e.account_id) && e.entry_type === 'DEBIT') ?? false;
     const isTransfer = (tx.ledger_entries?.filter((e) => Boolean(e.account_id)).length ?? 0) >= 2;
@@ -540,7 +541,7 @@ export const TransactionsTable: React.FC<Props> = ({
                           isIncome ? 'text-emerald-400' : 'text-zinc-100'
                         }`}
                       >
-                        {isIncome ? `+ Rp ${formattedAmount}` : `- Rp ${formattedAmount}`}
+                        {isIncome ? `+ ${formattedAmount}` : `- ${formattedAmount}`}
                       </span>
                     </div>
                   </div>
@@ -679,7 +680,7 @@ export const TransactionsTable: React.FC<Props> = ({
                             isIncome ? 'text-emerald-400' : 'text-zinc-100'
                           }`}
                         >
-                          {isIncome ? `+ Rp ${formattedAmount}` : `- Rp ${formattedAmount}`}
+                          {isIncome ? `+ ${formattedAmount}` : `- ${formattedAmount}`}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">

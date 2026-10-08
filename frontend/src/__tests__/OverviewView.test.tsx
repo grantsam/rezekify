@@ -191,6 +191,8 @@ describe('OverviewView Component', () => {
     expect(screen.getByText('Komitmen & Vaults Prioritas')).toBeInTheDocument();
     expect(screen.getByText('Simpanan Pajak')).toBeInTheDocument();
     expect(screen.getByText('Dana Darurat')).toBeInTheDocument();
+    expect(screen.getByText('Rp 1.000.000')).toBeInTheDocument();
+    expect(screen.getByText('/ Rp 1.500.000')).toBeInTheDocument();
 
     // Simulate button in vaults card
     const simBtn = screen.getByRole('button', { name: /Simulasi Belanja/i });
@@ -270,5 +272,26 @@ describe('OverviewView Component', () => {
     const openCopilotBtn = screen.getByRole('button', { name: /Buka AI Copilot/i });
     fireEvent.click(openCopilotBtn);
     expect(handleOpenChat).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders serene empty state directly via UpcomingBillsCard when upcoming_bills is empty', () => {
+    const emptyBillsSummary: DashboardSummaryResponse = {
+      ...mockSummary,
+      upcoming_bills: [],
+    };
+    render(
+      <OverviewView
+        summary={emptyBillsSummary}
+        vaults={mockVaults}
+        accounts={mockAccounts}
+        transactions={mockTransactions}
+        isLoading={false}
+        refreshTrigger={0}
+        onNavigateToVaults={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+        onOpenSimulateModal={vi.fn()}
+      />
+    );
+    expect(screen.getByText('Semua Komitmen Aman')).toBeInTheDocument();
   });
 });

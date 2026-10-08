@@ -42,8 +42,12 @@ describe('TransactionsTable Component', () => {
 
     expect(screen.getAllByText(/Makan Siang Nasi Padang/i)[0]).toBeInTheDocument();
     expect(screen.getAllByText(/Gaji Freelance Web/i)[0]).toBeInTheDocument();
-    expect(screen.getAllByText(/- Rp 35.000/i)[0]).toBeInTheDocument();
-    expect(screen.getAllByText(/\+ Rp 1.500.000/i)[0]).toBeInTheDocument();
+    const expenseEl = screen.getAllByText(/- Rp 35.000/i)[0];
+    const incomeEl = screen.getAllByText(/\+ Rp 1.500.000/i)[0];
+    expect(expenseEl).toBeInTheDocument();
+    expect(expenseEl).toHaveClass('tabular-nums');
+    expect(incomeEl).toBeInTheDocument();
+    expect(incomeEl).toHaveClass('tabular-nums');
 
     // Verify semantic table structure
     expect(screen.getByRole('table')).toBeInTheDocument();

@@ -12,6 +12,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Vault } from '../types/api';
+import { formatRupiah } from '../utils/formatters';
 
 export interface VaultCardProps {
   vault: Vault;
@@ -21,14 +22,6 @@ export interface VaultCardProps {
   isTogglingLock?: boolean;
   isDeleting?: boolean;
 }
-
-const formatCurrency = (val: number): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(val);
-};
 
 // ponytail: simplified date display using native toLocaleDateString; add when relative date-fns needed
 const formatDate = (dateStr: string): string => {
@@ -172,13 +165,13 @@ export const VaultCard: React.FC<VaultCardProps> = ({
           <div className="flex items-baseline gap-1 text-zinc-400">
             <span>Terkumpul:</span>
             <span className="font-semibold text-zinc-200 tabular-nums font-mono">
-              {formatCurrency(allocated)}
+              {formatRupiah(allocated)}
             </span>
           </div>
           <div className="flex items-baseline gap-1 text-zinc-400">
             <span>Target:</span>
             <span className="font-semibold text-zinc-200 tabular-nums font-mono">
-              {formatCurrency(target)}
+              {formatRupiah(target)}
             </span>
           </div>
         </div>

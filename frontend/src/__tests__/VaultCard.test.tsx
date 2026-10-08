@@ -37,8 +37,12 @@ describe('VaultCard Component', () => {
     expect(screen.getByText('Dana Darurat 3 Bulan')).toBeInTheDocument();
     expect(screen.getByText('Tabungan')).toBeInTheDocument();
     // Currency formatted with id-ID: Rp 7.500.000 and Rp 15.000.000
-    expect(screen.getByText(/Rp\s*7\.500\.000/)).toBeInTheDocument();
-    expect(screen.getByText(/Rp\s*15\.000\.000/)).toBeInTheDocument();
+    const allocatedEl = screen.getByText('Rp 7.500.000');
+    const targetEl = screen.getByText('Rp 15.000.000');
+    expect(allocatedEl).toBeInTheDocument();
+    expect(allocatedEl).toHaveClass('tabular-nums');
+    expect(targetEl).toBeInTheDocument();
+    expect(targetEl).toHaveClass('tabular-nums');
     expect(screen.getByText('50%')).toBeInTheDocument();
     expect(screen.getByText(/2026-12-31|31 Des 2026|Desember 2026/i)).toBeInTheDocument();
   });
