@@ -303,5 +303,19 @@ export interface ChatMessageItem {
   created_at: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otp_code: string;
+  new_password: string;
+}
+
+export interface GenericMessageResponse {
+  message: string;
+}
+
 
 

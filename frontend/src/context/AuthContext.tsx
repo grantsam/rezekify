@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiFetch, getAuthToken, setAuthToken, clearAuthToken } from '../services/apiClient';
+import { GenericMessageResponse } from '../types/api';
 
 export interface UserProfile {
   id: string;
@@ -16,6 +17,8 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => Promise<void>;
+  forgotPassword?: (email: string) => Promise<string>;
+  resetPassword?: (email: string, otpCode: string, newPassword: string) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -126,6 +129,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const forgotPassword = async (email: string): Promise<string> => {
+    const res = await apiFetch<GenericMessageResponse>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    return res.message;
+  };
+
+  const resetPassword = async (email: string, otpCode: string, newPassword: string): Promise<string> => {
+    const res = await apiFetch<GenericMessageResponse>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp_code: otpCode, new_password: newPassword }),
+    });
+    return res.message;
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -134,6 +153,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     register,
     logout,
+    forgotPassword,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

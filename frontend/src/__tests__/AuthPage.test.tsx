@@ -7,12 +7,16 @@ describe('AuthPage Component', () => {
   const mockLogin = vi.fn();
   const mockRegister = vi.fn();
   const mockLogout = vi.fn();
+  const mockForgotPassword = vi.fn();
+  const mockResetPassword = vi.fn();
 
   beforeEach(() => {
     vi.restoreAllMocks();
     mockLogin.mockReset().mockResolvedValue(undefined);
     mockRegister.mockReset().mockResolvedValue(undefined);
     mockLogout.mockReset();
+    mockForgotPassword.mockReset().mockResolvedValue('Kode verifikasi telah dikirim ke email Anda.');
+    mockResetPassword.mockReset().mockResolvedValue('Kata sandi Anda berhasil diperbarui.');
 
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       user: null,
@@ -22,6 +26,8 @@ describe('AuthPage Component', () => {
       login: mockLogin,
       register: mockRegister,
       logout: mockLogout,
+      forgotPassword: mockForgotPassword,
+      resetPassword: mockResetPassword,
     });
   });
 
@@ -159,5 +165,145 @@ describe('AuthPage Component', () => {
     // Switch to register tab clears error
     fireEvent.click(screen.getByRole('button', { name: /Daftar Akun/i }));
     expect(screen.queryByText('Kredensial salah')).not.toBeInTheDocument();
+  });
+
+  it('switches to forgot password form when clicking "Lupa kata sandi?"', () => {
+    render(<AuthPage />);
+
+    const forgotPasswordLink = screen.getByRole('button', { name: /Lupa kata sandi\?/i });
+    fireEvent.click(forgotPasswordLink);
+
+    expect(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Kembali ke Masuk/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/nama@email.com/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/••••••••/i)).not.toBeInTheDocument();
+  });
+
+  it('submits email in forgot password form, calls forgotPassword(email), and advances to OTP entry', async () => {
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
+      target: { value: 'user@rezekify.id' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i }));
+
+    await waitFor(() => {
+      expect(mockForgotPassword).toHaveBeenCalledWith('user@rezekify.id');
+    });
+
+    expect(screen.getByText(/user@rezekify.id/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/123456/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Kata sandi baru/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Perbarui Kata Sandi/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Kirim ulang kode/i })).toBeInTheDocument();
+  });
+
+  it('submits OTP and new password, calls resetPassword(email, otp, newPassword), and transitions back to login with success message', async () => {
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
+      target: { value: 'user@rezekify.id' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/123456/i)).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(/123456/i), {
+      target: { value: '654321' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Kata sandi baru/i), {
+      target: { value: 'NewSecret123!' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Perbarui Kata Sandi/i }));
+
+    await waitFor(() => {
+      expect(mockResetPassword).toHaveBeenCalledWith('user@rezekify.id', '654321', 'NewSecret123!');
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Masuk ke Rezekify/i })).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Kata sandi Anda berhasil diperbarui/i)).toBeInTheDocument();
+  });
+
+  it('displays error banner when forgotPassword fails', async () => {
+    mockForgotPassword.mockRejectedValueOnce(new Error('Email tidak ditemukan.'));
+
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
+      target: { value: 'unknown@rezekify.id' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Email tidak ditemukan.')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i })).toBeInTheDocument();
+  });
+
+  it('displays error banner when resetPassword fails', async () => {
+    mockResetPassword.mockRejectedValueOnce(new Error('Kode OTP tidak valid atau sudah kedaluwarsa.'));
+
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
+      target: { value: 'user@rezekify.id' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/123456/i)).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(/123456/i), {
+      target: { value: '000000' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Kata sandi baru/i), {
+      target: { value: 'NewSecret123!' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Perbarui Kata Sandi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Kode OTP tidak valid atau sudah kedaluwarsa.')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /Perbarui Kata Sandi/i })).toBeInTheDocument();
+  });
+
+  it('calls forgotPassword again when clicking "Kirim ulang kode"', async () => {
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
+      target: { value: 'user@rezekify.id' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Kode Verifikasi/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Kirim ulang kode/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Kirim ulang kode/i }));
+
+    await waitFor(() => {
+      expect(mockForgotPassword).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('switches back to login form when clicking "Kembali ke Masuk"', () => {
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    expect(screen.getByRole('button', { name: /Kembali ke Masuk/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Kembali ke Masuk/i }));
+
+    expect(screen.getByRole('button', { name: /Masuk ke Rezekify/i })).toBeInTheDocument();
   });
 });
