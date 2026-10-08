@@ -1,5 +1,6 @@
 """Authentication and Telegram Pairing Services."""
 
+import secrets
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -8,7 +9,9 @@ from sqlalchemy.orm import Session
 from rezekify.core.security import (
     create_access_token,
     generate_pairing_code,
+    hash_otp_code,
     hash_password,
+    verify_otp_code,
     verify_password,
 )
 from rezekify.db.models import User
@@ -111,3 +114,59 @@ class AuthService:
         self.db.commit()
         self.db.refresh(user)
         return user
+
+    def request_password_reset(self, email: str) -> None:
+        """Initiates password reset OTP generation and email delivery."""
+        from rezekify.services.email import EmailService
+        user = self.db.query(User).filter_by(email=email.lower().strip()).first()
+        if not user:
+            return  # Anti-enumeration: silent exit
+
+        otp = f"{secrets.randbelow(1000000):06d}"
+        user.password_reset_otp_hash = hash_otp_code(otp)
+        user.password_reset_expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+        user.password_reset_attempts = 0
+        self.db.commit()
+
+        email_svc = EmailService()
+        email_svc.send_password_reset_email(user.email, otp)
+
+    def reset_password_with_otp(self, email: str, otp_code: str, new_password: str) -> None:
+        """Verifies OTP and resets user password with lockout protection."""
+        user = self.db.query(User).filter_by(email=email.lower().strip()).first()
+        now = datetime.now(timezone.utc)
+
+        if not user or not user.password_reset_otp_hash or not user.password_reset_expires_at:
+            raise ValueError("Kode verifikasi tidak valid atau telah kadaluwarsa.")
+
+        expires_at = user.password_reset_expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        if expires_at < now:
+            raise ValueError("Kode verifikasi telah kadaluwarsa. Silakan minta kode baru.")
+
+        if user.password_reset_attempts >= 5:
+            user.password_reset_otp_hash = None
+            user.password_reset_expires_at = None
+            user.password_reset_attempts = 0
+            self.db.commit()
+            raise ValueError("Terlalu banyak percobaan salah. Kode verifikasi telah dibatalkan. Silakan minta kode baru.")
+
+        if not verify_otp_code(otp_code, user.password_reset_otp_hash):
+            user.password_reset_attempts += 1
+            attempts_remaining = 5 - user.password_reset_attempts
+            if attempts_remaining <= 0:
+                user.password_reset_otp_hash = None
+                user.password_reset_expires_at = None
+                user.password_reset_attempts = 0
+                self.db.commit()
+                raise ValueError("Terlalu banyak percobaan salah. Kode verifikasi telah dibatalkan. Silakan minta kode baru.")
+            self.db.commit()
+            raise ValueError(f"Kode verifikasi salah. Sisa percobaan: {attempts_remaining}.")
+
+        user.password_hash = hash_password(new_password)
+        user.password_reset_otp_hash = None
+        user.password_reset_expires_at = None
+        user.password_reset_attempts = 0
+        self.db.commit()

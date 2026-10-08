@@ -1,5 +1,7 @@
 """Security utilities for password hashing, JWT generation, and OTP pairing."""
 
+import hashlib
+import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Union
@@ -49,3 +51,15 @@ def generate_pairing_code() -> str:
     """Generates a secure 6-character base32 alphanumeric code with DK- prefix."""
     suffix = "".join(secrets.choice(PAIRING_ALPHABET) for _ in range(6))
     return f"DK-{suffix}"
+
+
+def hash_otp_code(otp_code: str) -> str:
+    """Computes SHA-256 hash of a numeric OTP code."""
+    return hashlib.sha256(otp_code.encode("utf-8")).hexdigest()
+
+
+def verify_otp_code(plain_otp: str, hashed_otp: str) -> bool:
+    """Verifies a plain OTP against its stored SHA-256 hash using constant-time comparison."""
+    candidate_hash = hash_otp_code(plain_otp)
+    return hmac.compare_digest(candidate_hash, hashed_otp)
+

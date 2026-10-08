@@ -77,6 +77,21 @@ class TelegramPairingCodeResponse(BaseModel):
     pairing_code: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp_code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    new_password: str = Field(min_length=8, max_length=72)
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+
 @auth_router.post("/register", response_model=RegisterResponse, dependencies=[Depends(auth_limiter)])
 def register(req: RegisterRequest, response: Response, db: Session = Depends(get_db)):
     """Registers a new user and sets HttpOnly refresh cookie."""
@@ -172,3 +187,21 @@ def create_telegram_pairing_code(
     auth = AuthService(db)
     code = auth.generate_telegram_pairing_code(user_id=current_user.id)
     return TelegramPairingCodeResponse(pairing_code=code)
+
+
+@auth_router.post("/forgot-password", response_model=MessageResponse, dependencies=[Depends(auth_limiter)])
+def forgot_password_endpoint(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    auth = AuthService(db)
+    auth.request_password_reset(req.email)
+    return MessageResponse(message="Jika email terdaftar, kode verifikasi 6-digit telah dikirim ke kotak masuk Anda.")
+
+
+@auth_router.post("/reset-password", response_model=MessageResponse, dependencies=[Depends(auth_limiter)])
+def reset_password_endpoint(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    auth = AuthService(db)
+    try:
+        auth.reset_password_with_otp(req.email, req.otp_code, req.new_password)
+        return MessageResponse(message="Kata sandi Anda berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.")
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
