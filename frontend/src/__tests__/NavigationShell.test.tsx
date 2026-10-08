@@ -180,4 +180,48 @@ describe('Navigation Shell Components', () => {
     expect(screen.getByTestId('dashboard-content')).toBeInTheDocument();
     expect(screen.getAllByText('Rezekify')[0]).toBeInTheDocument();
   });
+
+  it('applies indigo active styling and enforces 38px collapse toggle in Sidebar', () => {
+    const handleToggleCollapse = vi.fn();
+    render(
+      <Sidebar
+        activeView="overview"
+        onViewChange={vi.fn()}
+        accounts={mockAccounts}
+        user={mockUser}
+        onLogout={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+        onToggleCollapse={handleToggleCollapse}
+      />
+    );
+
+    const activeNavBtn = screen.getByRole('button', { name: /Ringkasan/i });
+    expect(activeNavBtn).toHaveClass('bg-indigo-500/10');
+    expect(activeNavBtn).toHaveClass('border-indigo-500/30');
+
+    const activeIcon = activeNavBtn.querySelector('svg');
+    expect(activeIcon).toHaveClass('text-indigo-400');
+    expect(activeIcon).not.toHaveClass('text-emerald-400');
+
+    const collapseBtn = screen.getByRole('button', { name: /Ciutkan sidebar/i });
+    expect(collapseBtn).toHaveClass('min-w-[38px]');
+    expect(collapseBtn).toHaveClass('min-h-[38px]');
+  });
+
+  it('applies indigo active styling to BottomDock active navigation item', () => {
+    render(
+      <BottomDock
+        activeView="ledger"
+        onViewChange={vi.fn()}
+      />
+    );
+
+    const activeBtn = screen.getByRole('button', { name: /Buku Besar/i });
+    expect(activeBtn).toHaveClass('text-indigo-400');
+    expect(activeBtn).toHaveClass('font-semibold');
+    expect(activeBtn).not.toHaveClass('text-emerald-400');
+
+    const inactiveBtn = screen.getByRole('button', { name: /Ringkasan/i });
+    expect(inactiveBtn).not.toHaveClass('text-indigo-400');
+  });
 });

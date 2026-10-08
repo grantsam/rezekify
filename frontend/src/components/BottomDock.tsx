@@ -23,7 +23,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
         onPress={() => onViewChange('overview')}
         aria-label="Ringkasan"
         className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] h-auto p-1 gap-1 bg-transparent ${
-          activeView === 'overview' ? 'text-emerald-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+          activeView === 'overview' ? 'text-indigo-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
         }`}
       >
         <LayoutDashboard className="w-5 h-5" />
@@ -35,7 +35,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
         onPress={() => onViewChange('ledger')}
         aria-label="Buku Besar"
         className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] h-auto p-1 gap-1 bg-transparent ${
-          activeView === 'ledger' ? 'text-emerald-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+          activeView === 'ledger' ? 'text-indigo-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
         }`}
       >
         <ReceiptText className="w-5 h-5" />
@@ -65,7 +65,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
         onPress={() => onViewChange('vaults')}
         aria-label="Vaults"
         className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] h-auto p-1 gap-1 bg-transparent ${
-          activeView === 'vaults' ? 'text-emerald-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+          activeView === 'vaults' ? 'text-indigo-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
         }`}
       >
         <ShieldCheck className="w-5 h-5" />
@@ -77,7 +77,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
         onPress={() => onViewChange('settings')}
         aria-label="Pengaturan"
         className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] h-auto p-1 gap-1 bg-transparent ${
-          activeView === 'settings' ? 'text-emerald-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
+          activeView === 'settings' ? 'text-indigo-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
         }`}
       >
         <Settings className="w-5 h-5" />

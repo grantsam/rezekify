@@ -87,7 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               variant="light"
               onPress={onToggleCollapse}
               aria-label={isCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
-              className="p-1 min-w-[32px] min-h-[32px] text-zinc-400 hover:text-white bg-transparent"
+              className="p-1 min-w-[38px] min-h-[38px] text-zinc-400 hover:text-white bg-transparent"
             >
               {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </Button>
@@ -112,12 +112,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={item.label}
                 className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors min-h-[38px] h-auto ${
                   isActive
-                    ? 'bg-zinc-800/90 text-white border border-zinc-700/80 font-semibold'
+                    ? 'bg-indigo-500/10 text-white border border-indigo-500/30 font-semibold'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 bg-transparent'
                 }`}
               >
                 <div className="flex items-center gap-2.5 truncate">
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-400' : 'text-zinc-400'}`} />
                   {!isCollapsed && <span className="truncate">{item.label}</span>}
                 </div>
                 {!isCollapsed && item.badge !== undefined && (
