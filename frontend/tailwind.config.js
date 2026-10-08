@@ -11,6 +11,12 @@ export default {
   theme: {
     extend: {
       colors: {
+        surface: {
+          canvas: '#0c0c0e',
+          card: '#141417',
+          subtle: '#1a1a1e',
+          border: 'rgba(39, 39, 42, 0.8)',
+        },
         brand: {
           50: '#eef2ff',
           500: '#6366f1',
