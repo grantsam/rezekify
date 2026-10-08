@@ -93,6 +93,9 @@ class User(Base):
     monthly_cycle_day = Column(Integer, nullable=False, default=1)
     safe_runway_threshold = Column(Numeric(15, 2), nullable=False, default=Decimal("30000.00"))
     currency = Column(String(3), nullable=False, default="IDR")
+    password_reset_otp_hash = Column(String(255), nullable=True)
+    password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
+    password_reset_attempts = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), default=utc_now)
 
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
