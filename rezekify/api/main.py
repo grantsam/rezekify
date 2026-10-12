@@ -1,5 +1,7 @@
 """Main FastAPI Application Entrypoint."""
 
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -17,6 +19,24 @@ from rezekify.api.v1.settings_router import settings_router
 from rezekify.api.v1.transactions_router import transactions_router
 from rezekify.api.v1.vaults_router import vaults_router
 from rezekify.core.config import settings
+from rezekify.gateway.telegram_bot import (
+    dispatch_daily_bill_reminders,
+    scheduled_bills_notifier,
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    notifier_task = asyncio.create_task(scheduled_bills_notifier())
+    try:
+        yield
+    finally:
+        notifier_task.cancel()
+        try:
+            await notifier_task
+        except asyncio.CancelledError:
+            pass
+
 
 app = FastAPI(
     title="rezekify Core API",
@@ -25,6 +45,7 @@ app = FastAPI(
     docs_url="/docs" if settings.SHOW_DOCS else None,
     redoc_url=None,
     openapi_url="/openapi.json" if settings.SHOW_DOCS else None,
+    lifespan=lifespan,
 )
 
 app.add_middleware(

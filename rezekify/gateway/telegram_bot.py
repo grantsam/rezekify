@@ -1,12 +1,21 @@
 """Telegram Gateway Bot Service handling incoming text, commands, receipt photos, and voice notes."""
 
+import asyncio
+from datetime import date, datetime, timedelta, timezone
+import logging
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
+import httpx
 from sqlalchemy.orm import Session
 
 from rezekify.agent.orchestrator import AgentOrchestrator
+from rezekify.core.config import settings
 from rezekify.db.models import User
+from rezekify.db.session import SessionLocal
 from rezekify.services.auth import AuthService
+from rezekify.services.runway import RunwayService
+
+logger = logging.getLogger(__name__)
 
 # ponytail: in-memory dict dedup ceiling ~100k entries, upgrade to Redis TTL in multi-replica cluster
 _processed_update_ids: dict[int, float] = {}
@@ -19,6 +28,24 @@ PAIRING_FAIL_WINDOW_SECONDS: float = 900.0
 def clear_dedup_cache() -> None:
     """Clear processed update ID deduplication cache (useful for testing)."""
     _processed_update_ids.clear()
+
+
+def format_upcoming_bills_message(bills: list) -> str:
+    """Formats upcoming bills inquiry for Telegram chat presentation."""
+    if not bills:
+        return "✅ Tidak ada tagihan jatuh tempo dalam 7 hari ke depan. Semua komitmen aman!"
+
+    lines = ["📋 *Daftar Tagihan Mendatang (H-7)*\n"]
+    for idx, bill in enumerate(bills, 1):
+        due_str = f"{bill.days_until_due} hari lagi" if bill.days_until_due > 0 else "hari ini"
+        date_formatted = bill.target_date.strftime("%d %b %Y")
+        lines.append(
+            f"{idx}. *{bill.name}*\n"
+            f"   ⏳ Jatuh tempo: {due_str} ({date_formatted})\n"
+            f"   💰 Terkumpul: Rp {bill.allocated_amount:,.0f} dari target Rp {bill.target_amount:,.0f}\n"
+        )
+    lines.append("💡 Segera cukupi alokasi dana di brankas komitmen agar runway harian tetap aman!")
+    return "\n".join(lines)
 
 
 class TelegramGateway:
@@ -123,7 +150,16 @@ class TelegramGateway:
         if cleaned_text in ("/runway", "/saldo", "/status"):
             return self.orchestrator.handle_message(user.id, "cek runway")
 
+        if cmd in ("/tagihan", "/bills"):
+            return self.handle_upcoming_bills_inquiry(user.id)
+
         return self.orchestrator.handle_message(user.id, cleaned_text)
+
+    def handle_upcoming_bills_inquiry(self, user_id: Any) -> str:
+        """Answers on-demand inquiry for upcoming commitments due within 7 days."""
+        runway = RunwayService(self.db)
+        bills = runway.get_upcoming_bills(user_id=user_id)
+        return format_upcoming_bills_message(bills)
 
     def process_photo_message(
         self, chat_id: int, image_bytes: bytes, caption: Optional[str] = None
@@ -242,3 +278,93 @@ class TelegramGateway:
             )
 
         return "Unsupported message format."
+
+
+async def dispatch_daily_bill_reminders(
+    today: date,
+    session_factory=None,
+    bot_token: Optional[str] = None,
+) -> int:
+    """Dispatches daily 08:00 WIB bill reminders to linked Telegram users."""
+    token = bot_token if bot_token is not None else settings.TELEGRAM_BOT_TOKEN
+    if not token:
+        logger.debug("Telegram bot token not configured; skipping daily bill reminders.")
+        return 0
+
+    factory = session_factory or SessionLocal
+    db = factory()
+    dispatched_count = 0
+    try:
+        users = (
+            db.query(User)
+            .filter(User.telegram_chat_id.isnot(None))
+            .all()
+        )
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for user in users:
+                runway = RunwayService(db)
+                bills = runway.get_upcoming_bills(user_id=user.id, today=today)
+                if not bills:
+                    continue
+
+                bullet_lines = []
+                for b in bills:
+                    due_str = f"sisa {b.days_until_due} hari" if b.days_until_due > 0 else "hari ini"
+                    bullet_lines.append(f"• {b.name}: Rp {b.target_amount:,.0f} ({due_str})")
+                bullets_text = "\n".join(bullet_lines)
+
+                msg = (
+                    f"⏰ *Pengingat Pagi Rezekify (08:00 WIB)*\n\n"
+                    f"Halo {user.full_name}, Anda memiliki {len(bills)} tagihan jatuh tempo dalam 7 hari ke depan:\n"
+                    f"{bullets_text}\n\n"
+                    f"Cek status lengkap dengan ketik /tagihan atau buka web dashboard."
+                )
+
+                try:
+                    res = await client.post(
+                        f"https://api.telegram.org/bot{token}/sendMessage",
+                        json={
+                            "chat_id": user.telegram_chat_id,
+                            "text": msg,
+                            "parse_mode": "Markdown",
+                        },
+                    )
+                    if res.is_success:
+                        dispatched_count += 1
+                except Exception as send_err:
+                    logger.warning("Failed to send bill reminder to user %s: %s", user.id, send_err)
+
+                # Rate limit: max 20 msgs/second
+                await asyncio.sleep(0.05)
+    finally:
+        db.close()
+
+    return dispatched_count
+
+
+# ponytail: single-box asyncio sleep loop checking 08:00 WIB; upgrade to distributed celery-beat if horizontally scaled
+async def scheduled_bills_notifier(
+    session_factory=None,
+    bot_token: Optional[str] = None,
+    sleep_interval: float = 60.0,
+):
+    """Background loop checking for 08:00 WIB every 60s and triggering daily notifications."""
+    last_dispatched_date: Optional[date] = None
+    wib_tz = timezone(timedelta(hours=7))
+    while True:
+        try:
+            await asyncio.sleep(sleep_interval)
+            now_wib = datetime.now(wib_tz)
+            today_wib = now_wib.date()
+            if now_wib.hour == 8 and now_wib.minute == 0 and last_dispatched_date != today_wib:
+                last_dispatched_date = today_wib
+                await dispatch_daily_bill_reminders(
+                    today_wib,
+                    session_factory=session_factory,
+                    bot_token=bot_token,
+                )
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            logger.error("Error in scheduled_bills_notifier: %s", exc)
+
