@@ -4,7 +4,7 @@ import asyncio
 from datetime import date, datetime, timedelta, timezone
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 import httpx
 from sqlalchemy.orm import Session
 

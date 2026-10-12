@@ -24,6 +24,8 @@ from rezekify.gateway.telegram_bot import (
     scheduled_bills_notifier,
 )
 
+__all__ = ["app", "dispatch_daily_bill_reminders", "scheduled_bills_notifier"]
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

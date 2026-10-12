@@ -75,7 +75,7 @@ def seed():
     cat_food = get_or_create_cat("Makanan & Minuman", CategoryType.EXPENSE)
     cat_trans = get_or_create_cat("Transportasi", CategoryType.EXPENSE)
     cat_groceries = get_or_create_cat("Belanja Bulanan", CategoryType.EXPENSE)
-    cat_bills = get_or_create_cat("Tagihan & Utilitas", CategoryType.EXPENSE)
+    get_or_create_cat("Tagihan & Utilitas", CategoryType.EXPENSE)
     cat_salary = get_or_create_cat("Gaji & Penghasilan", CategoryType.INCOME)
 
     # 4. Setup Vaults
