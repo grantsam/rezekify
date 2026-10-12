@@ -65,6 +65,7 @@ export const DashboardPage: React.FC = () => {
       }}
       accounts={dashboard.accounts}
       transactionCount={ledger.pagination.total}
+      upcomingBills={dashboard.summary?.upcoming_bills}
       user={user}
       onLogout={logout}
       onOpenCreateAccount={modals.openCreateAccount}

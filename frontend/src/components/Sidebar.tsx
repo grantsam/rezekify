@@ -18,6 +18,7 @@ export interface SidebarProps {
   onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings') => void;
   accounts: Account[];
   transactionCount?: number;
+  upcomingBillsCount?: number;
   user: User | null;
   onLogout: () => void;
   onOpenCreateAccount: () => void;
@@ -31,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onViewChange,
   accounts,
   transactionCount,
+  upcomingBillsCount,
   user,
   onLogout,
   onOpenCreateAccount,
@@ -56,7 +58,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: ReceiptText,
       badge: transactionCount !== undefined ? transactionCount : undefined,
     },
-    { id: 'vaults' as const, label: 'Komitmen & Vaults', icon: ShieldCheck },
+    {
+      id: 'vaults' as const,
+      label: 'Komitmen & Vaults',
+      icon: ShieldCheck,
+      badge: upcomingBillsCount !== undefined && upcomingBillsCount > 0 ? upcomingBillsCount : undefined,
+    },
     { id: 'settings' as const, label: 'Pengaturan', icon: Settings },
   ];
 
@@ -121,7 +128,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {!isCollapsed && <span className="truncate">{item.label}</span>}
                 </div>
                 {!isCollapsed && item.badge !== undefined && (
-                  <span className="text-[10px] py-0.5 px-2 rounded-md bg-zinc-800 text-zinc-400 font-mono">
+                  <span
+                    className={`text-[10px] py-0.5 px-2 rounded-md font-mono ${
+                      item.id === 'vaults'
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                        : 'bg-zinc-800 text-zinc-400'
+                    }`}
+                  >
                     {item.badge}
                   </span>
                 )}

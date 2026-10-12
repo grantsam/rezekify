@@ -5,12 +5,14 @@ import { LayoutDashboard, ReceiptText, ShieldCheck, Settings, Sparkles } from 'l
 export interface BottomDockProps {
   activeView: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings';
   onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings') => void;
+  upcomingBillsCount?: number;
   onQuickCapturePress?: () => void;
 }
 
 export const BottomDock: React.FC<BottomDockProps> = ({
   activeView,
   onViewChange,
+  upcomingBillsCount,
   onQuickCapturePress,
 }) => {
   return (
@@ -68,7 +70,12 @@ export const BottomDock: React.FC<BottomDockProps> = ({
           activeView === 'vaults' ? 'text-indigo-400 font-semibold' : 'text-zinc-400 hover:text-zinc-200'
         }`}
       >
-        <ShieldCheck className="w-5 h-5" />
+        <div className="relative">
+          <ShieldCheck className="w-5 h-5" />
+          {upcomingBillsCount !== undefined && upcomingBillsCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-zinc-950" />
+          )}
+        </div>
         <span className="text-[10px]">Vaults</span>
       </Button>
 

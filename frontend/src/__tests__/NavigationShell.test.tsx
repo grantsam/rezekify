@@ -224,4 +224,37 @@ describe('Navigation Shell Components', () => {
     const inactiveBtn = screen.getByRole('button', { name: /Ringkasan/i });
     expect(inactiveBtn).not.toHaveClass('text-indigo-400');
   });
+
+  it('renders badge for upcoming bills on vaults menu in Sidebar when upcomingBillsCount > 0', () => {
+    render(
+      <Sidebar
+        activeView="overview"
+        onViewChange={vi.fn()}
+        accounts={mockAccounts}
+        upcomingBillsCount={3}
+        user={mockUser}
+        onLogout={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+      />
+    );
+
+    const vaultsBtn = screen.getByRole('button', { name: /Komitmen & Vaults/i });
+    expect(vaultsBtn).toBeInTheDocument();
+    expect(vaultsBtn).toHaveTextContent('3');
+  });
+
+  it('renders amber indicator dot on Vaults tab in BottomDock when upcomingBillsCount > 0', () => {
+    const { container } = render(
+      <BottomDock
+        activeView="overview"
+        onViewChange={vi.fn()}
+        upcomingBillsCount={2}
+      />
+    );
+
+    const vaultsBtn = screen.getByRole('button', { name: /Vaults/i });
+    expect(vaultsBtn).toBeInTheDocument();
+    const dot = container.querySelector('.bg-amber-400');
+    expect(dot).toBeInTheDocument();
+  });
 });
