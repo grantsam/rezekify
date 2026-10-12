@@ -210,6 +210,64 @@ export async function getTransactions(
   return apiFetch<PaginatedTransactionsResponse>(`/transactions${qs ? `?${qs}` : ''}`);
 }
 
+export async function downloadTransactionsCSV(params?: TransactionFilterParams): Promise<void> {
+  const query = new URLSearchParams();
+  if (params?.account_id) query.append('account_id', params.account_id);
+  if (params?.category_id) query.append('category_id', params.category_id);
+  if (params?.start_date) query.append('start_date', params.start_date);
+  if (params?.end_date) query.append('end_date', params.end_date);
+
+  const qs = query.toString();
+  const endpoint = `/transactions/export${qs ? `?${qs}` : ''}`;
+  const baseUrl = API_BASE_URL;
+
+  let headers: Record<string, string> = { ...getAuthHeader() };
+
+  let response = await fetch(`${baseUrl}${endpoint}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers,
+  });
+
+  if (response.status === 401) {
+    const newToken = await executeTokenRefresh();
+    if (newToken) {
+      headers = { ...headers, Authorization: `Bearer ${newToken}` };
+      response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers,
+      });
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Gagal mengunduh CSV: status ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition');
+  let filename = 'rezekify_transaksi.csv';
+  if (disposition && disposition.includes('filename=')) {
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    if (match && match[1]) {
+      filename = match[1];
+    }
+  }
+
+  // ponytail: Browser-based anchor click for CSV download; upgrade to StreamSaver.js if files exceed browser memory limits.
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export const exportTransactionsCsv = downloadTransactionsCSV;
+
 export async function getVaults(): Promise<Vault[]> {
   return apiFetch<Vault[]>('/vaults');
 }

@@ -8,6 +8,7 @@ import {
   updateAccount,
   deactivateAccount,
   getTransactions,
+  downloadTransactionsCSV,
   updateTransaction,
   getVaults,
   toggleVaultLock,
@@ -554,6 +555,54 @@ describe('apiClient authentication headers and utilities', () => {
       'http://localhost:8000/api/v1/transactions',
       expect.anything()
     );
+  });
+
+  it('downloadTransactionsCSV requests export with filters and triggers file download', async () => {
+    setAuthToken('auth-token-123');
+    const mockBlob = new Blob(['sample,csv,data'], { type: 'text/csv' });
+    const mockHeaders = new Headers();
+    mockHeaders.set('Content-Disposition', 'attachment; filename="rezekify_transaksi_20261013.csv"');
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: mockHeaders,
+      blob: async () => mockBlob,
+    });
+
+    const realAnchor = document.createElement('a');
+    const clickSpy = vi.spyOn(realAnchor, 'click').mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(realAnchor);
+
+    await downloadTransactionsCSV({
+      account_id: 'acc-123',
+      category_id: 'cat-456',
+      start_date: '2026-09-01T00:00:00Z',
+      end_date: '2026-09-30T23:59:59Z',
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/transactions/export?account_id=acc-123&category_id=cat-456&start_date=2026-09-01T00%3A00%3A00Z&end_date=2026-09-30T23%3A59%3A59Z',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer auth-token-123',
+        }),
+      })
+    );
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(realAnchor.download).toBe('rezekify_transaksi_20261013.csv');
+    createElementSpy.mockRestore();
+  });
+
+  it('downloadTransactionsCSV throws an error when request fails', async () => {
+    setAuthToken('auth-token-123');
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+    });
+
+    await expect(downloadTransactionsCSV()).rejects.toThrow('Gagal mengunduh CSV: status 500');
   });
 
   it('updateTransaction sends PUT request with correct URL, auth headers, and body', async () => {

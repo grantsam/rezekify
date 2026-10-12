@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
-import { PlusCircle, Calculator, Tag } from 'lucide-react';
+import { PlusCircle, Calculator, Tag, Download } from 'lucide-react';
 import { Transaction, Account, Category, TransactionFilterParams } from '../types/api';
+import { downloadTransactionsCSV } from '../services/apiClient';
 import { TransactionsTable } from './TransactionsTable';
 
 export interface LedgerViewProps {
@@ -13,6 +14,8 @@ export interface LedgerViewProps {
   page: number;
   pageSize: number;
   totalPages: number;
+  activeFilters?: TransactionFilterParams;
+  onExportCSV?: () => Promise<void> | void;
   onParamsChange: (params: TransactionFilterParams) => void;
   onPageChange: (page: number) => void;
   onDeleteTransaction: (id: string) => Promise<void> | void;
@@ -31,6 +34,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   page,
   pageSize,
   totalPages,
+  activeFilters,
+  onExportCSV,
   onParamsChange,
   onPageChange,
   onDeleteTransaction,
@@ -40,6 +45,23 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   onOpenCategoryModal,
   isLoading = false,
 }) => {
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  const handleExport = async () => {
+    if (onExportCSV) {
+      await onExportCSV();
+      return;
+    }
+    try {
+      setIsExporting(true);
+      await downloadTransactionsCSV(activeFilters);
+    } catch (err) {
+      console.error('Failed to export transactions CSV:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
@@ -59,6 +81,18 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="flat"
+            isLoading={isExporting}
+            isDisabled={isExporting}
+            onPress={handleExport}
+            startContent={!isExporting ? <Download className="w-3.5 h-3.5 text-zinc-400" /> : undefined}
+            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 min-h-[38px] rounded-xl text-xs font-semibold"
+          >
+            Unduh CSV
+          </Button>
+
           <Button
             size="sm"
             variant="flat"

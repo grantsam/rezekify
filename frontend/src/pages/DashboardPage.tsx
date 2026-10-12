@@ -156,6 +156,7 @@ export const DashboardPage: React.FC = () => {
             page={ledger.pagination.page}
             pageSize={ledger.filters.page_size ?? 20}
             totalPages={ledger.pagination.total_pages}
+            activeFilters={ledger.filters}
             onParamsChange={ledger.handleParamsChange}
             onPageChange={ledger.handlePageChange}
             onDeleteTransaction={handleDeleteTransaction}
