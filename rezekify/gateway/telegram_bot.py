@@ -329,8 +329,8 @@ async def dispatch_daily_bill_reminders(
                             "parse_mode": "Markdown",
                         },
                     )
-                    if res.is_success:
-                        dispatched_count += 1
+                    res.raise_for_status()
+                    dispatched_count += 1
                 except Exception as send_err:
                     logger.warning("Failed to send bill reminder to user %s: %s", user.id, send_err)
 
@@ -356,7 +356,7 @@ async def scheduled_bills_notifier(
             await asyncio.sleep(sleep_interval)
             now_wib = datetime.now(wib_tz)
             today_wib = now_wib.date()
-            if now_wib.hour == 8 and now_wib.minute == 0 and last_dispatched_date != today_wib:
+            if now_wib.hour == 8 and last_dispatched_date != today_wib:
                 last_dispatched_date = today_wib
                 await dispatch_daily_bill_reminders(
                     today_wib,
