@@ -11,7 +11,11 @@ from sqlalchemy.pool import StaticPool
 
 from rezekify.api.main import dispatch_daily_bill_reminders
 from rezekify.db.models import Base, User, Vault, VaultType
-from rezekify.gateway.telegram_bot import TelegramGateway
+from rezekify.gateway.telegram_bot import (
+    TelegramGateway,
+    escape_markdown,
+    format_upcoming_bills_message,
+)
 
 test_engine = create_engine(
     "sqlite:///:memory:",
@@ -295,5 +299,65 @@ async def test_scheduled_bills_notifier_tick_during_hour_8_drift():
     # Triggered once at 08:35; second iteration at 08:36 deduplicated because same date
     assert len(dispatched_dates) == 1
     assert dispatched_dates[0] == simulated_now_1.date()
+
+
+def test_escape_markdown():
+    """escape_markdown properly escapes Markdown v1 special characters _, *, [, ], `."""
+    raw = "User_Name *bold* [link] `code`"
+    escaped = escape_markdown(raw)
+    assert escaped == r"User\_Name \*bold\* \[link\] \`code\`"
+    assert escape_markdown("") == ""
+    assert escape_markdown(None) == ""
+
+
+def test_format_upcoming_bills_message_escapes_markdown():
+    """format_upcoming_bills_message escapes vault names containing Markdown special characters."""
+    class MockBill:
+        days_until_due = 3
+        target_date = date(2026, 10, 20)
+        name = "Tagihan_IndiHome* [Sept] `auto`"
+        allocated_amount = Decimal("100000.00")
+        target_amount = Decimal("300000.00")
+
+    res = format_upcoming_bills_message([MockBill()])
+    assert r"Tagihan\_IndiHome\* \[Sept\] \`auto\`" in res
+
+
+@pytest.mark.asyncio
+async def test_dispatch_daily_bill_reminders_escapes_markdown(linked_user):
+    """dispatch_daily_bill_reminders escapes user full_name and bill names."""
+    db = TestingSessionLocal()
+    # Update linked_user name to contain special characters
+    user = db.query(User).filter_by(id=linked_user.id).first()
+    user.full_name = "Danang_Sutanto* [VIP]"
+    today = date.today()
+    vault = Vault(
+        user_id=user.id,
+        name="Cicilan_KPR* [BCA] `ok`",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("3500000.00"),
+        allocated_amount=Decimal("1000000.00"),
+        target_date=today + timedelta(days=2),
+    )
+    db.add(vault)
+    db.commit()
+    db.close()
+
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_post = AsyncMock(return_value=mock_response)
+
+    with patch("httpx.AsyncClient.post", mock_post):
+        count = await dispatch_daily_bill_reminders(
+            today=today,
+            session_factory=TestingSessionLocal,
+            bot_token="test_bot_token_123",
+        )
+        assert count == 1
+        call_kwargs = mock_post.await_args.kwargs
+        text = call_kwargs["json"]["text"]
+        assert r"Danang\_Sutanto\* \[VIP\]" in text
+        assert r"Cicilan\_KPR\* \[BCA\] \`ok\`" in text
+
 
 

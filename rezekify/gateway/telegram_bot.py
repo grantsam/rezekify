@@ -30,6 +30,16 @@ def clear_dedup_cache() -> None:
     _processed_update_ids.clear()
 
 
+def escape_markdown(text: str) -> str:
+    """Escapes Telegram Markdown special characters in dynamic strings."""
+    if not text:
+        return ""
+    # ponytail: basic Markdown v1 escaping; upgrade to MarkdownV2 full charset if parse_mode is migrated
+    for ch in ("_", "*", "[", "]", "`"):
+        text = text.replace(ch, f"\\{ch}")
+    return text
+
+
 def format_upcoming_bills_message(bills: list) -> str:
     """Formats upcoming bills inquiry for Telegram chat presentation."""
     if not bills:
@@ -40,7 +50,7 @@ def format_upcoming_bills_message(bills: list) -> str:
         due_str = f"{bill.days_until_due} hari lagi" if bill.days_until_due > 0 else "hari ini"
         date_formatted = bill.target_date.strftime("%d %b %Y")
         lines.append(
-            f"{idx}. *{bill.name}*\n"
+            f"{idx}. *{escape_markdown(bill.name)}*\n"
             f"   ⏳ Jatuh tempo: {due_str} ({date_formatted})\n"
             f"   💰 Terkumpul: Rp {bill.allocated_amount:,.0f} dari target Rp {bill.target_amount:,.0f}\n"
         )
@@ -310,12 +320,12 @@ async def dispatch_daily_bill_reminders(
                 bullet_lines = []
                 for b in bills:
                     due_str = f"sisa {b.days_until_due} hari" if b.days_until_due > 0 else "hari ini"
-                    bullet_lines.append(f"• {b.name}: Rp {b.target_amount:,.0f} ({due_str})")
+                    bullet_lines.append(f"• {escape_markdown(b.name)}: Rp {b.target_amount:,.0f} ({due_str})")
                 bullets_text = "\n".join(bullet_lines)
 
                 msg = (
                     f"⏰ *Pengingat Pagi Rezekify (08:00 WIB)*\n\n"
-                    f"Halo {user.full_name}, Anda memiliki {len(bills)} tagihan jatuh tempo dalam 7 hari ke depan:\n"
+                    f"Halo {escape_markdown(user.full_name)}, Anda memiliki {len(bills)} tagihan jatuh tempo dalam 7 hari ke depan:\n"
                     f"{bullets_text}\n\n"
                     f"Cek status lengkap dengan ketik /tagihan atau buka web dashboard."
                 )
