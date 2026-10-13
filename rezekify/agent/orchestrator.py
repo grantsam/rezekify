@@ -472,10 +472,18 @@ class AgentOrchestrator:
         hops = 0
         for hop in range(max_turns):
             hops += 1
-            llm_res = agent_to_use.process_input(
-                user_id=user_id,
-                text=history_context,
-            )
+            if hasattr(agent_to_use, "process_input"):
+                llm_res = agent_to_use.process_input(
+                    user_id=user_id,
+                    text=history_context,
+                    user_context=runway_report,
+                )
+            else:
+                llm_res = agent_to_use.aprocess_input(
+                    user_id=user_id,
+                    text=history_context,
+                    user_context=runway_report,
+                )
 
             if isinstance(llm_res, dict) and llm_res.get("action") == "byok_error":
                 byok_res = self._execute_action(user_id, llm_res, prompt)
@@ -530,6 +538,118 @@ class AgentOrchestrator:
             )
 
         # Ceiling reached without final answer: safe wrap-up
+        safe_reply = (
+            f"Berikut ringkasan data yang kami temukan: {last_observation_summary}"
+            if last_observation_summary
+            else "Permintaan Anda telah kami proses."
+        )
+        return {
+            "reply": safe_reply,
+            "transaction_id": executed_tx_id,
+            "transaction": executed_tx_meta,
+            "telemetry": self._safe_get_telemetry(user_id),
+            "hops": hops,
+        }
+
+    async def arun_autonomous_loop(
+        self,
+        user_id: UUID,
+        prompt: str,
+        max_turns: int = 3,
+    ) -> Dict[str, Any]:
+        """Closed-loop ReAct execution asynchronously: Prompt -> LLM -> Tool -> Observation -> LLM -> Final Answer."""
+        agent_to_use, _ = self._resolve_agent_for_user(user_id)
+        if not agent_to_use:
+            agent_to_use = self.agent
+
+        if not agent_to_use:
+            return {
+                "reply": "Layanan AI belum terkonfigurasi.",
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": self._safe_get_telemetry(user_id),
+                "hops": 0,
+            }
+
+        runway_report = None
+        try:
+            runway_report = self.runway.calculate_runway(user_id)
+        except Exception:
+            pass
+
+        system_prompt = build_cognitive_system_prompt(runway_report)
+        history_context = f"{system_prompt}\n\nPENGGUNA: {prompt}"
+
+        executed_tx_meta = None
+        executed_tx_id = None
+        last_observation_summary = ""
+
+        hops = 0
+        for hop in range(max_turns):
+            hops += 1
+            if hasattr(agent_to_use, "aprocess_input"):
+                llm_res = await agent_to_use.aprocess_input(
+                    user_id=user_id,
+                    text=history_context,
+                    user_context=runway_report,
+                )
+            else:
+                llm_res = agent_to_use.process_input(
+                    user_id=user_id,
+                    text=history_context,
+                    user_context=runway_report,
+                )
+
+            if isinstance(llm_res, dict) and llm_res.get("action") == "byok_error":
+                byok_res = self._execute_action(user_id, llm_res, prompt)
+                byok_res["hops"] = hops
+                return byok_res
+
+            raw_text = (
+                llm_res.get("raw")
+                or llm_res.get("message")
+                or (json.dumps(llm_res) if isinstance(llm_res, dict) else str(llm_res))
+            )
+
+            turn = parse_agent_turn(llm_res.get("raw") or llm_res.get("message") or llm_res)
+
+            if not turn.is_tool_call or not turn.tool_name:
+                final_text = turn.final_response or raw_text
+                return {
+                    "reply": final_text,
+                    "transaction_id": executed_tx_id,
+                    "transaction": executed_tx_meta,
+                    "telemetry": self._safe_get_telemetry(user_id),
+                    "hops": hops,
+                }
+
+            observation = self.dispatcher.dispatch(
+                user_id=user_id,
+                tool_name=turn.tool_name,
+                arguments=turn.tool_args or {},
+            )
+
+            if turn.tool_name == "record_transaction" and observation.get("status") == "success":
+                tx_info = observation.get("transaction")
+                if tx_info:
+                    executed_tx_meta = tx_info
+                    raw_id = tx_info.get("id")
+                    try:
+                        executed_tx_id = UUID(str(raw_id)) if raw_id else None
+                    except Exception:
+                        executed_tx_id = raw_id
+
+            obs_str = json.dumps(observation, default=str)
+            last_observation_summary = obs_str
+            action_desc = f"Memanggil alat '{turn.tool_name}'"
+            if turn.thought:
+                action_desc = f"Penalaran: {turn.thought}. {action_desc}"
+            history_context += (
+                f"\n\n[TINDAKAN ASISTEN]: {action_desc}\n"
+                f"[OBSERVASI DARI {turn.tool_name}]: {obs_str}\n"
+                "Sintesis jawaban akhir yang komprehensif, faktual, dan ramah untuk pengguna berdasarkan observasi di atas:"
+            )
+
         safe_reply = (
             f"Berikut ringkasan data yang kami temukan: {last_observation_summary}"
             if last_observation_summary

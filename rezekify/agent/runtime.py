@@ -202,6 +202,13 @@ def parse_agent_turn(response_text: Union[str, Dict[str, Any]]) -> AgentTurnResu
             final_response=str(final_resp),
         )
 
+    if parsed.get("action") == "unknown":
+        return AgentTurnResult(
+            is_tool_call=False,
+            thought=parsed.get("thought"),
+            final_response="Saya siap membantu mencatat pengeluaran, memeriksa jatah belanja harian, atau menganalisis riwayat keuangan Anda.",
+        )
+
     return AgentTurnResult(is_tool_call=False, final_response=text)
 
 

@@ -6,7 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from sqlalchemy import String, func
+from sqlalchemy import String, func, or_
 from sqlalchemy.orm import Session, aliased
 
 from rezekify.db.models import (
@@ -237,12 +237,18 @@ class FacetedQueryEngine:
         flow = params.flow_type.upper()
         if flow == "EXPENSE":
             filters.append(LedgerEntry.entry_type == EntryType.DEBIT)
-            filters.append(LedgerEntry.category_id.isnot(None))
+            filters.append(
+                or_(
+                    LedgerEntry.category_id.isnot(None),
+                    LedgerEntry.account_id.is_(None),
+                )
+            )
         elif flow == "INCOME":
             filters.append(LedgerEntry.entry_type == EntryType.CREDIT)
             filters.append(LedgerEntry.category_id.isnot(None))
         elif flow == "TRANSFER":
             filters.append(LedgerEntry.entry_type == EntryType.DEBIT)
+            filters.append(LedgerEntry.account_id.isnot(None))
             filters.append(LedgerEntry.category_id.is_(None))
         else:
             filters.append(LedgerEntry.entry_type == EntryType.DEBIT)
@@ -279,6 +285,8 @@ class FacetedQueryEngine:
                 filters.append(Transaction.id.in_(account_tx_ids))
 
         return filters
+
+    _build_base_query = _build_base_filters
 
     def _aggregate_period(
         self,

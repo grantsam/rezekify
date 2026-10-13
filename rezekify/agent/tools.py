@@ -129,6 +129,10 @@ AGENT_TOOL_DEFINITIONS: List[Dict[str, Any]] = [
                     "type": "string",
                     "description": "Brief description of the transaction.",
                 },
+                "note": {
+                    "type": "string",
+                    "description": "Transaction note or description (alias for description).",
+                },
                 "to_account_name": {
                     "type": "string",
                     "description": "Destination account name (for transfers only).",
@@ -171,7 +175,8 @@ class RecordTransactionArgs(BaseModel):
     amount: Decimal = Field(gt=0)
     account_name: Optional[str] = None
     from_account: Optional[str] = None
-    description: str
+    description: Optional[str] = None
+    note: Optional[str] = None
     category_name: Optional[str] = None
     to_account_name: Optional[str] = None
     to_account: Optional[str] = None
@@ -188,6 +193,7 @@ class RecordTransactionArgs(BaseModel):
             self.to_account_name = self.to_account
         if not self.to_account and self.to_account_name:
             self.to_account = self.to_account_name
+        self.description = self.description or self.note or "Transaksi"
         return self
 
 
@@ -335,9 +341,15 @@ class AgentToolDispatcher:
         if acc_lookup:
             account = (
                 self.db.query(Account)
-                .filter(Account.user_id == user_id, Account.name.ilike(f"%{acc_lookup}%"))
+                .filter(Account.user_id == user_id, Account.name.ilike(acc_lookup))
                 .first()
             )
+            if not account:
+                account = (
+                    self.db.query(Account)
+                    .filter(Account.user_id == user_id, Account.name.ilike(f"%{acc_lookup}%"))
+                    .first()
+                )
         if not account:
             err_msg = f"Akun '{acc_lookup or ''}' tidak ditemukan."
             return {
@@ -401,9 +413,15 @@ class AgentToolDispatcher:
                 return {"status": "error", "message": err_msg, "error": err_msg}
             to_acc = (
                 self.db.query(Account)
-                .filter(Account.user_id == user_id, Account.name.ilike(f"%{to_lookup}%"))
+                .filter(Account.user_id == user_id, Account.name.ilike(to_lookup))
                 .first()
             )
+            if not to_acc:
+                to_acc = (
+                    self.db.query(Account)
+                    .filter(Account.user_id == user_id, Account.name.ilike(f"%{to_lookup}%"))
+                    .first()
+                )
             if not to_acc or to_acc.id == account.id:
                 err_msg = "Akun tujuan transfer tidak valid atau sama dengan sumber."
                 return {"status": "error", "message": err_msg, "error": err_msg}

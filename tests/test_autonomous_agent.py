@@ -395,4 +395,23 @@ def test_e2e_operator_mutation_with_telemetry_reflection(db_session: Session, au
     assert acc.current_balance == Decimal("2970000.00")
 
 
+def test_autonomous_react_loop_passes_user_context_runway_report(db_session: Session, autonomous_env: User):
+    """Verifies that run_autonomous_loop passes user_context=runway_report to agent.process_input."""
+    mock_agent = MagicMock(spec=ReActAgent)
+    mock_agent.process_input.return_value = {
+        "raw": '{"thought": "Selesai", "final_response": "Semua baik."}'
+    }
+
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    orchestrator.run_autonomous_loop(
+        user_id=autonomous_env.id,
+        prompt="Status keuangan",
+    )
+
+    assert mock_agent.process_input.call_count == 1
+    call_kwargs = mock_agent.process_input.call_args.kwargs
+    assert "user_context" in call_kwargs
+    assert call_kwargs["user_context"] is not None
+
+
 

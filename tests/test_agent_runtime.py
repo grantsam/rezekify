@@ -724,6 +724,16 @@ async def test_react_agent_aprocess_input_with_user_context():
         assert "Saldo Bebas Operasional: Rp 500,000" in kwargs["system_prompt"]
 
 
+def test_parse_agent_turn_unknown_action_fallback_friendly_message():
+    """Verifies unknown action with no other content returns friendly default assistant text."""
+    turn = parse_agent_turn('{"action": "unknown"}')
+    assert turn.is_tool_call is False
+    assert (
+        turn.final_response
+        == "Saya siap membantu mencatat pengeluaran, memeriksa jatah belanja harian, atau menganalisis riwayat keuangan Anda."
+    )
+
+
 
 
 

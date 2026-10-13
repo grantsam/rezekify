@@ -290,3 +290,57 @@ def test_dispatcher_category_type_constraint(db_session: Session, seeded_tools_d
     assert CategoryType.EXPENSE in types
     assert CategoryType.INCOME in types
 
+
+def test_record_transaction_args_note_and_description_fallback():
+    """Verifies note fallback logic when description is omitted or note is provided."""
+    from rezekify.agent.tools import RecordTransactionArgs
+
+    # 1. With note only, description falls back to note
+    args1 = RecordTransactionArgs(action="expense", amount=Decimal("15000"), account_name="BCA", note="Kopi kenangan")
+    assert args1.description == "Kopi kenangan"
+    assert args1.note == "Kopi kenangan"
+
+    # 2. With description and note, description takes precedence
+    args2 = RecordTransactionArgs(action="expense", amount=Decimal("15000"), account_name="BCA", description="Makan siang", note="Catatan tambahan")
+    assert args2.description == "Makan siang"
+
+    # 3. With neither description nor note, description defaults to 'Transaksi'
+    args3 = RecordTransactionArgs(action="expense", amount=Decimal("15000"), account_name="BCA")
+    assert args3.description == "Transaksi"
+
+
+def test_dispatcher_record_transaction_exact_account_name_match(db_session: Session, seeded_tools_db: User):
+    """Verifies exact case-insensitive account match priority before falling back to substring."""
+    acc_prioritas = Account(
+        user_id=seeded_tools_db.id,
+        name="BCA Prioritas",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("10000000.00"),
+    )
+    db_session.add(acc_prioritas)
+    db_session.commit()
+
+    dispatcher = AgentToolDispatcher(db_session)
+
+    # Looking up "bca" should match "BCA" exactly, not "BCA Prioritas"
+    args = {
+        "action": "expense",
+        "amount": 50000,
+        "account_name": "bca",
+        "note": "Tes match eksak",
+    }
+    result = dispatcher.dispatch(seeded_tools_db.id, "record_transaction", args)
+    assert result["status"] == "success"
+    assert result["transaction"]["account_name"] == "BCA"
+
+    # Looking up "prioritas" has no exact match, falls back to substring and matches "BCA Prioritas"
+    args_sub = {
+        "action": "expense",
+        "amount": 20000,
+        "account_name": "prioritas",
+        "note": "Tes match substring",
+    }
+    res_sub = dispatcher.dispatch(seeded_tools_db.id, "record_transaction", args_sub)
+    assert res_sub["status"] == "success"
+    assert res_sub["transaction"]["account_name"] == "BCA Prioritas"
+

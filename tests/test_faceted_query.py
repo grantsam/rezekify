@@ -526,3 +526,104 @@ def test_faceted_query_group_by_day(db_session: Session, sample_user: User):
     assert result.groups[2].percentage_of_total == Decimal("9.09")
 
 
+def test_faceted_query_uncategorized_expense_and_transfer_separation(db_session: Session, sample_user: User):
+    """Verifies uncategorized expense (account_id is None) is classified under EXPENSE and transfer is classified under TRANSFER."""
+    acc_source = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("2000000.00"),
+    )
+    acc_dest = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("500000.00"),
+    )
+    db_session.add_all([acc_source, acc_dest])
+    db_session.commit()
+
+    # 1. Uncategorized expense: Debit has category_id=None, account_id=None
+    tx_exp = Transaction(
+        user_id=sample_user.id,
+        description="Pengeluaran Tanpa Kategori",
+        transaction_date=datetime(2026, 10, 4, 10, 0, tzinfo=timezone.utc),
+    )
+    db_session.add(tx_exp)
+    db_session.flush()
+    e_exp_deb = LedgerEntry(
+        transaction_id=tx_exp.id,
+        user_id=sample_user.id,
+        category_id=None,
+        account_id=None,
+        entry_type=EntryType.DEBIT,
+        amount=Decimal("45000.00"),
+    )
+    e_exp_crd = LedgerEntry(
+        transaction_id=tx_exp.id,
+        user_id=sample_user.id,
+        category_id=None,
+        account_id=acc_source.id,
+        entry_type=EntryType.CREDIT,
+        amount=Decimal("45000.00"),
+    )
+    db_session.add_all([e_exp_deb, e_exp_crd])
+
+    # 2. Transfer: Debit has account_id=acc_dest.id, category_id=None
+    tx_trf = Transaction(
+        user_id=sample_user.id,
+        description="Transfer Antar Rekening",
+        transaction_date=datetime(2026, 10, 4, 11, 0, tzinfo=timezone.utc),
+    )
+    db_session.add(tx_trf)
+    db_session.flush()
+    e_trf_crd = LedgerEntry(
+        transaction_id=tx_trf.id,
+        user_id=sample_user.id,
+        category_id=None,
+        account_id=acc_source.id,
+        entry_type=EntryType.CREDIT,
+        amount=Decimal("100000.00"),
+    )
+    e_trf_deb = LedgerEntry(
+        transaction_id=tx_trf.id,
+        user_id=sample_user.id,
+        category_id=None,
+        account_id=acc_dest.id,
+        entry_type=EntryType.DEBIT,
+        amount=Decimal("100000.00"),
+    )
+    db_session.add_all([e_trf_crd, e_trf_deb])
+    db_session.commit()
+
+    engine = FacetedQueryEngine(db_session)
+
+    # Query EXPENSE
+    res_exp = engine.execute(
+        sample_user.id,
+        FacetedQueryParams(
+            flow_type="EXPENSE",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 10),
+            group_by="none",
+        ),
+    )
+    assert res_exp.summary["total_amount"] == Decimal("45000.00")
+    assert res_exp.summary["transaction_count"] == 1
+    assert res_exp.items[0]["description"] == "Pengeluaran Tanpa Kategori"
+
+    # Query TRANSFER
+    res_trf = engine.execute(
+        sample_user.id,
+        FacetedQueryParams(
+            flow_type="TRANSFER",
+            start_date=date(2026, 10, 1),
+            end_date=date(2026, 10, 10),
+            group_by="none",
+        ),
+    )
+    assert res_trf.summary["total_amount"] == Decimal("100000.00")
+    assert res_trf.summary["transaction_count"] == 1
+    assert res_trf.items[0]["description"] == "Transfer Antar Rekening"
+
+
