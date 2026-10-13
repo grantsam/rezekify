@@ -95,7 +95,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const [activeTab, setActiveTab] = useState<CategoryType>('EXPENSE');
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
   const [name, setName] = useState<string>('');
-  const [selectedColor, setSelectedColor] = useState<string>('#64748b');
+  const [selectedColor, setSelectedColor] = useState<string>('#10b981');
   const [selectedIcon, setSelectedIcon] = useState<string>('tag');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -132,7 +132,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
 
   const resetForm = () => {
     setName('');
-    setSelectedColor('#64748b');
+    setSelectedColor('#10b981');
     setSelectedIcon('tag');
     setEditingCategory(null);
     setErrorMsg(null);
@@ -141,7 +141,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const handleStartEdit = (cat: Category) => {
     setEditingCategory(cat);
     setName(cat.name);
-    setSelectedColor(cat.color || '#64748b');
+    setSelectedColor(cat.color || '#10b981');
     setSelectedIcon(cat.icon || 'tag');
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -173,7 +173,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
         // Update existing category
         const updated = await apiClient.updateCategory(editingCategory.id, {
           name: trimmed,
-          category_type: editingCategory.category_type as CategoryType || activeTab,
+          category_type: (editingCategory.category_type as CategoryType) || activeTab,
           icon: selectedIcon,
           color: selectedColor,
         });
@@ -224,7 +224,6 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
 
   if (!isOpen) return null;
 
-  // ponytail: client-side category filtering; add server-side pagination when tenant has > 100 categories
   const filteredCategories = localCategories.filter((c) => {
     const catType = (c.category_type || 'EXPENSE').toUpperCase();
     return catType === activeTab;
@@ -238,9 +237,9 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100 max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl',
-        backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
+        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white max-w-xl max-h-[90vh] overflow-y-auto rounded-[28px] shadow-2xl shadow-[#10B981]/10 text-left select-none',
+        backdrop: 'bg-black/60 backdrop-blur-md',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -249,14 +248,14 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
             <ModalHeader>
               <div className="flex items-center justify-between w-full pr-6">
                 <div>
-                  <h3 id="category-manager-modal-title" className="font-semibold text-lg text-zinc-100">
+                  <h3 id="category-manager-modal-title" className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
                     Kelola Kategori
                   </h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-emerald-200/80 font-medium mt-0.5">
                     Sesuaikan pos anggaran, ikon representatif, dan aksen warna
                   </p>
                 </div>
-                <div className="p-2 rounded-xl bg-indigo-600/10 text-indigo-400 border border-indigo-500/20">
+                <div className="p-2.5 rounded-2xl bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 shadow-xs">
                   <Layers className="w-4 h-4" />
                 </div>
               </div>
@@ -265,20 +264,20 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
             <ModalBody className="pb-6 space-y-5">
               {/* Notifications: Error & Success */}
               {errorMsg && (
-                <div className="p-3 rounded-xl text-xs flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 text-rose-400">
+                <div className="p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-300">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
               {successMsg && (
-                <div className="p-3 rounded-xl text-xs flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <div className="p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 bg-emerald-500/15 border border-[#10B981]/30 text-[#0F766E] dark:text-[#10B981]">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{successMsg}</span>
                 </div>
               )}
 
               {/* Category Type Tabs */}
-              <div className="grid grid-cols-2 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
+              <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-[#021D17] p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 text-xs">
                 <Button
                   size="sm"
                   variant="light"
@@ -286,10 +285,10 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     setActiveTab('EXPENSE');
                     if (!editingCategory) resetForm();
                   }}
-                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
+                  className={`py-2 px-3 rounded-xl font-extrabold transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'EXPENSE'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white bg-transparent'
+                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
                   }`}
                 >
                   Pengeluaran
@@ -301,10 +300,10 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     setActiveTab('INCOME');
                     if (!editingCategory) resetForm();
                   }}
-                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
+                  className={`py-2 px-3 rounded-xl font-extrabold transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'INCOME'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white bg-transparent'
+                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
                   }`}
                 >
                   Pemasukan
@@ -314,14 +313,14 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
               {/* Form Section */}
               <form
                 onSubmit={handleSubmit}
-                className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800/80 space-y-4"
+                className="bg-slate-50 dark:bg-[#021D17]/60 p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 space-y-4"
               >
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+                  <h4 className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     {editingCategory ? 'Ubah Kategori' : 'Tambah Kategori Baru'}
                   </h4>
                   {editingCategory && (
-                    <span className="text-[11px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                    <span className="text-[11px] font-extrabold text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                       Mode Edit
                     </span>
                   )}
@@ -329,7 +328,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
 
                 {/* Name Input */}
                 <div>
-                  <label htmlFor="category-name-input" className="block text-xs font-medium text-zinc-400 mb-1">
+                  <label htmlFor="category-name-input" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                     Nama Kategori
                   </label>
                   <input
@@ -340,16 +339,16 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     placeholder="Contoh: Makanan, Transportasi, Hiburan..."
                     maxLength={50}
                     disabled={isSubmitting}
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors disabled:opacity-50 min-h-[38px]"
+                    className="w-full bg-white dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium disabled:opacity-50 min-h-[38px]"
                   />
-                  <div className="text-right text-[10px] text-zinc-500 mt-1">
+                  <div className="text-right text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1">
                     {name.length}/50 karakter
                   </div>
                 </div>
 
                 {/* Color Swatch Picker */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-2">
+                  <label className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-2">
                     Warna Aksen
                   </label>
                   <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Pilihan Warna">
@@ -366,12 +365,12 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           onPress={() => setSelectedColor(swatch.value)}
                           className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 min-h-[38px] min-w-[38px] p-0 focus:outline-none ${
                             isSelected
-                              ? 'ring-2 ring-offset-2 ring-offset-zinc-900 ring-white scale-105'
+                              ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#042421] ring-[#10B981] scale-105'
                               : 'opacity-85 hover:opacity-100'
                           }`}
                           style={{ backgroundColor: swatch.value }}
                         >
-                          {isSelected && <Check className="w-4 h-4 text-white drop-shadow" />}
+                          {isSelected && <Check className="w-4 h-4 text-white drop-shadow-md" />}
                         </Button>
                       );
                     })}
@@ -380,7 +379,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
 
                 {/* Icon Grid Picker */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-2">
+                  <label className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-2">
                     Pilihan Ikon
                   </label>
                   <div
@@ -399,14 +398,14 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           aria-label={`Ikon ${item.label}`}
                           isDisabled={isSubmitting}
                           onPress={() => setSelectedIcon(item.key)}
-                          className={`p-2 rounded-xl flex flex-col items-center justify-center gap-1 min-h-[46px] min-w-[38px] h-auto transition-all border text-xs ${
+                          className={`p-2 rounded-2xl flex flex-col items-center justify-center gap-1 min-h-[46px] min-w-[38px] h-auto transition-all border text-xs font-bold ${
                             isSelected
-                              ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] border-[#10B981] text-white shadow-md'
+                              : 'bg-white dark:bg-[#021D17] border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-[#10B981]'
                           }`}
                         >
                           <IconComp className="w-4 h-4" />
-                          <span className="text-[10px] truncate max-w-full font-normal">{item.label}</span>
+                          <span className="text-[10px] truncate max-w-full font-medium">{item.label}</span>
                         </Button>
                       );
                     })}
@@ -414,13 +413,13 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 </div>
 
                 {/* Form Action Buttons */}
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800/80">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/80 dark:border-white/10">
                   {editingCategory && (
                     <Button
                       variant="light"
                       isDisabled={isSubmitting}
                       onPress={handleCancelEdit}
-                      className="min-h-[38px] text-xs text-zinc-400 hover:text-white"
+                      className="min-h-[38px] text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       Batal Edit
                     </Button>
@@ -428,7 +427,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   <Button
                     type="submit"
                     isDisabled={isSubmitting}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-sm"
+                    className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#10B981]/25 px-5 min-h-[38px]"
                   >
                     {isSubmitting ? (
                       <div className="flex items-center gap-2">
@@ -447,17 +446,17 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
               {/* Categories List Section */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  <h4 className="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Daftar Kategori {activeTab === 'EXPENSE' ? 'Pengeluaran' : 'Pemasukan'} ({filteredCategories.length})
                   </h4>
                 </div>
 
                 {filteredCategories.length === 0 ? (
-                  <div className="p-6 rounded-xl bg-zinc-900/40 border border-zinc-800/60 text-center">
-                    <p className="text-sm font-medium text-zinc-300">
+                  <div className="p-6 rounded-2xl bg-slate-50 dark:bg-[#021D17]/40 border border-slate-200 dark:border-white/10 text-center">
+                    <p className="text-sm font-extrabold text-slate-700 dark:text-slate-300">
                       Belum ada kategori {activeTab === 'EXPENSE' ? 'pengeluaran' : 'pemasukan'}.
                     </p>
-                    <p className="text-xs text-zinc-500 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                       Buat kategori baru menggunakan formulir di atas.
                     </p>
                   </div>
@@ -470,22 +469,22 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                       return (
                         <div
                           key={cat.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700/80 transition-all"
+                          className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 hover:border-[#10B981]/40 transition-all"
                         >
                           <div className="flex items-center gap-3">
                             <div
-                              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border"
+                              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs"
                               style={{
-                                backgroundColor: `${cat.color || '#64748b'}20`,
-                                borderColor: `${cat.color || '#64748b'}40`,
-                                color: cat.color || '#64748b',
+                                backgroundColor: `${cat.color || '#10b981'}20`,
+                                borderColor: `${cat.color || '#10b981'}40`,
+                                color: cat.color || '#10b981',
                               }}
                             >
                               <IconComp className="w-4 h-4" />
                             </div>
                             <span
                               data-testid="category-item-name"
-                              className="font-medium text-sm text-zinc-100"
+                              className="font-extrabold text-sm text-slate-900 dark:text-white"
                             >
                               {cat.name}
                             </span>
@@ -494,7 +493,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           {/* Action Buttons / Confirm State */}
                           {isConfirmingDelete ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-rose-400 font-medium hidden sm:inline">
+                              <span className="text-xs text-rose-500 dark:text-rose-400 font-bold hidden sm:inline">
                                 Yakin hapus kategori ini?
                               </span>
                               <Button
@@ -503,7 +502,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                                 variant="flat"
                                 isDisabled={isSubmitting}
                                 onPress={() => handleDelete(cat.id)}
-                                className="min-h-[38px] px-3 text-xs text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl"
+                                className="min-h-[38px] px-3.5 text-xs font-extrabold text-rose-600 dark:text-rose-300 bg-rose-500/15 hover:bg-rose-500/25 rounded-xl"
                               >
                                 {isSubmitting ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -516,7 +515,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                                 variant="light"
                                 isDisabled={isSubmitting}
                                 onPress={() => setDeletingId(null)}
-                                className="min-h-[38px] px-3 text-xs text-zinc-400 hover:text-white rounded-xl"
+                                className="min-h-[38px] px-3 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl"
                               >
                                 Batal
                               </Button>
@@ -529,7 +528,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                                 variant="light"
                                 aria-label={`Edit ${cat.name}`}
                                 onPress={() => handleStartEdit(cat)}
-                                className="min-h-[38px] min-w-[38px] p-2 flex items-center justify-center rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors bg-transparent"
+                                className="min-h-[36px] min-w-[36px] p-2 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-[#10B981] hover:bg-[#10B981]/10 transition-colors bg-transparent"
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>
@@ -543,7 +542,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                                   setErrorMsg(null);
                                   setSuccessMsg(null);
                                 }}
-                                className="min-h-[38px] min-w-[38px] p-2 flex items-center justify-center rounded-xl text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors bg-transparent"
+                                className="min-h-[36px] min-w-[36px] p-2 flex items-center justify-center rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors bg-transparent"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>

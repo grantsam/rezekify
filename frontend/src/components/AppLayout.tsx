@@ -4,6 +4,7 @@ import { BottomDock } from './BottomDock';
 import { Account, User } from '../types/api';
 
 export interface AppLayoutProps {
+  children: React.ReactNode;
   activeView: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings';
   onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings') => void;
   accounts: Account[];
@@ -13,10 +14,13 @@ export interface AppLayoutProps {
   onOpenCreateAccount: () => void;
   onOpenSettings?: () => void;
   onQuickCapturePress?: () => void;
-  children: React.ReactNode;
+  isDarkMode?: boolean;
+  onToggleTheme?: () => void;
+  onOpenProfile?: () => void;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
+  children,
   activeView,
   onViewChange,
   accounts,
@@ -26,13 +30,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenCreateAccount,
   onOpenSettings,
   onQuickCapturePress,
-  children,
+  isDarkMode,
+  onToggleTheme,
+  onOpenProfile,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 flex flex-col md:flex-row antialiased selection:bg-zinc-800 selection:text-white">
-      {/* Desktop Collapsible Sidebar */}
+    <div className="min-h-screen w-full bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row antialiased">
+      {/* Desktop Fixed Sidebar */}
       <Sidebar
         activeView={activeView}
         onViewChange={onViewChange}
@@ -44,10 +50,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenSettings={onOpenSettings}
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        isDarkMode={isDarkMode}
+        onToggleTheme={onToggleTheme}
+        onOpenProfile={onOpenProfile}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-6">
+      <div
+        className={`flex-1 flex flex-col min-w-0 min-h-screen pb-20 md:pb-6 relative z-10 transition-all duration-300 ${
+          isCollapsed ? 'md:pl-20' : 'md:pl-64'
+        }`}
+      >
         {children}
       </div>
 

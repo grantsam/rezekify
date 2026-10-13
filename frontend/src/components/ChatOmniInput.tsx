@@ -13,7 +13,6 @@ export interface ChatOmniInputProps {
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-// ponytail: dynamic canvas downscaling & client WebP compression; ceiling: single attached receipt image. Upgrade to multiple file upload array if batch ledger imports are requested.
 export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
   onSubmit,
   onVoiceSubmit,
@@ -226,12 +225,12 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`relative w-full rounded-2xl border transition-all duration-200 ${
+      className={`relative w-full rounded-2xl border transition-all duration-200 select-none ${
         isDraggingOver
-          ? 'border-emerald-500/70 bg-emerald-950/20 ring-2 ring-emerald-500/30'
+          ? 'border-[#10B981] bg-[#10B981]/15 ring-2 ring-[#10B981]/30'
           : isRecording
-          ? 'border-rose-500/50 bg-rose-950/20'
-          : 'border-zinc-800 bg-[#141417]/95 focus-within:border-zinc-700 focus-within:ring-1 focus-within:ring-zinc-700/50'
+          ? 'border-rose-500/50 bg-rose-500/10'
+          : 'border-slate-200/80 dark:border-[#10B981]/30 bg-white/90 dark:bg-[#042421]/90 backdrop-blur-xl focus-within:border-[#10B981] focus-within:ring-2 focus-within:ring-[#10B981]/30 shadow-lg shadow-[#10B981]/5'
       }`}
     >
       {/* Voice recording state view */}
@@ -243,7 +242,7 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
         >
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
-            <span className="text-xs font-mono font-medium text-rose-400 tabular-nums">
+            <span className="text-xs font-mono font-extrabold text-rose-600 dark:text-rose-400 tabular-nums">
               {formatDuration(recordingSeconds)}
             </span>
             {/* Visualizer bars */}
@@ -277,7 +276,7 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
               type="button"
               onClick={handleCancelRecording}
               aria-label="Batalkan rekaman"
-              className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 active:scale-95 transition-all"
+              className="min-w-[36px] min-h-[36px] p-2 inline-flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 active:scale-95 transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -285,7 +284,7 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
               type="button"
               onClick={handleStopRecording}
               aria-label="Selesai dan kirim pesan suara"
-              className="min-w-[38px] min-h-[38px] px-3 py-1.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs shadow-sm transition-all"
+              className="min-w-[36px] min-h-[36px] px-3.5 py-1.5 inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md shadow-rose-600/20 transition-all"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
               <span>Selesai</span>
@@ -293,16 +292,16 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col p-2.5 gap-2">
+        <div className="flex flex-col p-2.5 gap-2 text-left">
           {/* Attached receipt / image chip preview */}
           {file && (
-            <div className="flex items-center gap-2 self-start px-2.5 py-1 rounded-lg bg-zinc-800/80 border border-zinc-700/80 text-xs text-zinc-200">
-              <span className="max-w-[240px] truncate font-medium">{file.name}</span>
+            <div className="flex items-center gap-2 self-start px-2.5 py-1 rounded-xl bg-[#10B981]/15 border border-[#10B981]/30 text-xs font-bold text-[#0F766E] dark:text-[#10B981]">
+              <span className="max-w-[240px] truncate">{file.name}</span>
               <button
                 type="button"
                 onClick={handleRemoveFile}
                 aria-label="Hapus lampiran"
-                className="p-2 min-w-[38px] min-h-[38px] inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/60 transition-colors"
+                className="p-1 min-w-[28px] min-h-[28px] inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-500 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -319,11 +318,11 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
             disabled={isLoading}
             placeholder={placeholder || 'Tanya atau catat keuangan... (Shift+Enter untuk baris baru)'}
             aria-label="Pesan chat keuangan"
-            className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none resize-none min-h-[44px] max-h-[160px] py-1.5 px-2 overflow-y-auto leading-relaxed"
+            className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium focus:outline-none resize-none min-h-[44px] max-h-[160px] py-1.5 px-2 overflow-y-auto leading-relaxed"
           />
 
           {/* Bottom actions toolbar */}
-          <div className="flex items-center justify-between pt-1 border-t border-zinc-800/60">
+          <div className="flex items-center justify-between pt-1 border-t border-slate-200/80 dark:border-white/10">
             <div className="flex items-center gap-1">
               <input
                 ref={fileInputRef}
@@ -338,7 +337,7 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
                 disabled={isLoading}
                 aria-label="Unggah struk atau gambar"
                 title="Unggah struk atau gambar (JPEG, PNG, WebP)"
-                className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                className="min-w-[36px] min-h-[36px] p-2 inline-flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-[#10B981] hover:bg-[#10B981]/10 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
               >
                 <Paperclip className="w-4 h-4" />
               </button>
@@ -349,7 +348,7 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
                 disabled={isLoading}
                 aria-label="Rekam pesan suara"
                 title="Rekam pesan suara mutasi atau pertanyaan"
-                className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                className="min-w-[36px] min-h-[36px] p-2 inline-flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-[#10B981] hover:bg-[#10B981]/10 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
               >
                 <Mic className="w-4 h-4" />
               </button>
@@ -361,7 +360,7 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
               disabled={isSubmitDisabled}
               aria-label="Kirim pesan"
               title="Kirim pesan (Enter)"
-              className="min-w-[40px] min-h-[40px] p-2 inline-flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600"
+              className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold active:scale-95 transition-all shadow-md shadow-[#10B981]/20 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />

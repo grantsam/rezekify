@@ -239,9 +239,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100 max-w-2xl max-h-[90vh] overflow-y-auto',
-        backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
+        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white max-w-2xl max-h-[90vh] overflow-y-auto rounded-[28px] shadow-2xl shadow-[#10B981]/10 text-left select-none',
+        backdrop: 'bg-black/60 backdrop-blur-md',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -250,22 +250,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <ModalHeader>
               <div className="flex items-center justify-between w-full pr-6">
                 <div>
-                  <h3 className="font-semibold text-lg text-zinc-100">Pengaturan Akun & Sistem</h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">Kelola integrasi bot Telegram dan kuota AI kustom (BYOK)</p>
+                  <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">Pengaturan Akun & Sistem</h3>
+                  <p className="text-xs text-slate-500 dark:text-emerald-200/80 font-medium mt-0.5">Kelola integrasi bot Telegram dan kuota AI kustom (BYOK)</p>
                 </div>
-                {isLoading && <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />}
+                {isLoading && <Loader2 className="w-4 h-4 text-[#10B981] animate-spin" />}
               </div>
             </ModalHeader>
 
-            <ModalBody className="pb-6">
+            <ModalBody className="pb-6 space-y-4">
               {feedbackMsg && (
                 <div
                   role="status"
                   aria-live="polite"
-                  className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                  className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 ${
                     feedbackMsg.isError
-                      ? 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
-                      : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                      ? 'bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-300'
+                      : 'bg-emerald-500/15 border border-[#10B981]/30 text-[#0F766E] dark:text-[#10B981]'
                   }`}
                 >
                   {feedbackMsg.isError ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
@@ -274,65 +274,68 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
 
               {/* Navigation Tabs */}
-              <div className="grid grid-cols-3 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
+              <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-[#021D17] p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 text-xs">
                 <Button
                   size="sm"
                   variant="light"
                   onPress={() => setActiveTab('telegram')}
-                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
+                  className={`py-2 px-3 rounded-xl font-extrabold transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'telegram'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white bg-transparent'
+                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
                   }`}
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Integrasi Telegram</span>
+                  <span className="hidden sm:inline">Integrasi Telegram</span>
+                  <span className="sm:hidden">Telegram</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="light"
                   onPress={() => setActiveTab('ai')}
-                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
+                  className={`py-2 px-3 rounded-xl font-extrabold transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'ai'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white bg-transparent'
+                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
                   }`}
                 >
                   <Bot className="w-3.5 h-3.5" />
-                  <span>Model & Kunci AI (BYOK)</span>
+                  <span className="hidden sm:inline">Model & Kunci AI (BYOK)</span>
+                  <span className="sm:hidden">AI BYOK</span>
                 </Button>
                 <Button
                   size="sm"
                   variant="light"
                   onPress={() => setActiveTab('profile')}
-                  className={`py-2 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 min-h-[38px] ${
+                  className={`py-2 px-3 rounded-xl font-extrabold transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'profile'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white bg-transparent'
+                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>Siklus & Ambang Batas</span>
+                  <span className="hidden sm:inline">Siklus & Ambang Batas</span>
+                  <span className="sm:hidden">Siklus</span>
                 </Button>
               </div>
 
               {/* TAB 1: TELEGRAM */}
               {activeTab === 'telegram' && (
-                <div className="space-y-4 pt-2">
-                  <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between">
+                <div className="space-y-4 pt-1">
+                  <div className="p-4 bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200/80 dark:border-white/10 rounded-2xl flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-zinc-400 block mb-1">Status Koneksi</span>
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">Status Koneksi</span>
                       {settings?.telegram?.is_connected ? (
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                          <span className="text-sm font-semibold text-emerald-400">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
+                          <span className="text-xs sm:text-sm font-extrabold text-[#0F766E] dark:text-[#10B981]">
                             Terhubung: ID {settings.telegram.telegram_chat_id}
                           </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                          <span className="text-sm font-semibold text-amber-400">Belum Terhubung</span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                          <span className="text-xs sm:text-sm font-extrabold text-amber-600 dark:text-amber-400">Belum Terhubung</span>
                         </div>
                       )}
                     </div>
@@ -343,7 +346,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         color="danger"
                         onPress={handleUnlinkTelegram}
                         isDisabled={isUnlinking}
-                        className="text-rose-400 bg-rose-500/10 border border-rose-500/20 text-xs font-semibold rounded-xl"
+                        className="text-rose-600 dark:text-rose-300 bg-rose-500/15 border border-rose-500/30 text-xs font-extrabold rounded-xl"
                       >
                         {isUnlinking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Putuskan Hubungan'}
                       </Button>
@@ -351,9 +354,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {!settings?.telegram?.is_connected ? (
-                    <div className="p-4 bg-zinc-900/60 border border-zinc-800/80 rounded-xl space-y-4">
-                      <h4 className="text-xs font-semibold text-zinc-200">Langkah Menghubungkan:</h4>
-                      <ol className="text-xs text-zinc-400 space-y-2 list-decimal list-inside">
+                    <div className="p-4 bg-slate-50 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 rounded-2xl space-y-4">
+                      <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-200">Langkah Menghubungkan:</h4>
+                      <ol className="text-xs text-slate-600 dark:text-slate-300 font-medium space-y-2 list-decimal list-inside">
                         <li>Klik tombol <strong>Dapatkan Kode Pairing</strong> di bawah.</li>
                         <li>Klik tombol tautan instan 1-klik untuk membuka bot Telegram.</li>
                         <li>Tekan <strong>START</strong> di Telegram dan akun Anda langsung terhubung!</li>
@@ -364,34 +367,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           size="sm"
                           onPress={handleGeneratePairingCode}
                           isDisabled={isGeneratingCode}
-                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl"
+                          className="w-full bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold rounded-xl min-h-[40px] shadow-md shadow-[#10B981]/20"
                         >
                           {isGeneratingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Dapatkan Kode Pairing Baru'}
                         </Button>
                       ) : (
-                        <div className="p-4 bg-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-3">
+                        <div className="p-4 bg-emerald-500/10 border border-[#10B981]/30 rounded-2xl space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-indigo-300 font-medium">Kode Pairing Anda:</span>
-                            <span className="text-[11px] text-zinc-400">Berlaku 15 menit</span>
+                            <span className="text-xs text-[#0F766E] dark:text-[#10B981] font-bold">Kode Pairing Anda:</span>
+                            <span className="text-[11px] text-slate-500 font-medium">Berlaku 15 menit</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl font-mono font-bold text-white tracking-wider bg-zinc-900 px-4 py-2 rounded-xl border border-zinc-800 grow text-center">
+                            <span className="text-2xl font-mono font-extrabold text-slate-900 dark:text-white tracking-wider bg-white dark:bg-[#021D17] px-4 py-2 rounded-xl border border-slate-200 dark:border-[#10B981]/30 grow text-center">
                               {pairingCode}
                             </span>
                             <Button
                               size="sm"
                               variant="flat"
                               onPress={handleCopyCode}
-                              className="bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-xl min-h-[44px]"
+                              className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl min-h-[44px]"
                             >
-                              {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                              {isCopied ? <Check className="w-4 h-4 text-[#10B981]" /> : <Copy className="w-4 h-4" />}
                             </Button>
                           </div>
                           <a
                             href={`https://t.me/${settings?.telegram?.bot_username || 'RezekifyBot'}?start=${pairingCode}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                            className="w-full py-2.5 px-4 bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white text-xs font-extrabold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-[#10B981]/20"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                             Buka Telegram Sekarang (1-Klik)
@@ -400,7 +403,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div className="p-4 bg-zinc-900/60 border border-zinc-800/80 rounded-xl space-y-2 text-xs text-zinc-400">
+                    <div className="p-4 bg-slate-50 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 rounded-2xl space-y-2 text-xs text-slate-600 dark:text-slate-300 font-medium">
                       <p>✅ Bot Telegram aktif dan siap menerima pesan.</p>
                       <p>Anda dapat mencatat pengeluaran langsung via teks santai, foto struk belanja, atau pesan suara.</p>
                     </div>
@@ -410,23 +413,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* TAB 2: AI BYOK */}
               {activeTab === 'ai' && (
-                <div className="space-y-4 pt-2">
+                <div className="space-y-4 pt-1">
                   {/* Mode Toggles */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Button
                       variant="flat"
                       onPress={() => setIsCustomAi(false)}
-                      className={`p-3.5 rounded-xl border text-left transition-all h-auto block min-h-[76px] ${
+                      className={`p-3.5 rounded-2xl border text-left transition-all h-auto block min-h-[76px] ${
                         !isCustomAi
-                          ? 'bg-indigo-600/10 border-indigo-500/50 shadow-md shadow-indigo-600/10'
-                          : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                          ? 'bg-[#10B981]/15 border-[#10B981] shadow-md shadow-[#10B981]/10'
+                          : 'bg-slate-50 dark:bg-[#021D17] border-slate-200 dark:border-white/10'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1.5">
-                        <Server className={`w-4 h-4 ${!isCustomAi ? 'text-indigo-400' : 'text-zinc-400'}`} />
-                        <span className="text-xs font-bold text-white">Shared Platform</span>
+                        <Server className={`w-4 h-4 ${!isCustomAi ? 'text-[#10B981]' : 'text-slate-400'}`} />
+                        <span className="text-xs font-extrabold text-slate-900 dark:text-white">Shared Platform</span>
                       </div>
-                      <p className="text-[11px] text-zinc-400 leading-relaxed font-normal whitespace-normal">
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium whitespace-normal">
                         Infrastruktur rotary pool bersama gratis dari Rezekify. Tanpa konfigurasi.
                       </p>
                     </Button>
@@ -434,32 +437,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <Button
                       variant="flat"
                       onPress={() => setIsCustomAi(true)}
-                      className={`p-3.5 rounded-xl border text-left transition-all h-auto block min-h-[76px] ${
+                      className={`p-3.5 rounded-2xl border text-left transition-all h-auto block min-h-[76px] ${
                         isCustomAi
-                          ? 'bg-indigo-600/10 border-indigo-500/50 shadow-md shadow-indigo-600/10'
-                          : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                          ? 'bg-[#10B981]/15 border-[#10B981] shadow-md shadow-[#10B981]/10'
+                          : 'bg-slate-50 dark:bg-[#021D17] border-slate-200 dark:border-white/10'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1.5">
-                        <Radio className={`w-4 h-4 ${isCustomAi ? 'text-indigo-400' : 'text-zinc-400'}`} />
-                        <span className="text-xs font-bold text-white">Bring Your Own Key</span>
+                        <Radio className={`w-4 h-4 ${isCustomAi ? 'text-[#10B981]' : 'text-slate-400'}`} />
+                        <span className="text-xs font-extrabold text-slate-900 dark:text-white">Bring Your Own Key</span>
                         {isCustomAi && (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#10B981]/20 text-[#0F766E] dark:text-[#10B981] border border-[#10B981]/30">
                             {protocol === 'OPENAI' ? 'OpenAI-compat' : 'Anthropic-compat'}
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-zinc-400 leading-relaxed font-normal whitespace-normal">
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium whitespace-normal">
                         Gunakan custom endpoint (OpenAI/Anthropic-compatible) dengan API key pribadi Anda.
                       </p>
                     </Button>
                   </div>
 
                   {isCustomAi && (
-                    <div className="space-y-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
+                    <div className="space-y-4 p-4 bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200/80 dark:border-white/10 rounded-2xl">
                       {/* Protocol Selector */}
                       <div>
-                        <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                        <label className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                           Protokol Endpoint
                         </label>
                         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Protokol Endpoint">
@@ -470,10 +473,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               setProtocol('OPENAI');
                               setValidationResult(null);
                             }}
-                            className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all min-h-[40px] flex items-center justify-center ${
+                            className={`py-2 px-3 rounded-xl text-xs font-extrabold border transition-all min-h-[40px] flex items-center justify-center ${
                               protocol === 'OPENAI'
-                                ? 'bg-zinc-800 text-white border-indigo-500 shadow-sm'
-                                : 'bg-zinc-800/50 text-zinc-400 border-zinc-800 hover:text-white'
+                                ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white border-[#10B981] shadow-sm'
+                                : 'bg-white dark:bg-[#021D17] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
                             }`}
                           >
                             OpenAI-compatible
@@ -485,10 +488,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               setProtocol('ANTHROPIC');
                               setValidationResult(null);
                             }}
-                            className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all min-h-[40px] flex items-center justify-center ${
+                            className={`py-2 px-3 rounded-xl text-xs font-extrabold border transition-all min-h-[40px] flex items-center justify-center ${
                               protocol === 'ANTHROPIC'
-                                ? 'bg-zinc-800 text-white border-indigo-500 shadow-sm'
-                                : 'bg-zinc-800/50 text-zinc-400 border-zinc-800 hover:text-white'
+                                ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white border-[#10B981] shadow-sm'
+                                : 'bg-white dark:bg-[#021D17] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
                             }`}
                           >
                             Anthropic-compatible
@@ -498,7 +501,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                       {/* Base URL Input */}
                       <div>
-                        <label htmlFor="base-url-input" className="block text-xs font-medium text-zinc-300 mb-1.5">
+                        <label htmlFor="base-url-input" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                           Base URL Endpoint
                         </label>
                         <input
@@ -507,16 +510,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           value={baseUrl}
                           onChange={(e) => setBaseUrl(e.target.value)}
                           placeholder={protocol === 'ANTHROPIC' ? 'https://api.anthropic.com' : 'https://api.openai.com/v1'}
-                          className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 min-h-[38px]"
+                          className="w-full bg-white dark:bg-[#021D17] border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none font-medium min-h-[38px]"
                         />
-                        <p className="text-[11px] text-zinc-400 mt-1">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">
                           Harus diawali https:// (contoh: {protocol === 'ANTHROPIC' ? 'https://api.anthropic.com' : 'https://api.openai.com/v1, https://api.groq.com/openai/v1'})
                         </p>
                       </div>
 
                       {/* Model Input */}
                       <div>
-                        <label htmlFor="model-input" className="block text-xs font-medium text-zinc-300 mb-1.5">
+                        <label htmlFor="model-input" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                           Nama Model
                         </label>
                         <input
@@ -525,9 +528,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           value={model}
                           onChange={(e) => setModel(e.target.value)}
                           placeholder={protocol === 'ANTHROPIC' ? 'claude-3-5-haiku-20241022' : 'gpt-4o-mini'}
-                          className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 min-h-[38px]"
+                          className="w-full bg-white dark:bg-[#021D17] border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none font-medium min-h-[38px]"
                         />
-                        <p className="text-[11px] text-zinc-400 mt-1">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">
                           Contoh: {protocol === 'ANTHROPIC' ? 'claude-3-5-haiku-20241022, claude-3-7-sonnet-20250219' : 'gpt-4o-mini, llama-3.3-70b-versatile, deepseek-chat'}
                         </p>
                       </div>
@@ -535,11 +538,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {/* API Key Input */}
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <label htmlFor="api-key-input" className="text-xs font-medium text-zinc-300">
+                          <label htmlFor="api-key-input" className="text-xs font-extrabold text-slate-600 dark:text-slate-300">
                             Kunci API (API Key)
                           </label>
                           {settings?.ai?.has_api_key && (
-                            <span className="text-[11px] text-emerald-400 font-mono">
+                            <span className="text-[11px] text-[#0F766E] dark:text-[#10B981] font-mono font-bold">
                               Tersimpan ({settings.ai.key_hint || '...'})
                             </span>
                           )}
@@ -555,7 +558,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 ? 'Biarkan kosong jika tidak ingin mengubah'
                                 : 'Masukkan kunci API Anda'
                             }
-                            className="w-full bg-[#0c0c0e] border border-zinc-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 pr-10 min-h-[38px]"
+                            className="w-full bg-white dark:bg-[#021D17] border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none font-medium pr-10 min-h-[38px]"
                           />
                           <Button
                             isIconOnly
@@ -563,30 +566,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             variant="light"
                             onPress={() => setShowKey(!showKey)}
                             aria-label={showKey ? 'Sembunyikan API key' : 'Tampilkan API key'}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white min-w-[38px] min-h-[38px] flex items-center justify-center p-0 bg-transparent"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:hover:text-white min-w-[38px] min-h-[38px] flex items-center justify-center p-0 bg-transparent"
                           >
                             {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </Button>
                         </div>
-                        <div className="mt-1 flex justify-end">
+                        <div className="mt-1.5 flex justify-end">
                           {protocol === 'ANTHROPIC' ? (
                             <a
                               href="https://console.anthropic.com/settings/keys"
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] text-indigo-400 hover:underline inline-flex items-center gap-1"
+                              className="text-[11px] text-[#0F766E] dark:text-[#10B981] hover:underline inline-flex items-center gap-1 font-bold"
                             >
                               Dapatkan API Key di Anthropic Console
                               <ExternalLink className="w-2.5 h-2.5" />
                             </a>
                           ) : (
-                            <span className="text-[11px] text-zinc-400 inline-flex items-center gap-1">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium inline-flex items-center gap-1">
                               Dapatkan API Key di penyedia endpoint Anda (mis.{' '}
                               <a
                                 href="https://platform.openai.com/api-keys"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-indigo-400 hover:underline inline-flex items-center gap-0.5"
+                                className="text-[#0F766E] dark:text-[#10B981] hover:underline inline-flex items-center gap-0.5 font-bold"
                               >
                                 OpenAI <ExternalLink className="w-2 h-2" />
                               </a>
@@ -595,7 +598,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 href="https://console.groq.com/keys"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-indigo-400 hover:underline inline-flex items-center gap-0.5"
+                                className="text-[#0F766E] dark:text-[#10B981] hover:underline inline-flex items-center gap-0.5 font-bold"
                               >
                                 Groq <ExternalLink className="w-2 h-2" />
                               </a>
@@ -610,10 +613,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div
                           role="status"
                           aria-live="polite"
-                          className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                          className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 ${
                             validationResult.valid
-                              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-                              : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
+                              ? 'bg-emerald-500/15 border border-[#10B981]/30 text-[#0F766E] dark:text-[#10B981]'
+                              : 'bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-300'
                           }`}
                         >
                           {validationResult.valid ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
@@ -621,13 +624,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                       )}
 
-                      <div className="pt-2 flex items-center justify-between gap-3">
+                      <div className="pt-1 flex items-center justify-between gap-3">
                         <Button
                           size="sm"
                           variant="flat"
                           onPress={handleValidateKey}
                           isDisabled={isValidating || !apiKey.trim() || !baseUrl.trim()}
-                          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-xl text-xs font-semibold min-h-[38px] px-4"
+                          className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-extrabold min-h-[38px] px-4"
                         >
                           {isValidating ? (
                             <span className="flex items-center gap-1.5">
@@ -641,12 +644,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   )}
 
-                  <div className="pt-3 flex justify-end">
+                  <div className="pt-2 flex justify-end">
                     <Button
                       size="sm"
                       onPress={handleSaveAISettings}
                       isDisabled={isSaving}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs px-5 min-h-[38px]"
+                      className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold rounded-xl text-xs px-5 min-h-[38px] shadow-md shadow-[#10B981]/20"
                     >
                       {isSaving ? (
                         <span className="flex items-center gap-1.5">
@@ -662,13 +665,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* TAB 3: SIKLUS & AMBANG BATAS */}
               {activeTab === 'profile' && (
-                <div className="space-y-4 pt-2">
-                  <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl space-y-4">
+                <div className="space-y-4 pt-1">
+                  <div className="p-4 bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200/80 dark:border-white/10 rounded-2xl space-y-4">
                     <div>
-                      <label htmlFor="monthly-cycle-day-input" className="block text-xs font-medium text-zinc-300 mb-1">
+                      <label htmlFor="monthly-cycle-day-input" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1">
                         Hari Siklus Finansial Bulanan
                       </label>
-                      <p className="text-[11px] text-zinc-400 mb-2">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-2">
                         Pilih tanggal antara 1 sampai 31 yang menandai awal bulan finansial atau tanggal gajian Anda.
                       </p>
                       <div className="flex items-center gap-3">
@@ -679,22 +682,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           max={31}
                           value={monthlyCycleDay}
                           onChange={(e) => setMonthlyCycleDay(parseInt(e.target.value, 10) || 1)}
-                          className="w-28 bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none"
+                          className="w-28 bg-white dark:bg-[#021D17] border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white outline-none font-mono font-bold"
                         />
-                        <span className="text-xs text-zinc-400">Tiap tanggal {monthlyCycleDay} per bulan</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-300 font-bold">Tiap tanggal {monthlyCycleDay} per bulan</span>
                       </div>
                     </div>
 
-                    <div className="border-t border-zinc-800/80 pt-4">
-                      <label htmlFor="safe-runway-threshold-input" className="block text-xs font-medium text-zinc-300 mb-1">
+                    <div className="border-t border-slate-200/80 dark:border-white/10 pt-4">
+                      <label htmlFor="safe-runway-threshold-input" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1">
                         Ambang Batas Jatah Harian Aman (IDR)
                       </label>
-                      <p className="text-[11px] text-zinc-400 mb-2">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-2">
                         Batas minimum pengeluaran harian aman. Bila jatah harian berada di bawah nominal ini, status runway menjadi WARNING.
                       </p>
                       <div className="space-y-2">
                         <div className="relative">
-                          <span className="absolute left-3.5 top-2.5 text-xs text-zinc-500 font-medium">Rp</span>
+                          <span className="absolute left-4 top-2.5 text-xs text-slate-400 font-mono font-bold">Rp</span>
                           <input
                             id="safe-runway-threshold-input"
                             type="number"
@@ -702,12 +705,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             step={1000}
                             value={safeRunwayThreshold}
                             onChange={(e) => setSafeRunwayThreshold(parseFloat(e.target.value) || 0)}
-                            className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none"
+                            className="w-full bg-white dark:bg-[#021D17] border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl pl-11 pr-4 py-2.5 text-xs text-slate-900 dark:text-white outline-none font-mono font-bold"
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[11px] text-zinc-400 bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800/50">
-                          <span>Preview Ambang Batas:</span>
-                          <span className="font-semibold text-emerald-400 font-mono tabular-nums">
+                        <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-[#021D17]/60 p-3 rounded-xl border border-slate-200/80 dark:border-white/10">
+                          <span className="font-semibold">Preview Ambang Batas:</span>
+                          <span className="font-extrabold text-[#0F766E] dark:text-[#10B981] font-mono tabular-nums">
                             Rp {Number(safeRunwayThreshold || 0).toLocaleString('id-ID')} / hari
                           </span>
                         </div>
@@ -720,7 +723,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       size="sm"
                       onPress={handleSaveProfile}
                       isDisabled={isSavingProfile}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs px-5 min-h-[38px]"
+                      className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold rounded-xl text-xs px-5 min-h-[38px] shadow-md shadow-[#10B981]/20"
                     >
                       {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Preferensi Siklus'}
                     </Button>

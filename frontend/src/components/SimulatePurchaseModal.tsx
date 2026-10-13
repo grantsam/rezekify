@@ -83,9 +83,9 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
       backdrop="blur"
       size="lg"
       classNames={{
-        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100 max-h-[90vh]',
-        backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
+        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-[#10B981]/10 max-h-[90vh] text-left select-none',
+        backdrop: 'bg-black/60 backdrop-blur-md',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -97,17 +97,17 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
               el?.closest('[role="dialog"]')?.setAttribute('aria-labelledby', 'simulate-modal-title');
             }}
           >
-            <ModalHeader className="pb-4 border-b border-zinc-800/80">
+            <ModalHeader className="pb-4 border-b border-slate-200/80 dark:border-white/10">
               <div className="flex items-center justify-between w-full pr-6">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-[#10B981]/15 border border-[#10B981]/30 rounded-2xl text-[#10B981] shadow-xs">
                     <Calculator className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 id="simulate-modal-title" className="font-semibold text-lg text-zinc-100">
+                    <h3 id="simulate-modal-title" className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
                       Simulasi Rencana Belanja
                     </h3>
-                    <p className="text-xs text-zinc-400 font-normal">
+                    <p className="text-xs text-slate-500 dark:text-emerald-200/80 font-medium">
                       What-If Purchase & Runway Impact Simulator
                     </p>
                   </div>
@@ -118,13 +118,15 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                   onPress={handleClose}
                   aria-label="Tutup modal"
                   className="sr-only"
-                />
+                >
+                  Tutup modal
+                </Button>
               </div>
             </ModalHeader>
 
             <ModalBody className="py-6 overflow-y-auto">
               {errorMsg && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center gap-2">
+                <div className="p-3.5 bg-rose-500/15 border border-rose-500/30 rounded-2xl text-rose-600 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
@@ -132,11 +134,11 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="planned-amount" className="block text-xs font-medium text-zinc-400 mb-1.5">
+                  <label htmlFor="planned-amount" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                     Nominal Rencana Belanja (Rp)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm font-semibold">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm font-bold font-mono">
                       Rp
                     </span>
                     <input
@@ -148,16 +150,15 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                       value={plannedAmount}
                       onChange={(e) => setPlannedAmount(e.target.value)}
                       placeholder="Contoh: 500000"
-                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl pl-11 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                     />
                   </div>
                 </div>
 
                 <Button
                   type="submit"
-                  color="primary"
                   isLoading={isLoading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 active:scale-[0.99]"
+                  className="w-full bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 disabled:opacity-50 text-white font-extrabold py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-[#10B981]/25 flex items-center justify-center gap-2 active:scale-[0.99] min-h-[44px]"
                 >
                   {isLoading ? (
                     <>
@@ -174,60 +175,60 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
               </div>
 
               {result && (
-                <div className="mt-6 pt-5 border-t border-zinc-800/80 space-y-4">
-                  <h4 className="text-xs uppercase tracking-wider font-semibold text-zinc-400">
+                <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-white/10 space-y-4">
+                  <h4 className="text-xs uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400">
                     Hasil Proyeksi Runway
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-zinc-900/70 border border-zinc-800 p-3.5 rounded-xl">
-                      <span className="text-[11px] text-zinc-400 block mb-1">Jatah Saat Ini</span>
-                      <p className="text-sm font-bold text-zinc-200 tabular-nums">
+                    <div className="bg-slate-50 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 p-3.5 rounded-2xl">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Jatah Saat Ini</span>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
                         Rp {result.current_daily_runway.toLocaleString('id-ID')}
                       </p>
-                      <span className="text-[10px] text-zinc-400">/ hari</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">/ hari</span>
                     </div>
 
-                    <div className="bg-zinc-900/70 border border-zinc-800 p-3.5 rounded-xl">
-                      <span className="text-[11px] text-zinc-400 block mb-1">Proyeksi Setelah Belanja</span>
+                    <div className="bg-slate-50 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 p-3.5 rounded-2xl">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Proyeksi Setelah Belanja</span>
                       <p
-                        className={`text-sm font-bold tabular-nums ${
-                          result.is_safe ? 'text-emerald-400' : 'text-rose-400'
+                        className={`text-sm font-extrabold font-mono tabular-nums ${
+                          result.is_safe ? 'text-[#0F766E] dark:text-[#10B981]' : 'text-rose-600 dark:text-rose-400'
                         }`}
                       >
                         Rp {result.projected_daily_runway.toLocaleString('id-ID')}
                       </p>
-                      <span className="text-[10px] text-zinc-400">/ hari</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">/ hari</span>
                     </div>
 
-                    <div className="bg-zinc-900/70 border border-zinc-800 p-3.5 rounded-xl">
-                      <span className="text-[11px] text-zinc-400 block mb-1">Penurunan Jatah Harian</span>
-                      <p className="text-sm font-bold text-amber-400 tabular-nums">
+                    <div className="bg-slate-50 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 p-3.5 rounded-2xl">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Penurunan Jatah Harian</span>
+                      <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
                         -Rp {result.daily_drop_amount.toLocaleString('id-ID')}/hari
                       </p>
-                      <span className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                        <TrendingDown className="w-3 h-3 text-amber-400" /> berkurang
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                        <TrendingDown className="w-3 h-3 text-amber-500" /> berkurang
                       </span>
                     </div>
                   </div>
 
                   <div
-                    className={`p-4 rounded-xl border flex items-start gap-3 transition-colors ${
+                    className={`p-4 rounded-2xl border flex items-start gap-3 transition-colors ${
                       result.is_safe
-                        ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300'
-                        : 'bg-rose-950/30 border-rose-500/30 text-rose-300'
+                        ? 'bg-emerald-500/15 border-[#10B981]/30 text-[#0F766E] dark:text-emerald-300'
+                        : 'bg-rose-500/15 border-rose-500/30 text-rose-700 dark:text-rose-300'
                     }`}
                   >
                     {result.is_safe ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-[#10B981] shrink-0 mt-0.5" />
                     ) : (
-                      <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
                     )}
                     <div className="text-xs leading-relaxed">
-                      <p className="font-semibold mb-1">
+                      <p className="font-extrabold mb-1">
                         {result.is_safe ? 'Kalkulasi Aman' : 'Peringatan Risiko Pengeluaran'}
                       </p>
-                      <p className="text-zinc-300">{result.advice}</p>
+                      <p className="font-medium text-slate-700 dark:text-slate-200">{result.advice}</p>
                     </div>
                   </div>
                 </div>

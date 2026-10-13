@@ -129,7 +129,6 @@ export const VaultModal: React.FC<VaultModalProps> = ({
 
     try {
       if (isEdit && activeVault) {
-        // ponytail: direct update call; add transaction-backed reallocation history when ledger auditing required
         await apiClient.updateVault(activeVault.id, {
           name: trimmedName,
           target_amount: parsedTarget,
@@ -167,9 +166,9 @@ export const VaultModal: React.FC<VaultModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-[#141417] border border-zinc-800/80 text-zinc-100',
-        backdrop: 'bg-black/75',
-        closeButton: 'hover:bg-zinc-800 text-zinc-400 hover:text-white',
+        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-[#10B981]/10 text-left select-none',
+        backdrop: 'bg-black/60 backdrop-blur-md',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -183,8 +182,8 @@ export const VaultModal: React.FC<VaultModalProps> = ({
           >
             <ModalHeader>
               <div className="flex items-center justify-between w-full pr-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
                     {isEdit ? (
                       <Pencil className="w-4 h-4" />
                     ) : vaultType === 'SAVINGS' ? (
@@ -193,7 +192,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       <Receipt className="w-4 h-4" />
                     )}
                   </div>
-                  <h3 id={titleId} className="font-semibold text-lg text-zinc-100">
+                  <h3 id={titleId} className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
                     {isEdit ? 'Edit Komitmen Vault' : 'Tambah Komitmen & Vault'}
                   </h3>
                 </div>
@@ -203,14 +202,16 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                   onPress={handleClose}
                   aria-label="Tutup modal"
                   className="sr-only"
-                />
+                >
+                  Tutup modal
+                </Button>
               </div>
             </ModalHeader>
 
             <ModalBody>
               {isEdit && activeVault?.is_locked && (
-                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs">
-                  <Lock className="w-4 h-4 shrink-0 text-amber-400" />
+                <div className="flex items-center gap-2.5 p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                  <Lock className="w-4 h-4 shrink-0 text-amber-500" />
                   <span>
                     Vault ini sedang terkunci. Anda dapat menambah alokasi, namun tidak dapat mengurangi alokasi di bawah dana saat ini.
                   </span>
@@ -218,14 +219,14 @@ export const VaultModal: React.FC<VaultModalProps> = ({
               )}
 
               {errorMsg && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs">
+                <div className="p-3.5 bg-rose-500/15 border border-rose-500/30 rounded-2xl text-rose-600 dark:text-rose-300 text-xs font-semibold">
                   {errorMsg}
                 </div>
               )}
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="vault-name" className="block text-xs font-medium text-zinc-400 mb-1.5">
+                  <label htmlFor="vault-name" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                     Nama Tagihan / Komitmen
                     <span className="sr-only">Nama Komitmen</span>
                   </label>
@@ -236,24 +237,24 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: Sewa Kos, Listrik PLN, Tabungan Darurat"
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                    className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium"
                   />
                 </div>
 
                 {!isEdit && (
                   <div>
-                    <span className="block text-xs font-medium text-zinc-400 mb-1.5">Tipe Pos</span>
-                    <div className="grid grid-cols-2 gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs" role="radiogroup" aria-label="Tipe Pos">
+                    <span className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">Tipe Pos</span>
+                    <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-[#021D17] p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 text-xs" role="radiogroup" aria-label="Tipe Pos">
                       {VAULT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
                         <Button
                           key={type}
                           role="radio"
                           onPress={() => setVaultType(type)}
                           aria-checked={vaultType === type}
-                          className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all min-h-[38px] ${
+                          className={`flex items-center justify-center gap-2 py-2 rounded-xl font-extrabold transition-all min-h-[38px] ${
                             vaultType === type
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                              : 'text-zinc-400 hover:text-white border border-transparent bg-transparent'
+                              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
                           }`}
                         >
                           <Icon className="w-4 h-4" />
@@ -266,7 +267,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="target-amount" className="block text-xs font-medium text-zinc-400 mb-1.5">
+                    <label htmlFor="target-amount" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                       Target Biaya (Rp)
                       <span className="sr-only">Target Nominal</span>
                     </label>
@@ -279,12 +280,12 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       value={targetAmount}
                       onChange={(e) => setTargetAmount(e.target.value)}
                       placeholder="0"
-                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="allocated-amount" className="block text-xs font-medium text-zinc-400 mb-1.5">
+                    <label htmlFor="allocated-amount" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                       Alokasi Terkunci (Rp)
                     </label>
                     <input
@@ -295,13 +296,13 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       value={allocatedAmount}
                       onChange={(e) => setAllocatedAmount(e.target.value)}
                       placeholder={isEdit ? '0' : 'Sama dengan target'}
-                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                      className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="target-date" className="block text-xs font-medium text-zinc-400 mb-1.5">
+                  <label htmlFor="target-date" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
                     Tanggal Jatuh Tempo
                   </label>
                   <input
@@ -309,19 +310,19 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                     type="date"
                     value={targetDate}
                     onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                    className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white outline-none font-medium transition-all"
                   />
                 </div>
 
                 {!isEdit && (
-                  <div className="flex items-center justify-between p-3 bg-zinc-900/60 rounded-xl border border-zinc-800/80">
+                  <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#021D17]/60 rounded-2xl border border-slate-200 dark:border-white/10">
                     <div className="flex items-center gap-2.5">
-                      <Lock className={`w-4 h-4 ${isLocked ? 'text-amber-400' : 'text-zinc-400'}`} />
+                      <Lock className={`w-4 h-4 ${isLocked ? 'text-[#10B981]' : 'text-slate-400'}`} />
                       <div>
-                        <label htmlFor="is_locked_toggle" className="text-sm font-medium text-white cursor-pointer">
+                        <label htmlFor="is_locked_toggle" className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white cursor-pointer">
                           Kunci Dana Komitmen
                         </label>
-                        <p className="text-xs text-zinc-400">Cegah pengurangan alokasi dana secara tidak sengaja</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Cegah pengurangan alokasi dana secara tidak sengaja</p>
                       </div>
                     </div>
                     <input
@@ -329,27 +330,26 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       id="is_locked_toggle"
                       checked={isLocked}
                       onChange={(e) => setIsLocked(e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-zinc-800 border-zinc-700 cursor-pointer"
+                      className="w-4 h-4 rounded text-[#10B981] focus:ring-[#10B981] bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-pointer accent-[#10B981]"
                     />
                   </div>
                 )}
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-end gap-2">
               <Button
                 variant="light"
                 onPress={handleClose}
-                className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors min-h-[38px]"
               >
                 Batal
               </Button>
               <Button
                 type="submit"
-                color="primary"
                 isLoading={isSubmitting}
                 isDisabled={isSubmitting}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl shadow-sm"
+                className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#10B981]/25 px-5 min-h-[38px]"
               >
                 {isSubmitting ? (
                   <>

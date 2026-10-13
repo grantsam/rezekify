@@ -13,7 +13,6 @@ export interface AIChatViewProps {
   providerLabel?: string;
 }
 
-// ponytail: dedicated AI Copilot conversation view with persistent telemetry strip, enriched transaction feeds, and multimodal capture; upgrade to multi-session chats if conversation tabs are implemented.
 export const AIChatView: React.FC<AIChatViewProps> = ({
   initialTelemetry = null,
   initialPrompt,
@@ -203,14 +202,21 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] md:h-screen flex flex-col min-w-0 bg-[#0c0c0e]">
+    <div className="h-[calc(100vh-4rem)] md:h-screen flex flex-col min-w-0 bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-white transition-colors duration-300 relative overflow-hidden select-none">
+      
+      {/* AMBIENT RADIAL LIGHT DEKORATIF */}
+      <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-radial from-[#10B981]/15 via-[#0F766E]/10 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-radial from-[#34D399]/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
+
       {/* Sticky Telemetry Strip */}
-      <ChatTelemetryStrip
-        telemetry={telemetry}
-        onResetChat={handleResetChat}
-        isResetting={isResetting}
-        providerLabel={providerLabel}
-      />
+      <div className="sticky top-0 z-20 backdrop-blur-2xl bg-white/70 dark:bg-[#042421]/80 border-b border-slate-200/80 dark:border-[#10B981]/20 shadow-xs">
+        <ChatTelemetryStrip
+          telemetry={telemetry}
+          onResetChat={handleResetChat}
+          isResetting={isResetting}
+          providerLabel={providerLabel}
+        />
+      </div>
 
       {/* Middle Scrollable Feed */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -226,7 +232,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
       </div>
 
       {/* Pinned Bottom Omni Input */}
-      <div className="p-3 sm:p-4 bg-[#0c0c0e] border-t border-zinc-800/80">
+      <div className="p-3 sm:p-4 bg-white/80 dark:bg-[#042421]/90 backdrop-blur-2xl border-t border-slate-200/80 dark:border-[#10B981]/30 shadow-lg relative z-20">
         <ChatOmniInput
           onSubmit={handleSubmit}
           onVoiceSubmit={handleVoiceSubmit}

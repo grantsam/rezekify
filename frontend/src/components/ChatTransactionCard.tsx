@@ -45,31 +45,31 @@ export const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({
 
   const normalizedType = (transaction.type || 'EXPENSE').toUpperCase();
   let prefix = '- ';
-  let amountColor = 'text-rose-400';
+  let amountColor = 'text-rose-600 dark:text-rose-400';
 
   if (normalizedType === 'INCOME') {
     prefix = '+ ';
-    amountColor = 'text-emerald-400';
+    amountColor = 'text-[#0F766E] dark:text-[#10B981]';
   } else if (normalizedType === 'TRANSFER') {
     prefix = '↔ ';
-    amountColor = 'text-sky-400';
+    amountColor = 'text-sky-600 dark:text-sky-400';
   }
 
   return (
-    <div className="bg-[#18181b] sm:bg-[#1c1c21] border border-zinc-800/80 rounded-xl p-3.5 space-y-3 transition-colors shadow-sm max-w-sm">
+    <div className="bg-white/80 dark:bg-[#021D17]/80 backdrop-blur-md border border-slate-200/80 dark:border-[#10B981]/30 rounded-2xl p-4 space-y-3 transition-all shadow-md shadow-[#10B981]/5 max-w-sm text-left select-none">
       {/* Category and Account Pills */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-zinc-800/80 text-zinc-300 border border-zinc-700/60">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-slate-100 dark:bg-[#021D17] text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10">
             {transaction.category_name}
           </span>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-zinc-900 text-zinc-400 border border-zinc-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-slate-100/80 dark:bg-[#021D17]/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-white/5">
             {transaction.account_name}
           </span>
         </div>
         {isCancelled && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800/90 text-zinc-400 border border-zinc-700/60">
-            <CheckCircle2 className="w-3 h-3 text-zinc-400" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+            <CheckCircle2 className="w-3 h-3 text-slate-400" />
             Dibatalkan
           </span>
         )}
@@ -77,19 +77,19 @@ export const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({
 
       {/* Amount and Description */}
       <div>
-        <div className={`text-lg sm:text-xl font-bold font-mono tabular-nums tracking-tight ${amountColor}`}>
+        <div className={`text-lg sm:text-xl font-extrabold font-mono tabular-nums tracking-tight ${amountColor}`}>
           {prefix}{formatCurrency(transaction.amount)}
         </div>
-        <p className="text-sm font-medium text-zinc-200 mt-0.5 break-words">
+        <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white mt-1 break-words">
           {transaction.description}
         </p>
       </div>
 
       {/* Sisa Saldo */}
       {transaction.account_balance_after != null && (
-        <div className="text-xs text-zinc-400 flex items-center justify-between pt-2 border-t border-zinc-800/70">
+        <div className="text-xs text-slate-500 dark:text-emerald-200/80 font-medium flex items-center justify-between pt-2 border-t border-slate-200/80 dark:border-white/10">
           <span>Sisa saldo {transaction.account_name}:</span>
-          <span className="font-semibold font-mono tabular-nums text-zinc-200">
+          <span className="font-extrabold font-mono tabular-nums text-slate-900 dark:text-slate-100">
             {formatCurrency(transaction.account_balance_after)}
           </span>
         </div>
@@ -102,7 +102,7 @@ export const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({
             type="button"
             onClick={handleCancel}
             disabled={isCanceling}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium min-h-[38px] text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold min-h-[38px] text-rose-600 dark:text-rose-300 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
             aria-label="Batalkan Transaksi"
           >
             {isCanceling ? (
@@ -123,11 +123,11 @@ export const ChatTransactionCard: React.FC<ChatTransactionCardProps> = ({
           <button
             type="button"
             onClick={onViewLedger}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium min-h-[38px] text-zinc-300 bg-zinc-800/80 hover:bg-zinc-700/80 hover:text-white border border-zinc-700/70 active:scale-[0.98] transition-all ml-auto"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold min-h-[38px] text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-[#021D17] hover:bg-[#10B981]/15 hover:text-[#0F766E] dark:hover:text-[#10B981] border border-slate-200/80 dark:border-white/10 active:scale-[0.98] transition-all ml-auto"
             aria-label="Buka di Buku Besar"
           >
             <span>Buka di Buku Besar</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
           </button>
         )}
       </div>
