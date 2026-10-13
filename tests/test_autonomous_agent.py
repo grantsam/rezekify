@@ -245,3 +245,39 @@ async def test_handle_message_async_delegates_to_autonomous_loop(db_session: Ses
     assert result["hops"] == 1
     assert result["telemetry"] is not None
 
+
+def test_autonomous_react_loop_preserves_action_and_thought_traces_in_history(
+    db_session: Session, autonomous_env: User
+):
+    """Verifies that the next turn's history_context contains [TINDAKAN ASISTEN] with thought and tool call."""
+    mock_agent = MagicMock(spec=ReActAgent)
+    mock_agent.process_input.side_effect = [
+        {
+            "raw": """{
+              "thought": "Memeriksa pengeluaran kopi",
+              "tool_call": {
+                "name": "query_financial_ledger",
+                "arguments": {"flow_type": "EXPENSE"}
+              }
+            }"""
+        },
+        {
+            "raw": """{
+              "thought": "Data didapat.",
+              "final_response": "Selesai."
+            }"""
+        },
+    ]
+
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    orchestrator.run_autonomous_loop(
+        user_id=autonomous_env.id,
+        prompt="Berapa beli kopi?",
+    )
+
+    assert mock_agent.process_input.call_count == 2
+    second_call_text = mock_agent.process_input.call_args_list[1].kwargs["text"]
+    assert "[TINDAKAN ASISTEN]: Penalaran: Memeriksa pengeluaran kopi. Memanggil alat 'query_financial_ledger'" in second_call_text
+    assert "[OBSERVASI DARI query_financial_ledger]:" in second_call_text
+
+

@@ -520,7 +520,14 @@ class AgentOrchestrator:
 
             obs_str = json.dumps(observation, default=str)
             last_observation_summary = obs_str
-            history_context += f"\n\n[OBSERVATION dari {turn.tool_name}]: {obs_str}\nSintesis jawaban akhir untuk pengguna:"
+            action_desc = f"Memanggil alat '{turn.tool_name}'"
+            if turn.thought:
+                action_desc = f"Penalaran: {turn.thought}. {action_desc}"
+            history_context += (
+                f"\n\n[TINDAKAN ASISTEN]: {action_desc}\n"
+                f"[OBSERVASI DARI {turn.tool_name}]: {obs_str}\n"
+                "Sintesis jawaban akhir yang komprehensif, faktual, dan ramah untuk pengguna berdasarkan observasi di atas:"
+            )
 
         # Ceiling reached without final answer: safe wrap-up
         safe_reply = (
