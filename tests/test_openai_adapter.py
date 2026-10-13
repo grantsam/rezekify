@@ -156,3 +156,20 @@ def test_process_input_400_generic_maps_to_providererror():
         assert "Bad request format" in exc_info.value.message
 
 
+def test_process_input_custom_system_prompt():
+    adapter = OpenAICompatibleAdapter(_cfg())
+    captured = {}
+
+    def _fake_post(self, url, **kwargs):
+        captured["json"] = kwargs.get("json")
+        return _chat_response('{"action":"expense","amount":10000}')
+
+    with patch("httpx.Client.post", new=_fake_post):
+        adapter.process_input("kopi 10rb", system_prompt="Custom Cognitive Prompt")
+
+    messages = captured["json"]["messages"]
+    assert messages[0]["role"] == "system"
+    assert messages[0]["content"] == "Custom Cognitive Prompt"
+
+
+

@@ -326,6 +326,7 @@ async def ai_chat_omni_input(
         transaction=tx_summary,
         telemetry=telemetry_snap,
         traces=res.get("traces") if isinstance(res, dict) else None,
+        thought=res.get("thought") if isinstance(res, dict) else None,
     )
 
 
@@ -420,6 +421,7 @@ async def ai_receipt_upload(
         transaction=tx_summary,
         telemetry=telemetry_snap,
         traces=res.get("traces") if isinstance(res, dict) else None,
+        thought=res.get("thought") if isinstance(res, dict) else None,
     )
 
 
@@ -510,6 +512,7 @@ async def ai_voice_endpoint(
         telemetry=telemetry_snap,
         transcription=transcription,
         traces=result.get("traces") if isinstance(result, dict) else None,
+        thought=result.get("thought") if isinstance(result, dict) else None,
     )
 
 

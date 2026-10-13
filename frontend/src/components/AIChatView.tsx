@@ -105,7 +105,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         role: 'assistant',
         content: res.reply,
         transaction: res.transaction,
-        metadata: { traces: res.traces, thought: (res as any).thought },
+        metadata: { traces: res.traces, thought: res.thought || (res as any).thought },
         created_at: new Date().toISOString(),
       };
 
@@ -156,7 +156,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         role: 'assistant',
         content: res.reply,
         transaction: res.transaction,
-        metadata: { traces: res.traces, thought: (res as any).thought },
+        metadata: { traces: res.traces, thought: res.thought || (res as any).thought },
         created_at: new Date().toISOString(),
       };
 

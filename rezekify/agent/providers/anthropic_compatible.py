@@ -67,8 +67,11 @@ class AnthropicCompatibleAdapter:
         text: str,
         image_bytes: Optional[bytes] = None,
         mime_type: str = "image/jpeg",
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         from rezekify.agent.runtime import SYSTEM_PROMPT
+
+        sys_prompt = system_prompt or SYSTEM_PROMPT
 
         content = []
         if image_bytes:
@@ -81,7 +84,7 @@ class AnthropicCompatibleAdapter:
         payload = {
             "model": self.config.model,
             "max_tokens": _MAX_TOKENS,
-            "system": SYSTEM_PROMPT,
+            "system": sys_prompt,
             "messages": [{"role": "user", "content": content}],
         }
         try:

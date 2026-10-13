@@ -126,6 +126,8 @@ def test_ai_receipt_endpoint_persists_messages_and_returns_enriched(sample_user,
                 "days_remaining": 20,
                 "health_status": "HEALTHY",
             },
+            "traces": [{"hop": 1, "thought": "Membaca gambar struk", "tool_name": None}],
+            "thought": "Membaca gambar struk",
         },
     ):
         res = client.post(
@@ -140,6 +142,8 @@ def test_ai_receipt_endpoint_persists_messages_and_returns_enriched(sample_user,
         assert data["transaction"]["amount"] == 45000
         assert data["transaction"]["account_name"] == "BCA"
         assert data["telemetry"]["daily_safe_runway"] == 25000
+        assert data["thought"] == "Membaca gambar struk"
+        assert len(data["traces"]) == 1
 
     # Verify messages saved
     get_res = client.get("/api/v1/dashboard/ai-chat/messages", headers=headers)
@@ -172,6 +176,8 @@ def test_ai_voice_endpoint_persists_messages_and_returns_enriched(sample_user, d
                 "days_remaining": 12,
                 "health_status": "HEALTHY",
             },
+            "traces": [{"hop": 1, "thought": "Mendengarkan audio suara", "tool_name": None}],
+            "thought": "Mendengarkan audio suara",
         },
     ):
         res = client.post(
@@ -185,6 +191,8 @@ def test_ai_voice_endpoint_persists_messages_and_returns_enriched(sample_user, d
         assert data["reply"] == "✅ Tercatat: Kopi Rp 20.000"
         assert data["transcription"] == "beli kopi dua puluh ribu tunai"
         assert data["telemetry"]["operational_free_cash"] == 200000
+        assert data["thought"] == "Mendengarkan audio suara"
+        assert len(data["traces"]) == 1
 
     # Verify saved messages
     get_res = client.get("/api/v1/dashboard/ai-chat/messages", headers=headers)
@@ -299,6 +307,7 @@ def test_ai_chat_traces_and_thought_persistence(sample_user, db_session):
         assert data["traces"] is not None
         assert len(data["traces"]) == 2
         assert data["traces"][0]["tool_name"] == "get_runway_telemetry"
+        assert data["thought"] == "Menyusun jawaban akhir"
 
     # Verify persisted in message history metadata
     get_res = client.get("/api/v1/dashboard/ai-chat/messages", headers=headers)

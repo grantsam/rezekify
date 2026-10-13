@@ -73,3 +73,18 @@ def test_ping_invokes_process_input():
     with patch.object(adapter, "process_input", return_value={"ok": True}) as mock_process:
         adapter.ping()
         mock_process.assert_called_once_with("ping")
+
+
+def test_process_input_custom_system_prompt():
+    adapter = AnthropicCompatibleAdapter(_cfg())
+    captured = {}
+
+    def _fake_post(self, url, **kwargs):
+        captured["json"] = kwargs.get("json")
+        return _msg_response('{"action":"income","amount":100000}')
+
+    with patch("httpx.Client.post", new=_fake_post):
+        adapter.process_input("gaji", system_prompt="Custom Anthropic Cognitive Prompt")
+
+    assert captured["json"]["system"] == "Custom Anthropic Cognitive Prompt"
+

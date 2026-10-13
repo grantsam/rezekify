@@ -734,6 +734,125 @@ def test_parse_agent_turn_unknown_action_fallback_friendly_message():
     )
 
 
+def test_byok_process_input_forwards_cognitive_system_prompt():
+    """Verifies that ReActAgent with BYOK forwards cognitive system prompt when user_context is provided."""
+    from rezekify.agent.providers.base import BYOKConfig
+
+    cfg = BYOKConfig(protocol="OPENAI", base_url="https://api.openai.com/v1", model="gpt-4o", api_key="k")
+    agent = ReActAgent(byok=cfg, is_byok=True)
+
+    user_ctx = {
+        "operational_free_cash": Decimal("1000000"),
+        "daily_safe_runway": Decimal("100000"),
+        "days_remaining": 10,
+        "health_status": "HEALTHY",
+    }
+    with patch(
+        "rezekify.agent.providers.openai_compatible.OpenAICompatibleAdapter.process_input",
+        return_value={"action": "expense", "amount": 25000},
+    ) as mock_adapter_call:
+        res = agent.process_input(user_id=uuid4(), text="kopi 25rb", user_context=user_ctx)
+        assert res["action"] == "expense"
+        mock_adapter_call.assert_called_once()
+        kwargs = mock_adapter_call.call_args.kwargs
+        assert "system_prompt" in kwargs
+        assert "Saldo Bebas Operasional: Rp 1,000,000" in kwargs["system_prompt"]
+        assert "ATURAN MUTLAK: Anda adalah asisten OTONOM" in kwargs["system_prompt"]
+
+
+def test_build_cognitive_system_prompt_contains_autonomous_rule_and_few_shot_examples():
+    """Verifies autonomous proactive rule and few-shot tool calling JSON examples."""
+    prompt = build_cognitive_system_prompt()
+    assert "ATURAN MUTLAK: Anda adalah asisten OTONOM" in prompt
+    assert "JANGAN PERNAH bertanya balik atau meminta izin kepada pengguna" in prompt
+    assert "query_financial_ledger" in prompt
+    assert "get_runway_telemetry" in prompt
+    assert 'Contoh 1: Pengguna bertanya: "cek riwayat saya"' in prompt
+    assert 'Contoh 2: Pengguna bertanya: "sisa jatah belanja hari ini berapa?"' in prompt
+
+
+def test_parse_agent_turn_deepseek_think_tag_with_json_tool_call():
+    """Verifies extraction of <think>...</think> tag combined with structured tool call."""
+    raw_response = """<think>
+Pengguna meminta riwayat pengeluaran bulan ini, saya perlu memanggil tool query_financial_ledger.
+</think>
+```json
+{
+  "tool_call": {
+    "name": "query_financial_ledger",
+    "arguments": {
+      "flow_type": "EXPENSE"
+    }
+  }
+}
+```"""
+    turn = parse_agent_turn(raw_response)
+    assert turn.is_tool_call is True
+    assert turn.tool_name == "query_financial_ledger"
+    assert turn.tool_args == {"flow_type": "EXPENSE"}
+    assert "memanggil tool query_financial_ledger" in (turn.thought or "")
+
+
+def test_parse_agent_turn_deepseek_thought_tag_with_clean_response():
+    """Verifies extraction of <thought>...</thought> tag with conversational JSON response."""
+    raw_response = """<thought>
+Observasi selesai, jatah belanja harian masih aman.
+</thought>
+{
+  "final_response": "Sisa jatah belanja harian Anda hari ini adalah Rp 150.000."
+}"""
+    turn = parse_agent_turn(raw_response)
+    assert turn.is_tool_call is False
+    assert turn.thought == "Observasi selesai, jatah belanja harian masih aman."
+    assert turn.final_response == "Sisa jatah belanja harian Anda hari ini adalah Rp 150.000."
+
+
+def test_parse_agent_turn_deepseek_think_tag_with_plain_text():
+    """Verifies extraction of <think>...</think> with plain text response without JSON."""
+    raw_response = """<think>
+Pengguna menyapa copilot, saya balas dengan ramah dan tawarkan bantuan finansial.
+</think>
+Halo! Saya adalah copilot keuangan Rezekify Anda. Ada yang bisa saya bantu catat hari ini?"""
+    turn = parse_agent_turn(raw_response)
+    assert turn.is_tool_call is False
+    assert turn.thought == "Pengguna menyapa copilot, saya balas dengan ramah dan tawarkan bantuan finansial."
+    assert "<think>" not in (turn.final_response or "")
+    assert "</think>" not in (turn.final_response or "")
+    assert "Halo! Saya adalah copilot keuangan Rezekify Anda." in (turn.final_response or "")
+
+
+def test_parse_agent_turn_plain_text_mentions_tool_infers_thought():
+    """Verifies thought inference when plain text mentions query_financial_ledger."""
+    raw_response = "Saya akan memeriksa mutasi Anda melalui query_financial_ledger sebentar."
+    turn = parse_agent_turn(raw_response)
+    assert turn.is_tool_call is False
+    assert turn.thought is not None
+    assert len(turn.thought) > 0
+    assert turn.final_response == raw_response
+
+
+def test_parse_agent_turn_plain_text_no_thought_infers_default_thought():
+    """Verifies default thought inference so thought is never empty during conversational assistance."""
+    raw_response = "Selamat pagi! Silakan input transaksi belanja atau tanyakan riwayat keuangan."
+    turn = parse_agent_turn(raw_response)
+    assert turn.is_tool_call is False
+    assert turn.thought == "Menganalisis pesan dan status keuangan pengguna untuk memberikan rekomendasi."
+    assert turn.final_response == raw_response
+
+
+def test_parse_agent_turn_clean_json_extracts_thought():
+    """Verifies clean JSON extracts thought from thought key."""
+    raw_json = """{
+      "thought": "Pengguna menanyakan perbandingan bulan lalu.",
+      "final_response": "Pengeluaran Anda bulan ini lebih hemat 15%."
+    }"""
+    turn = parse_agent_turn(raw_json)
+    assert turn.is_tool_call is False
+    assert turn.thought == "Pengguna menanyakan perbandingan bulan lalu."
+    assert turn.final_response == "Pengeluaran Anda bulan ini lebih hemat 15%."
+
+
+
 
 
 

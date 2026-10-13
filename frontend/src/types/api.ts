@@ -287,6 +287,7 @@ export interface TelemetrySnapshot {
 
 export interface EnrichedChatResponse {
   reply: string;
+  thought?: string | null;
   message_id?: string | null;
   transaction?: TransactionSummary | null;
   telemetry?: TelemetrySnapshot | null;

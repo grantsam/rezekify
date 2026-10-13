@@ -49,6 +49,7 @@ class EnrichedChatResponse(BaseModel):
     telemetry: Optional[TelemetrySnapshot] = None
     transcription: Optional[str] = None
     traces: Optional[List[Dict[str, Any]]] = None
+    thought: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

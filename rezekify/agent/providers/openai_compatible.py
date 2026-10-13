@@ -67,8 +67,11 @@ class OpenAICompatibleAdapter:
         text: str,
         image_bytes: Optional[bytes] = None,
         mime_type: str = "image/jpeg",
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         from rezekify.agent.runtime import SYSTEM_PROMPT
+
+        sys_prompt = system_prompt or SYSTEM_PROMPT
 
         if image_bytes:
             b64 = base64.b64encode(image_bytes).decode("utf-8")
@@ -80,7 +83,7 @@ class OpenAICompatibleAdapter:
             user_content = text
 
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": sys_prompt},
             {"role": "user", "content": user_content},
         ]
         try:

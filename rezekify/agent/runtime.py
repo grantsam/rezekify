@@ -98,12 +98,37 @@ Anda memiliki akses mandiri ke subsistem simbolik deterministik buku besar pengg
 1. LLM DILARANG MENGHITUNG ANGKA ARITMATIKA. Semua perhitungan total, rata-rata, komparasi periode, dan dampak belanja WAJIB menggunakan tool.
 2. Gunakan pendekatan Behavioral Nudge & Mental Accounting (Thaler): lindungi dana tagihan mendesak dan ingatkan depresiasi jatah belanja harian jika pembelian diskresioner berisiko.
 3. Selalu bersikap empatik, ringkas, jelas, dan faktual.
+4. ATURAN MUTLAK: Anda adalah asisten OTONOM. JANGAN PERNAH bertanya balik atau meminta izin kepada pengguna untuk menjalankan tool jika pengguna meminta data/riwayat/analisis/aksi keuangan! LANGSUNG PANGGIL tool terkait sekarang juga melalui protokol JSON!
 
 [DAFTAR ALAT TERSEDIA]
 1. query_financial_ledger(flow_type, start_date, end_date, categories, accounts, keyword, group_by, compare_with_previous_period)
 2. get_runway_telemetry()
 3. simulate_purchase(planned_amount, category_name)
 4. record_transaction(action, amount, account_name, category_name, description)
+
+[CONTOH EKSEKUSI OTONOM]
+Contoh 1: Pengguna bertanya: "cek riwayat saya" atau "pengeluaran saya bulan ini apa saja"
+Keluaran:
+```json
+{{
+  "thought": "Pengguna meminta riwayat transaksi, saya perlu memanggil tool query_financial_ledger untuk mengambil data riwayat buku besar.",
+  "tool_call": {{
+    "name": "query_financial_ledger",
+    "arguments": {{}}
+  }}
+}}
+```
+Contoh 2: Pengguna bertanya: "sisa jatah belanja hari ini berapa?"
+Keluaran:
+```json
+{{
+  "thought": "Pengguna menanyakan runway atau saldo jatah harian, saya panggil get_runway_telemetry.",
+  "tool_call": {{
+    "name": "get_runway_telemetry",
+    "arguments": {{}}
+  }}
+}}
+```
 
 [PROTOKOL KELUARAN REACT]
 Jika Anda memerlukan data untuk menjawab pertanyaan pengguna, tanggapi HANYA dengan JSON:
@@ -127,19 +152,61 @@ def parse_agent_turn(response_text: Union[str, Dict[str, Any]]) -> AgentTurnResu
 
     ponytail: Regex + JSON decode parser; upgrade to grammar-constrained json schema generation if model syntax errors exceed 2%.
     """
+    extracted_think = None
     if isinstance(response_text, dict):
         parsed = response_text
         text = json.dumps(response_text)
+        cleaned_text = text
     else:
         text = (response_text or "").strip()
-        match = re.search(r"\{.*\}", text, re.DOTALL)
+        think_match = re.search(
+            r"<(?:think|thought)>(.*?)</(?:think|thought)>", text, re.DOTALL | re.IGNORECASE
+        )
+        if think_match:
+            extracted_think = think_match.group(1).strip()
+            cleaned_text = re.sub(
+                r"<(?:think|thought)>.*?</(?:think|thought)>",
+                "",
+                text,
+                flags=re.DOTALL | re.IGNORECASE,
+            ).strip()
+        else:
+            cleaned_text = text
+
+        match = re.search(r"\{.*\}", cleaned_text, re.DOTALL)
         if not match:
-            return AgentTurnResult(is_tool_call=False, final_response=text)
+            thought = extracted_think
+            if not thought:
+                if "query_financial_ledger" in cleaned_text:
+                    thought = "Mengambil data riwayat transaksi buku besar pengguna untuk analisis keuangan."
+                elif "get_runway_telemetry" in cleaned_text:
+                    thought = "Memeriksa data runway dan indikator kesehatan keuangan pengguna."
+                elif "simulate_purchase" in cleaned_text:
+                    thought = "Mensimulasikan dampak pengeluaran terhadap kondisi runway pengguna."
+                elif "record_transaction" in cleaned_text:
+                    thought = "Menyiapkan pencatatan transaksi keuangan ke dalam buku besar."
+                else:
+                    thought = "Menganalisis pesan dan status keuangan pengguna untuk memberikan rekomendasi."
+            return AgentTurnResult(is_tool_call=False, thought=thought, final_response=cleaned_text)
 
         try:
             parsed = json.loads(match.group(0))
         except Exception:
-            return AgentTurnResult(is_tool_call=False, final_response=text)
+            thought = extracted_think
+            if not thought:
+                if "query_financial_ledger" in cleaned_text:
+                    thought = "Mengambil data riwayat transaksi buku besar pengguna untuk analisis keuangan."
+                elif "get_runway_telemetry" in cleaned_text:
+                    thought = "Memeriksa data runway dan indikator kesehatan keuangan pengguna."
+                elif "simulate_purchase" in cleaned_text:
+                    thought = "Mensimulasikan dampak pengeluaran terhadap kondisi runway pengguna."
+                elif "record_transaction" in cleaned_text:
+                    thought = "Menyiapkan pencatatan transaksi keuangan ke dalam buku besar."
+                else:
+                    thought = "Menganalisis pesan dan status keuangan pengguna untuk memberikan rekomendasi."
+            return AgentTurnResult(is_tool_call=False, thought=thought, final_response=cleaned_text)
+
+    thought = parsed.get("thought") or extracted_think
 
     # Check for tool_call structure
     tool_call = parsed.get("tool_call") or parsed.get("call_tool")
@@ -150,7 +217,7 @@ def parse_agent_turn(response_text: Union[str, Dict[str, Any]]) -> AgentTurnResu
             is_tool_call=True,
             tool_name=name,
             tool_args=args,
-            thought=parsed.get("thought"),
+            thought=thought,
         )
     elif tool_call and isinstance(tool_call, str):
         args = parsed.get("arguments") or parsed.get("parameters") or {}
@@ -158,14 +225,14 @@ def parse_agent_turn(response_text: Union[str, Dict[str, Any]]) -> AgentTurnResu
             is_tool_call=True,
             tool_name=tool_call,
             tool_args=args,
-            thought=parsed.get("thought"),
+            thought=thought,
         )
     elif "tool_name" in parsed:
         return AgentTurnResult(
             is_tool_call=True,
             tool_name=parsed["tool_name"],
             tool_args=parsed.get("arguments") or parsed.get("parameters") or {},
-            thought=parsed.get("thought"),
+            thought=thought,
         )
 
     # Legacy single-shot action fallback
@@ -184,32 +251,36 @@ def parse_agent_turn(response_text: Union[str, Dict[str, Any]]) -> AgentTurnResu
             is_tool_call=True,
             tool_name="record_transaction",
             tool_args=tool_args,
-            thought=parsed.get("thought"),
+            thought=thought,
         )
     elif action == "query_runway":
         return AgentTurnResult(
             is_tool_call=True,
             tool_name="get_runway_telemetry",
             tool_args={},
-            thought=parsed.get("thought"),
+            thought=thought,
         )
 
     final_resp = parsed.get("final_response") or parsed.get("reply") or parsed.get("message")
     if final_resp:
         return AgentTurnResult(
             is_tool_call=False,
-            thought=parsed.get("thought"),
+            thought=thought or "Menganalisis pesan dan status keuangan pengguna untuk memberikan rekomendasi.",
             final_response=str(final_resp),
         )
 
     if parsed.get("action") == "unknown":
         return AgentTurnResult(
             is_tool_call=False,
-            thought=parsed.get("thought"),
+            thought=thought or "Menganalisis pesan dan status keuangan pengguna untuk memberikan rekomendasi.",
             final_response="Saya siap membantu mencatat pengeluaran, memeriksa jatah belanja harian, atau menganalisis riwayat keuangan Anda.",
         )
 
-    return AgentTurnResult(is_tool_call=False, final_response=text)
+    return AgentTurnResult(
+        is_tool_call=False,
+        thought=thought or "Menganalisis pesan dan status keuangan pengguna untuk memberikan rekomendasi.",
+        final_response=cleaned_text,
+    )
 
 
 SYSTEM_PROMPT = """Anda adalah asisten cerdas pencatatan keuangan Rezekify.
@@ -273,11 +344,20 @@ class ReActAgent:
         image_bytes: Optional[bytes] = None,
         mime_type: str = "image/jpeg",
         user_context: Optional[Dict[str, Any]] = None,
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Delegates a text/vision request to the configured BYOK adapter and maps errors."""
         adapter = get_adapter(self.byok)
+        sys_prompt = system_prompt
+        if sys_prompt is None and user_context is not None:
+            sys_prompt = build_cognitive_system_prompt(user_context=user_context)
         try:
-            return adapter.process_input(text, image_bytes=image_bytes, mime_type=mime_type)
+            return adapter.process_input(
+                text,
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+                system_prompt=sys_prompt,
+            )
         except AuthError:
             return {"action": "byok_error", "status_code": 401}
         except RateLimitError:
@@ -321,8 +401,17 @@ class ReActAgent:
     ) -> Dict[str, Any]:
         """Processes natural language text or receipt image into structured transaction entities."""
         if self.byok:
+            sys_prompt = (
+                build_cognitive_system_prompt(user_context=user_context)
+                if user_context is not None
+                else SYSTEM_PROMPT
+            )
             return self._byok_process_input(
-                text, image_bytes=image_bytes, mime_type=mime_type, user_context=user_context
+                text,
+                image_bytes=image_bytes,
+                mime_type=mime_type,
+                user_context=user_context,
+                system_prompt=sys_prompt,
             )
 
         system_prompt = (
@@ -750,8 +839,18 @@ class ReActAgent:
     ) -> Dict[str, Any]:
         """Asynchronously processes natural language text or receipt image into structured transaction entities."""
         if self.byok:
+            sys_prompt = (
+                build_cognitive_system_prompt(user_context=user_context)
+                if user_context is not None
+                else SYSTEM_PROMPT
+            )
             return await asyncio.to_thread(
-                self._byok_process_input, text, image_bytes, mime_type, user_context
+                self._byok_process_input,
+                text,
+                image_bytes,
+                mime_type,
+                user_context,
+                sys_prompt,
             )
 
         system_prompt = (
