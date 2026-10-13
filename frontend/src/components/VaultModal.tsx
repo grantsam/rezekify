@@ -166,9 +166,9 @@ export const VaultModal: React.FC<VaultModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-[#10B981]/10 text-left select-none',
+        base: 'bg-white dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800/80 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-black/10 text-left select-none',
         backdrop: 'bg-black/60 backdrop-blur-md',
-        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -183,7 +183,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
             <ModalHeader>
               <div className="flex items-center justify-between w-full pr-6">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
+                  <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
                     {isEdit ? (
                       <Pencil className="w-4 h-4" />
                     ) : vaultType === 'SAVINGS' ? (
@@ -237,14 +237,14 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: Sewa Kos, Listrik PLN, Tabungan Darurat"
-                    className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium"
+                    className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium"
                   />
                 </div>
 
                 {!isEdit && (
                   <div>
                     <span className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">Tipe Pos</span>
-                    <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-[#021D17] p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 text-xs" role="radiogroup" aria-label="Tipe Pos">
+                    <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-zinc-900/60 p-1.5 rounded-2xl border border-slate-200 dark:border-zinc-800/80 text-xs" role="radiogroup" aria-label="Tipe Pos">
                       {VAULT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
                         <Button
                           key={type}
@@ -253,8 +253,8 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                           aria-checked={vaultType === type}
                           className={`flex items-center justify-center gap-2 py-2 rounded-xl font-extrabold transition-all min-h-[38px] ${
                             vaultType === type
-                              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-                              : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
+                              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
                           }`}
                         >
                           <Icon className="w-4 h-4" />
@@ -280,7 +280,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       value={targetAmount}
                       onChange={(e) => setTargetAmount(e.target.value)}
                       placeholder="0"
-                      className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
+                      className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                     />
                   </div>
 
@@ -296,7 +296,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       value={allocatedAmount}
                       onChange={(e) => setAllocatedAmount(e.target.value)}
                       placeholder={isEdit ? '0' : 'Sama dengan target'}
-                      className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
+                      className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -310,14 +310,14 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                     type="date"
                     value={targetDate}
                     onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white outline-none font-medium transition-all"
+                    className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white outline-none font-medium transition-all"
                   />
                 </div>
 
                 {!isEdit && (
-                  <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-[#021D17]/60 rounded-2xl border border-slate-200 dark:border-white/10">
+                  <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-900/60 rounded-2xl border border-slate-200 dark:border-zinc-800/80">
                     <div className="flex items-center gap-2.5">
-                      <Lock className={`w-4 h-4 ${isLocked ? 'text-[#10B981]' : 'text-slate-400'}`} />
+                      <Lock className={`w-4 h-4 ${isLocked ? 'text-emerald-500' : 'text-slate-400'}`} />
                       <div>
                         <label htmlFor="is_locked_toggle" className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white cursor-pointer">
                           Kunci Dana Komitmen
@@ -330,7 +330,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                       id="is_locked_toggle"
                       checked={isLocked}
                       onChange={(e) => setIsLocked(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#10B981] focus:ring-[#10B981] bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-pointer accent-[#10B981]"
+                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-pointer accent-emerald-500"
                     />
                   </div>
                 )}
@@ -349,7 +349,7 @@ export const VaultModal: React.FC<VaultModalProps> = ({
                 type="submit"
                 isLoading={isSubmitting}
                 isDisabled={isSubmitting}
-                className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#10B981]/25 px-5 min-h-[38px]"
+                className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-900/25 px-5 min-h-[38px]"
               >
                 {isSubmitting ? (
                   <>

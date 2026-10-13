@@ -237,9 +237,9 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white max-w-xl max-h-[90vh] overflow-y-auto rounded-[28px] shadow-2xl shadow-[#10B981]/10 text-left select-none',
+        base: 'bg-white dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800/80 text-slate-900 dark:text-white max-w-xl max-h-[90vh] overflow-y-auto rounded-[28px] shadow-2xl shadow-black/10 text-left select-none',
         backdrop: 'bg-black/60 backdrop-blur-md',
-        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -251,11 +251,11 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   <h3 id="category-manager-modal-title" className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
                     Kelola Kategori
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-emerald-200/80 font-medium mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
                     Sesuaikan pos anggaran, ikon representatif, dan aksen warna
                   </p>
                 </div>
-                <div className="p-2.5 rounded-2xl bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 shadow-xs">
+                <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 shadow-xs">
                   <Layers className="w-4 h-4" />
                 </div>
               </div>
@@ -270,14 +270,14 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 </div>
               )}
               {successMsg && (
-                <div className="p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 bg-emerald-500/15 border border-[#10B981]/30 text-[#0F766E] dark:text-[#10B981]">
+                <div className="p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{successMsg}</span>
                 </div>
               )}
 
               {/* Category Type Tabs */}
-              <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-[#021D17] p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 text-xs">
+              <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-zinc-900/60 p-1.5 rounded-2xl border border-slate-200 dark:border-zinc-800/80 text-xs">
                 <Button
                   size="sm"
                   variant="light"
@@ -287,8 +287,8 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   }}
                   className={`py-2 px-3 rounded-xl font-extrabold transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'EXPENSE'
-                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
+                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
                   }`}
                 >
                   Pengeluaran
@@ -302,8 +302,8 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   }}
                   className={`py-2 px-3 rounded-xl font-extrabold transition-all flex items-center justify-center gap-2 min-h-[38px] ${
                     activeTab === 'INCOME'
-                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
+                      ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
                   }`}
                 >
                   Pemasukan
@@ -313,7 +313,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
               {/* Form Section */}
               <form
                 onSubmit={handleSubmit}
-                className="bg-slate-50 dark:bg-[#021D17]/60 p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 space-y-4"
+                className="bg-slate-50 dark:bg-zinc-900/60 p-4 rounded-2xl border border-slate-200/80 dark:border-zinc-800/80 space-y-4"
               >
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -339,7 +339,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     placeholder="Contoh: Makanan, Transportasi, Hiburan..."
                     maxLength={50}
                     disabled={isSubmitting}
-                    className="w-full bg-white dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium disabled:opacity-50 min-h-[38px]"
+                    className="w-full bg-white dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium disabled:opacity-50 min-h-[38px]"
                   />
                   <div className="text-right text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1">
                     {name.length}/50 karakter
@@ -365,7 +365,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           onPress={() => setSelectedColor(swatch.value)}
                           className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 min-h-[38px] min-w-[38px] p-0 focus:outline-none ${
                             isSelected
-                              ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#042421] ring-[#10B981] scale-105'
+                              ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#141417] ring-emerald-500 scale-105'
                               : 'opacity-85 hover:opacity-100'
                           }`}
                           style={{ backgroundColor: swatch.value }}
@@ -400,8 +400,8 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           onPress={() => setSelectedIcon(item.key)}
                           className={`p-2 rounded-2xl flex flex-col items-center justify-center gap-1 min-h-[46px] min-w-[38px] h-auto transition-all border text-xs font-bold ${
                             isSelected
-                              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] border-[#10B981] text-white shadow-md'
-                              : 'bg-white dark:bg-[#021D17] border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-[#10B981]'
+                              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] border-emerald-500 text-white shadow-md'
+                              : 'bg-white dark:bg-zinc-800 border-slate-200 dark:border-zinc-800/80 text-slate-600 dark:text-slate-300 hover:text-emerald-500'
                           }`}
                         >
                           <IconComp className="w-4 h-4" />
@@ -413,7 +413,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 </div>
 
                 {/* Form Action Buttons */}
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/80 dark:border-white/10">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/80 dark:border-zinc-800/80">
                   {editingCategory && (
                     <Button
                       variant="light"
@@ -427,7 +427,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   <Button
                     type="submit"
                     isDisabled={isSubmitting}
-                    className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#10B981]/25 px-5 min-h-[38px]"
+                    className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-900/25 px-5 min-h-[38px]"
                   >
                     {isSubmitting ? (
                       <div className="flex items-center gap-2">
@@ -452,7 +452,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 </div>
 
                 {filteredCategories.length === 0 ? (
-                  <div className="p-6 rounded-2xl bg-slate-50 dark:bg-[#021D17]/40 border border-slate-200 dark:border-white/10 text-center">
+                  <div className="p-6 rounded-2xl bg-slate-50 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800/80 text-center">
                     <p className="text-sm font-extrabold text-slate-700 dark:text-slate-300">
                       Belum ada kategori {activeTab === 'EXPENSE' ? 'pengeluaran' : 'pemasukan'}.
                     </p>
@@ -469,7 +469,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                       return (
                         <div
                           key={cat.id}
-                          className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 hover:border-[#10B981]/40 transition-all"
+                          className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 hover:border-zinc-700/60 transition-all"
                         >
                           <div className="flex items-center gap-3">
                             <div
@@ -528,7 +528,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                                 variant="light"
                                 aria-label={`Edit ${cat.name}`}
                                 onPress={() => handleStartEdit(cat)}
-                                className="min-h-[36px] min-w-[36px] p-2 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-[#10B981] hover:bg-[#10B981]/10 transition-colors bg-transparent"
+                                className="min-h-[36px] min-w-[36px] p-2 flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-colors bg-transparent"
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>

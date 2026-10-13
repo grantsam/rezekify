@@ -18,12 +18,12 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
         className="bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/30 rounded-3xl p-5 mb-6 animate-pulse select-none"
       >
         <div className="flex items-center justify-between mb-3">
-          <div className="h-5 w-64 bg-slate-200 dark:bg-[#042421] rounded-xl" />
-          <div className="h-5 w-32 bg-slate-200 dark:bg-[#042421] rounded-full" />
+          <div className="h-5 w-64 bg-slate-200 dark:bg-zinc-800 rounded-xl" />
+          <div className="h-5 w-32 bg-slate-200 dark:bg-zinc-800 rounded-full" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="h-16 bg-slate-100 dark:bg-[#021D17]/60 border border-slate-200 dark:border-white/10 rounded-2xl" />
-          <div className="h-16 bg-slate-100 dark:bg-[#021D17]/60 border border-slate-200 dark:border-white/10 rounded-2xl" />
+          <div className="h-16 bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80 rounded-2xl" />
+          <div className="h-16 bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80 rounded-2xl" />
         </div>
       </div>
     );
@@ -86,8 +86,8 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
               return (
                 <div
                   key={bill.name}
-                  className={`bg-white/80 dark:bg-[#021D17]/70 backdrop-blur-md border p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 shadow-xs transition-all ${
-                    isUrgent ? 'border-rose-500/50 shadow-rose-500/5' : 'border-slate-200/80 dark:border-white/10'
+                  className={`bg-white/80 dark:bg-zinc-900/70 backdrop-blur-md border p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 shadow-xs transition-all ${
+                    isUrgent ? 'border-rose-500/50 shadow-rose-500/5' : 'border-slate-200/80 dark:border-zinc-800/80'
                   }`}
                 >
                   <div className="min-w-0">
@@ -113,7 +113,7 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
                   <div className="text-right whitespace-nowrap shrink-0">
                     <span
                       className={`text-xs block font-extrabold font-mono tabular-nums ${
-                        shortage > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[#0F766E] dark:text-[#10B981]'
+                        shortage > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                       }`}
                     >
                       {shortage > 0

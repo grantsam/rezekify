@@ -96,24 +96,24 @@ export default function AboutSection() {
             </p>
 
             <div className="pt-2 grid grid-cols-2 gap-3 sm:gap-4 max-w-lg">
-              
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-white/50 dark:bg-[#042421]/60 backdrop-blur-xl border border-white/80 dark:border-[#10B981]/30 shadow-md shadow-[#10B981]/5 flex items-center gap-3 group hover:border-[#10B981]/60 transition-all duration-300">
+
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white/50 dark:bg-[#141417] backdrop-blur-xl border border-white/80 dark:border-zinc-800/80 shadow-md shadow-black/5 flex items-center gap-3 group hover:border-zinc-700/60 transition-all duration-300">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0F766E] to-[#10B981] text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
                   ⚡
                 </div>
                 <div>
                   <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">100%</p>
-                  <p className="text-[11px] text-slate-500 dark:text-emerald-200/80 font-medium leading-tight">Otomatis & Terintegrasi</p>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium leading-tight">Otomatis & Terintegrasi</p>
                 </div>
               </div>
 
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-white/50 dark:bg-[#042421]/60 backdrop-blur-xl border border-white/80 dark:border-[#10B981]/30 shadow-md shadow-[#10B981]/5 flex items-center gap-3 group hover:border-[#10B981]/60 transition-all duration-300">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white/50 dark:bg-[#141417] backdrop-blur-xl border border-white/80 dark:border-zinc-800/80 shadow-md shadow-black/5 flex items-center gap-3 group hover:border-zinc-700/60 transition-all duration-300">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#34D399] text-slate-900 flex items-center justify-center font-bold text-sm shadow-md shrink-0">
                   🤖
                 </div>
                 <div>
                   <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">24/7</p>
-                  <p className="text-[11px] text-slate-500 dark:text-emerald-200/80 font-medium leading-tight">Monitoring AI Realtime</p>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium leading-tight">Monitoring AI Realtime</p>
                 </div>
               </div>
 
@@ -126,7 +126,7 @@ export default function AboutSection() {
               {capabilities.map((item, idx) => (
                 <div
                   key={idx}
-                  className="group relative bg-white/50 dark:bg-[#042421]/60 backdrop-blur-2xl border border-white/80 dark:border-[#10B981]/25 p-6 rounded-3xl shadow-lg shadow-[#10B981]/5 hover:shadow-2xl hover:shadow-[#10B981]/20 hover:border-[#10B981]/60 hover:-translate-y-1.5 transition-all duration-300 text-left flex flex-col justify-between overflow-hidden"
+                  className="group relative bg-white/50 dark:bg-[#141417] backdrop-blur-2xl border border-white/80 dark:border-zinc-800/80 p-6 rounded-3xl shadow-lg shadow-black/5 hover:shadow-2xl hover:shadow-black/20 hover:border-zinc-700/60 hover:-translate-y-1.5 transition-all duration-300 text-left flex flex-col justify-between overflow-hidden"
                 >
                   <div className="absolute -top-12 -right-12 w-28 h-28 bg-[#10B981]/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
 

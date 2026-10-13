@@ -17,7 +17,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
 }) => {
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-white/80 dark:bg-[#042421]/90 border-t border-slate-200/80 dark:border-[#10B981]/20 h-16 px-4 flex items-center justify-between shadow-lg"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-white/80 dark:bg-[#141417]/90 border-t border-slate-200/80 dark:border-zinc-800/80 h-16 px-4 flex items-center justify-between shadow-lg"
       aria-label="Navigasi Bawah"
     >
       <Button
@@ -60,7 +60,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
             }
           }}
           aria-label="AI Copilot"
-          className="w-13 h-13 min-w-[50px] min-h-[50px] rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white shadow-xl shadow-[#10B981]/30 active:scale-95 transition-all flex items-center justify-center border-2 border-white dark:border-[#021D17]"
+          className="w-13 h-13 min-w-[50px] min-h-[50px] rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white shadow-xl shadow-emerald-900/30 active:scale-95 transition-all flex items-center justify-center border-2 border-white dark:border-[#141417]"
         >
           <Sparkles className="w-6 h-6 animate-pulse" />
         </Button>
@@ -79,7 +79,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
         <div className="relative">
           <ShieldCheck className="w-5 h-5" />
           {upcomingBillsCount !== undefined && upcomingBillsCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white dark:ring-[#042421]" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white dark:ring-[#141417]" />
           )}
         </div>
         <span className="text-[10px]">Vaults</span>

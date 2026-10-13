@@ -209,9 +209,9 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
       backdrop="blur"
       disableAnimation
       classNames={{
-        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-[#10B981]/10 max-w-lg text-left select-none',
+        base: 'bg-white dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800/80 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-black/10 max-w-lg text-left select-none',
         backdrop: 'bg-black/60 backdrop-blur-md',
-        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -229,21 +229,21 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                   <h3 id={titleId} className="font-extrabold text-base sm:text-lg flex items-center gap-2 text-slate-900 dark:text-white">
                     {isEdit ? (
                       <>
-                        <Save className="w-5 h-5 text-[#10B981]" />
+                        <Save className="w-5 h-5 text-emerald-500" />
                         <span>Edit Transaksi</span>
-                        <span className="text-[10px] font-mono font-bold uppercase bg-[#10B981]/15 text-[#0F766E] dark:text-[#10B981] px-2 py-0.5 rounded-lg border border-[#10B981]/20">
+                        <span className="text-[10px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg border border-emerald-500/20">
                           Reconciliation
                         </span>
                       </>
                     ) : (
                       <>
-                        <PlusCircle className="w-5 h-5 text-[#10B981]" />
+                        <PlusCircle className="w-5 h-5 text-emerald-500" />
                         <span>Tambah Transaksi Manual</span>
                       </>
                     )}
                   </h3>
                   {isEdit && (
-                    <p className="text-xs text-slate-500 dark:text-emerald-200/80 font-medium mt-0.5">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
                       Perubahan nominal atau rekening akan merekonsiliasi saldo secara otomatis.
                     </p>
                   )}
@@ -268,7 +268,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
               )}
 
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-[#021D17] p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 text-xs" role="radiogroup" aria-label="Tipe Transaksi">
+                <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-zinc-900/60 p-1.5 rounded-2xl border border-slate-200 dark:border-zinc-800/80 text-xs" role="radiogroup" aria-label="Tipe Transaksi">
                   {(['EXPENSE', 'INCOME', 'TRANSFER'] as const).map((t) => (
                     <Button
                       key={t}
@@ -277,8 +277,8 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                       onPress={() => setType(t)}
                       className={`min-h-[38px] flex items-center justify-center py-2 rounded-xl font-extrabold transition-all ${
                         type === t
-                          ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
+                          ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
                       }`}
                     >
                       {t === 'EXPENSE' ? 'Pengeluaran' : t === 'INCOME' ? 'Pemasukan' : 'Transfer'}
@@ -300,13 +300,13 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Contoh: 25000"
                     required
-                    className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
+                    className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="desc-input" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-[#10B981]" />
+                    <FileText className="w-3.5 h-3.5 text-emerald-500" />
                     <span>Keterangan Transaksi <span className="sr-only">Deskripsi</span>*</span>
                   </label>
                   <input
@@ -318,7 +318,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                     placeholder="Contoh: Makan Siang Nasi Padang"
                     required
                     maxLength={500}
-                    className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium"
+                    className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium"
                   />
                 </div>
 
@@ -326,7 +326,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="account-select" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                        <CreditCard className="w-3.5 h-3.5 text-[#10B981]" />
+                        <CreditCard className="w-3.5 h-3.5 text-emerald-500" />
                         <span>Pilih Akun <span className="sr-only">Rekening / Akun</span>*</span>
                       </label>
                       <Select
@@ -347,8 +347,8 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         placeholder={accounts.length === 0 ? 'Belum ada akun' : 'Pilih Akun'}
                         className="w-full"
                         classNames={{
-                          trigger: 'bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
-                          popoverContent: 'bg-white dark:bg-[#042421] border border-slate-200 dark:border-[#10B981]/30 text-slate-900 dark:text-white',
+                          trigger: 'bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
+                          popoverContent: 'bg-white dark:bg-[#141417] border border-slate-200 dark:border-zinc-800/80 text-slate-900 dark:text-white',
                           value: 'text-slate-900 dark:text-white text-xs font-bold',
                         }}
                       >
@@ -362,7 +362,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                             <SelectItem
                               key={acc.id}
                               textValue={`${acc.name} (Rp ${Number(acc.current_balance).toLocaleString('id-ID')})`}
-                              className="text-slate-700 dark:text-slate-200 hover:bg-[#10B981]/10 font-medium"
+                              className="text-slate-700 dark:text-slate-200 hover:bg-zinc-800/50 font-medium"
                             >
                               {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
                             </SelectItem>
@@ -373,7 +373,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
 
                     <div>
                       <label htmlFor="category-select" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 text-[#10B981]" />
+                        <Tag className="w-3.5 h-3.5 text-emerald-500" />
                         <span>Kategori (Opsional)</span>
                       </label>
                       <Select
@@ -393,8 +393,8 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         placeholder={`-- ${isEdit ? 'Tanpa Kategori' : 'Pilih Kategori'} --`}
                         className="w-full"
                         classNames={{
-                          trigger: 'bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
-                          popoverContent: 'bg-white dark:bg-[#042421] border border-slate-200 dark:border-[#10B981]/30 text-slate-900 dark:text-white',
+                          trigger: 'bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
+                          popoverContent: 'bg-white dark:bg-[#141417] border border-slate-200 dark:border-zinc-800/80 text-slate-900 dark:text-white',
                           value: 'text-slate-900 dark:text-white text-xs font-bold',
                         }}
                       >
@@ -413,7 +413,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                               <SelectItem
                                 key={cat.id}
                                 textValue={cat.name}
-                                className="text-slate-700 dark:text-slate-200 hover:bg-[#10B981]/10 font-medium"
+                                className="text-slate-700 dark:text-slate-200 hover:bg-zinc-800/50 font-medium"
                               >
                                 {cat.name}
                               </SelectItem>
@@ -446,8 +446,8 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         placeholder="Pilih rekening asal"
                         className="w-full"
                         classNames={{
-                          trigger: 'bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
-                          popoverContent: 'bg-white dark:bg-[#042421] border border-slate-200 dark:border-[#10B981]/30 text-slate-900 dark:text-white',
+                          trigger: 'bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
+                          popoverContent: 'bg-white dark:bg-[#141417] border border-slate-200 dark:border-zinc-800/80 text-slate-900 dark:text-white',
                           value: 'text-slate-900 dark:text-white text-xs font-bold',
                         }}
                       >
@@ -461,7 +461,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                             <SelectItem
                               key={acc.id}
                               textValue={`${acc.name} (Rp ${Number(acc.current_balance).toLocaleString('id-ID')})`}
-                              className="text-slate-700 dark:text-slate-200 hover:bg-[#10B981]/10 font-medium"
+                              className="text-slate-700 dark:text-slate-200 hover:bg-zinc-800/50 font-medium"
                             >
                               {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
                             </SelectItem>
@@ -491,8 +491,8 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         placeholder="Pilih rekening tujuan"
                         className="w-full"
                         classNames={{
-                          trigger: 'bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
-                          popoverContent: 'bg-white dark:bg-[#042421] border border-slate-200 dark:border-[#10B981]/30 text-slate-900 dark:text-white',
+                          trigger: 'bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
+                          popoverContent: 'bg-white dark:bg-[#141417] border border-slate-200 dark:border-zinc-800/80 text-slate-900 dark:text-white',
                           value: 'text-slate-900 dark:text-white text-xs font-bold',
                         }}
                       >
@@ -506,7 +506,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                             <SelectItem
                               key={acc.id}
                               textValue={`${acc.name} (Rp ${Number(acc.current_balance).toLocaleString('id-ID')})`}
-                              className="text-slate-700 dark:text-slate-200 hover:bg-[#10B981]/10 font-medium"
+                              className="text-slate-700 dark:text-slate-200 hover:bg-zinc-800/50 font-medium"
                             >
                               {acc.name} (Rp {Number(acc.current_balance).toLocaleString('id-ID')})
                             </SelectItem>
@@ -519,7 +519,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
 
                 <div>
                   <label htmlFor="date-input" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-[#10B981]" />
+                    <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                     <span>Waktu Transaksi <span className="sr-only">Tanggal Transaksi</span></span>
                   </label>
                   <input
@@ -528,7 +528,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                     type="datetime-local"
                     value={transactionDate}
                     onChange={(e) => setTransactionDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white outline-none font-medium transition-all"
+                    className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white outline-none font-medium transition-all"
                   />
                 </div>
               </div>
@@ -547,7 +547,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                 type="submit"
                 isLoading={isSubmitting}
                 isDisabled={isSubmitting || !amount}
-                className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#10B981]/25 px-5 min-h-[40px] flex items-center gap-2"
+                className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-900/25 px-5 min-h-[40px] flex items-center gap-2"
               >
                 {isSubmitting ? (
                   <>

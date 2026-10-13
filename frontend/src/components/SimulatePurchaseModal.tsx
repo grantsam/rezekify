@@ -83,9 +83,9 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
       backdrop="blur"
       size="lg"
       classNames={{
-        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-[#10B981]/10 max-h-[90vh] text-left select-none',
+        base: 'bg-white dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800/80 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-black/10 max-h-[90vh] text-left select-none',
         backdrop: 'bg-black/60 backdrop-blur-md',
-        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -97,17 +97,17 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
               el?.closest('[role="dialog"]')?.setAttribute('aria-labelledby', 'simulate-modal-title');
             }}
           >
-            <ModalHeader className="pb-4 border-b border-slate-200/80 dark:border-white/10">
+            <ModalHeader className="pb-4 border-b border-slate-200/80 dark:border-zinc-800/80">
               <div className="flex items-center justify-between w-full pr-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-[#10B981]/15 border border-[#10B981]/30 rounded-2xl text-[#10B981] shadow-xs">
+                  <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-500 shadow-xs">
                     <Calculator className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 id="simulate-modal-title" className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
                       Simulasi Rencana Belanja
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-emerald-200/80 font-medium">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
                       What-If Purchase & Runway Impact Simulator
                     </p>
                   </div>
@@ -150,7 +150,7 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                       value={plannedAmount}
                       onChange={(e) => setPlannedAmount(e.target.value)}
                       placeholder="Contoh: 500000"
-                      className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl pl-11 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
+                      className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl pl-11 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                 <Button
                   type="submit"
                   isLoading={isLoading}
-                  className="w-full bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 disabled:opacity-50 text-white font-extrabold py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-[#10B981]/25 flex items-center justify-center gap-2 active:scale-[0.99] min-h-[44px]"
+                  className="w-full bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 disabled:opacity-50 text-white font-extrabold py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-emerald-900/25 flex items-center justify-center gap-2 active:scale-[0.99] min-h-[44px]"
                 >
                   {isLoading ? (
                     <>
@@ -175,13 +175,13 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
               </div>
 
               {result && (
-                <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-white/10 space-y-4">
+                <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-zinc-800/80 space-y-4">
                   <h4 className="text-xs uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400">
                     Hasil Proyeksi Runway
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-slate-50 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 p-3.5 rounded-2xl">
+                    <div className="bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 p-3.5 rounded-2xl">
                       <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Jatah Saat Ini</span>
                       <p className="text-sm font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
                         Rp {result.current_daily_runway.toLocaleString('id-ID')}
@@ -189,11 +189,11 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">/ hari</span>
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 p-3.5 rounded-2xl">
+                    <div className="bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 p-3.5 rounded-2xl">
                       <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Proyeksi Setelah Belanja</span>
                       <p
                         className={`text-sm font-extrabold font-mono tabular-nums ${
-                          result.is_safe ? 'text-[#0F766E] dark:text-[#10B981]' : 'text-rose-600 dark:text-rose-400'
+                          result.is_safe ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                         }`}
                       >
                         Rp {result.projected_daily_runway.toLocaleString('id-ID')}
@@ -201,13 +201,13 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">/ hari</span>
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 p-3.5 rounded-2xl">
+                    <div className="bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 p-3.5 rounded-2xl">
                       <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1">Penurunan Jatah Harian</span>
                       <p className="text-sm font-extrabold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
                         -Rp {result.daily_drop_amount.toLocaleString('id-ID')}/hari
                       </p>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1 mt-0.5">
-                        <TrendingDown className="w-3 h-3 text-amber-500" /> berkurang
+                        <TrendingDown className="w-3 text-amber-500" /> berkurang
                       </span>
                     </div>
                   </div>
@@ -215,12 +215,12 @@ export const SimulatePurchaseModal: React.FC<SimulatePurchaseModalProps> = ({
                   <div
                     className={`p-4 rounded-2xl border flex items-start gap-3 transition-colors ${
                       result.is_safe
-                        ? 'bg-emerald-500/15 border-[#10B981]/30 text-[#0F766E] dark:text-emerald-300'
+                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
                         : 'bg-rose-500/15 border-rose-500/30 text-rose-700 dark:text-rose-300'
                     }`}
                   >
                     {result.is_safe ? (
-                      <CheckCircle2 className="w-5 h-5 text-[#10B981] shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                     ) : (
                       <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
                     )}

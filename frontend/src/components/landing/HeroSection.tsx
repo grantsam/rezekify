@@ -145,13 +145,13 @@ export default function HeroSection() {
                 </svg>
               </div>
 
-              <div className="absolute -top-6 left-2 sm:left-6 z-20 bg-white/90 dark:bg-[#052E2B]/90 backdrop-blur-xl border border-white/60 dark:border-[#10B981]/30 p-3.5 rounded-2xl shadow-xl shadow-[#10B981]/10 animate-bounce duration-[3000ms] transition-transform hover:scale-105">
+              <div className="absolute -top-6 left-2 sm:left-6 z-20 bg-white/90 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 p-3.5 rounded-2xl shadow-xl shadow-black/10 animate-bounce duration-[3000ms] transition-transform hover:scale-105">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-[#10B981] flex items-center justify-center font-bold">
                     💰
                   </div>
                   <div>
-                    <p className="text-[10px] font-medium text-slate-500 dark:text-emerald-200/70">Total Saldo Terkelola</p>
+                    <p className="text-[10px] font-medium text-slate-500 dark:text-zinc-400">Total Saldo Terkelola</p>
                     <p className="text-sm font-extrabold text-slate-900 dark:text-white tabular-nums">
                       Rp 5.250.000
                     </p>
@@ -159,11 +159,11 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              <div className="w-full bg-white/80 dark:bg-[#042421]/80 backdrop-blur-xl border border-white/60 dark:border-[#10B981]/30 rounded-3xl p-6 shadow-2xl transition-all duration-500 hover:border-[#10B981]/50">
-                <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-white/10 pb-3.5 mb-4">
+              <div className="w-full bg-white/80 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 rounded-3xl p-6 shadow-2xl transition-all duration-500 hover:border-zinc-700/60">
+                <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 pb-3.5 mb-4">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping" />
-                    <span className="text-xs font-bold text-slate-800 dark:text-emerald-100">Live AI Telemetry</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">Live AI Telemetry</span>
                   </div>
                   <span className="text-[10px] bg-[#10B981]/15 text-[#0F766E] dark:text-[#10B981] font-bold px-2.5 py-0.5 rounded-full">
                     Realtime
@@ -199,7 +199,7 @@ export default function HeroSection() {
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3.5 border-t border-slate-200/50 dark:border-white/10 flex items-end justify-between gap-2.5 h-16 px-2">
+                <div className="mt-5 pt-3.5 border-t border-slate-200/50 dark:border-zinc-800/80 flex items-end justify-between gap-2.5 h-16 px-2">
                   <div className="w-full bg-[#10B981]/20 rounded-t-md h-[40%] hover:h-[65%] transition-all" />
                   <div className="w-full bg-[#10B981]/40 rounded-t-md h-[70%] hover:h-[85%] transition-all" />
                   <div className="w-full bg-[#10B981] rounded-t-md h-[95%] hover:h-[100%] transition-all" />
@@ -208,7 +208,7 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              <div className="absolute -bottom-5 right-0 z-20 bg-white/90 dark:bg-[#052E2B]/90 backdrop-blur-xl border border-white/60 dark:border-[#10B981]/30 p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce duration-[4000ms]">
+              <div className="absolute -bottom-5 right-0 z-20 bg-white/90 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce duration-[4000ms]">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-xs font-bold">
                   ✨
                 </div>

@@ -51,8 +51,8 @@ export default function FaqSection() {
               </span>
             </h2>
 
-            <div className="bg-[#0F766E]/10 dark:bg-[#042421]/40 backdrop-blur-3xl border border-white/50 dark:border-[#10B981]/30 rounded-3xl p-6 shadow-xl space-y-5 text-center relative overflow-hidden">
-              
+            <div className="bg-[#0F766E]/10 dark:bg-[#141417] backdrop-blur-3xl border border-white/50 dark:border-zinc-800/80 rounded-3xl p-6 shadow-xl space-y-5 text-center relative overflow-hidden">
+
               <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-3xl shadow-lg animate-bounce duration-[4000ms]">
                 💬
               </div>
@@ -78,7 +78,7 @@ export default function FaqSection() {
                   className={`rounded-2xl backdrop-blur-2xl border transition-all duration-300 overflow-hidden text-left ${
                     isOpen
                       ? 'bg-[#0F766E]/15 dark:bg-[#0F766E]/30 border-[#10B981] shadow-md shadow-[#10B981]/10'
-                      : 'bg-[#10B981]/5 dark:bg-[#042421]/30 border-white/40 dark:border-[#10B981]/15 hover:border-[#10B981]/40'
+                      : 'bg-white/40 dark:bg-[#141417]/50 border-white/40 dark:border-zinc-800/80 hover:border-zinc-700/60'
                   }`}
                 >
                   <button

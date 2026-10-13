@@ -111,8 +111,8 @@ export default function FeaturesSection() {
               
               <div className="absolute inset-0 bg-gradient-to-tr from-[#0F766E]/40 to-[#10B981]/30 rounded-[48px] blur-2xl -z-10 animate-pulse duration-[5000ms]" />
 
-              <div className="relative rounded-[40px] p-4 bg-white/70 dark:bg-[#042421]/80 backdrop-blur-2xl border-4 border-white/80 dark:border-[#10B981]/30 shadow-2xl shadow-[#10B981]/15 space-y-4">
-                
+              <div className="relative rounded-[40px] p-4 bg-white/70 dark:bg-[#141417] backdrop-blur-2xl border-4 border-white/80 dark:border-zinc-800/80 shadow-2xl shadow-black/15 space-y-4">
+
                 <div className="flex items-center justify-between px-3 pt-1">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping" />
@@ -124,21 +124,21 @@ export default function FeaturesSection() {
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#10B981] text-white shadow-lg space-y-2">
                   <p className="text-[10px] font-medium opacity-80 uppercase tracking-wider">Total Saldo Terkelola</p>
                   <p className="text-xl font-black tabular-nums">Rp 5.250.000</p>
-                  
+
                   <div className="pt-2 flex justify-between items-center text-[10px] opacity-90 border-t border-white/20">
                     <span>Pemasukan: <strong className="text-emerald-200">Rp 3.500.000</strong></span>
                     <span>Pengeluaran: <strong className="text-rose-200">Rp 2.150.000</strong></span>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-white/60 dark:bg-[#052E2B]/60 border border-white/80 dark:border-[#10B981]/20 flex items-center justify-between gap-3">
+                <div className="p-3.5 rounded-2xl bg-white/60 dark:bg-[#141417]/80 border border-white/80 dark:border-zinc-800/80 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-xl bg-[#10B981]/20 text-[#10B981] flex items-center justify-center font-bold text-xs animate-bounce">
                       📷
                     </div>
                     <div className="text-left">
                       <p className="text-xs font-bold text-slate-800 dark:text-white">AI OCR Scanner Active</p>
-                      <p className="text-[10px] text-slate-500 dark:text-emerald-200/70">Mengekstrak Struk Belanja...</p>
+                      <p className="text-[10px] text-slate-500 dark:text-zinc-400">Mengekstrak Struk Belanja...</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-bold text-[#10B981] bg-[#10B981]/15 px-2 py-0.5 rounded-full">
@@ -146,7 +146,7 @@ export default function FeaturesSection() {
                   </span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-white/60 dark:bg-[#052E2B]/60 border border-white/80 dark:border-[#10B981]/20 space-y-2">
+                <div className="p-3.5 rounded-2xl bg-white/60 dark:bg-[#141417]/80 border border-white/80 dark:border-zinc-800/80 space-y-2">
                   <div className="flex justify-between text-[11px] font-bold text-slate-700 dark:text-slate-200">
                     <span>Cashflow Bulanan</span>
                     <span className="text-[#10B981]">+18% Stabil</span>
@@ -165,7 +165,7 @@ export default function FeaturesSection() {
           </div>
 
           <div className="lg:col-span-7 space-y-6 text-left">
-            
+
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#10B981]/15 dark:bg-[#10B981]/20 border border-[#10B981]/30 text-[#0F766E] dark:text-[#10B981] text-xs font-bold tracking-wide backdrop-blur-md shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-[#10B981] animate-ping" />
@@ -185,21 +185,21 @@ export default function FeaturesSection() {
             </p>
 
             <div className="pt-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 dark:text-emerald-200/70">
+              <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
                 Geser untuk jelajahi fitur (1/6)
               </span>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleScroll('left')}
-                  className="w-10 h-10 rounded-full bg-white/60 dark:bg-[#042421]/60 border border-slate-200 dark:border-[#10B981]/30 text-slate-700 dark:text-slate-200 hover:bg-[#10B981] hover:text-white transition-all flex items-center justify-center shadow-sm"
+                  className="w-10 h-10 rounded-full bg-white/60 dark:bg-[#141417]/90 border border-slate-200 dark:border-zinc-800/80 text-slate-700 dark:text-slate-200 hover:bg-[#10B981] hover:text-white transition-all flex items-center justify-center shadow-sm"
                   aria-label="Previous Feature"
                 >
                   ←
                 </button>
                 <button
                   onClick={() => handleScroll('right')}
-                  className="w-10 h-10 rounded-full bg-white/60 dark:bg-[#042421]/60 border border-slate-200 dark:border-[#10B981]/30 text-slate-700 dark:text-slate-200 hover:bg-[#10B981] hover:text-white transition-all flex items-center justify-center shadow-sm"
+                  className="w-10 h-10 rounded-full bg-white/60 dark:bg-[#141417]/90 border border-slate-200 dark:border-zinc-800/80 text-slate-700 dark:text-slate-200 hover:bg-[#10B981] hover:text-white transition-all flex items-center justify-center shadow-sm"
                   aria-label="Next Feature"
                 >
                   →
@@ -215,10 +215,10 @@ export default function FeaturesSection() {
                 <div
                   key={item.id}
                   onClick={() => setActiveIdx(idx)}
-                  className={`snap-start shrink-0 w-[280px] sm:w-[320px] p-6 rounded-3xl bg-white/50 dark:bg-[#042421]/60 backdrop-blur-2xl border transition-all duration-300 text-left flex flex-col justify-between cursor-pointer ${
+                  className={`snap-start shrink-0 w-[280px] sm:w-[320px] p-6 rounded-3xl bg-white/50 dark:bg-[#141417] backdrop-blur-2xl border transition-all duration-300 text-left flex flex-col justify-between cursor-pointer ${
                     activeIdx === idx
-                      ? 'border-[#10B981] shadow-xl shadow-[#10B981]/15 -translate-y-1'
-                      : 'border-white/80 dark:border-[#10B981]/20 hover:border-[#10B981]/50'
+                      ? 'border-[#10B981] shadow-xl shadow-black/15 -translate-y-1'
+                      : 'border-white/80 dark:border-zinc-800/80 hover:border-zinc-700/60'
                   }`}
                 >
                   <div className="space-y-4">

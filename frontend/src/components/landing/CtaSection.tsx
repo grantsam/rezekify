@@ -7,7 +7,7 @@ export default function CtaSection() {
     <section className="relative py-12 lg:py-20 overflow-hidden select-none transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        <div className="relative bg-[#E6F7EF]/90 dark:bg-[#042421]/90 backdrop-blur-3xl border-2 border-[#10B981]/40 dark:border-[#10B981]/40 rounded-[40px] p-8 sm:p-12 lg:p-16 shadow-2xl shadow-[#10B981]/15 overflow-hidden text-left transition-all duration-300">
+        <div className="relative bg-slate-100/90 dark:bg-[#141417] backdrop-blur-3xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[40px] p-8 sm:p-12 lg:p-16 shadow-2xl shadow-black/15 overflow-hidden text-left transition-all duration-300">
           
           <div className="absolute top-1/2 right-10 -translate-y-1/2 w-[500px] h-[500px] bg-[#10B981]/20 dark:bg-[#10B981]/25 rounded-full blur-[120px] pointer-events-none" />
 
@@ -50,7 +50,7 @@ export default function CtaSection() {
 
             <div className="lg:col-span-6 flex justify-center lg:justify-end relative">
               
-              <div className="absolute -top-6 left-2 sm:left-6 z-30 bg-white/95 dark:bg-[#052E2B]/95 backdrop-blur-xl border border-[#10B981]/30 dark:border-[#10B981]/30 p-3.5 rounded-2xl shadow-xl max-w-[210px] animate-bounce duration-[4000ms]">
+              <div className="absolute -top-6 left-2 sm:left-6 z-30 bg-white/95 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 p-3.5 rounded-2xl shadow-xl max-w-[210px] animate-bounce duration-[4000ms]">
                 <div className="flex items-center gap-2">
                   <span className="text-base">✨</span>
                   <p className="text-[11px] font-bold text-slate-800 dark:text-white leading-tight">

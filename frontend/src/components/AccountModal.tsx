@@ -142,9 +142,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       onClose={handleClose}
       backdrop="blur"
       classNames={{
-        base: 'bg-white dark:bg-[#042421] border-2 border-[#10B981]/30 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-[#10B981]/10 text-left select-none',
+        base: 'bg-white dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800/80 text-slate-900 dark:text-white rounded-[28px] shadow-2xl shadow-black/10 text-left select-none',
         backdrop: 'bg-black/60 backdrop-blur-md',
-        closeButton: 'hover:bg-slate-100 dark:hover:bg-[#021D17] text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
+        closeButton: 'hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl',
       }}
     >
       <ModalContent>
@@ -190,13 +190,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Contoh: BCA Utama, GoPay, Dompet Tunai"
-                    className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium"
+                    className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium"
                   />
                 </div>
 
                 <div>
                   <span className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">Tipe Akun</span>
-                  <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-[#021D17] p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 text-xs" role="radiogroup" aria-label="Tipe Akun">
+                  <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-zinc-900/60 p-1.5 rounded-2xl border border-slate-200 dark:border-zinc-800/80 text-xs" role="radiogroup" aria-label="Tipe Akun">
                     {ACCOUNT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
                       <Button
                         key={type}
@@ -205,8 +205,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                         aria-checked={accountType === type}
                         className={`flex items-center justify-center gap-1.5 py-2 rounded-xl font-extrabold transition-all min-h-[38px] ${
                           accountType === type
-                            ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
+                            ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5" />
@@ -229,7 +229,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       value={initialBalance}
                       onChange={(e) => setInitialBalance(e.target.value)}
                       placeholder="0"
-                      className="w-full bg-slate-50 dark:bg-[#021D17]/80 border border-slate-200 dark:border-[#10B981]/30 focus:border-[#10B981] rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
+                      className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                     />
                   </div>
                 ) : (
@@ -242,7 +242,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       type="text"
                       disabled
                       value={`Rp ${(accountToEdit.current_balance ?? 0).toLocaleString('id-ID')}`}
-                      className="w-full bg-slate-100 dark:bg-[#021D17]/40 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono font-bold cursor-not-allowed"
+                      className="w-full bg-slate-100 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800/80 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono font-bold cursor-not-allowed"
                     />
                     <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                       Saldo dikelola otomatis secara immutable melalui mutasi transaksi.
@@ -308,7 +308,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   type="submit"
                   isLoading={isSubmitting}
                   isDisabled={isSubmitting}
-                  className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#10B981]/25 px-5 min-h-[38px]"
+                  className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-900/25 px-5 min-h-[38px]"
                 >
                   {isSubmitting ? (
                     <>

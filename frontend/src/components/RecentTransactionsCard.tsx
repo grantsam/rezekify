@@ -33,16 +33,16 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
   const displayItems = transactions.slice(0, 5);
 
   return (
-    <div className="w-full h-full bg-white/80 dark:bg-[#042421]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-[#10B981]/20 rounded-[28px] p-6 shadow-lg shadow-emerald-950/5 text-slate-900 dark:text-white flex flex-col justify-between select-none text-left transition-all">
+    <div className="w-full h-full bg-white/80 dark:bg-[#141417] backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] p-6 shadow-lg shadow-black/5 text-slate-900 dark:text-white flex flex-col justify-between select-none text-left transition-all">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-white/10 gap-3 shrink-0">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-zinc-800/80 gap-3 shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#10B981] font-bold shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold shrink-0">
             <Receipt className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Transaksi Terakhir</h3>
-            <p className="text-[11px] text-slate-500 dark:text-emerald-200/80 font-medium">Mutasi pengeluaran & pemasukan terkini</p>
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium">Mutasi pengeluaran & pemasukan terkini</p>
           </div>
         </div>
 
@@ -52,7 +52,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
             variant="flat"
             onPress={onViewAll}
             endContent={<ArrowRight className="w-3.5 h-3.5" />}
-            className="bg-slate-100 dark:bg-[#021D17] hover:bg-[#10B981]/15 text-slate-700 dark:text-slate-200 hover:text-[#0F766E] dark:hover:text-[#10B981] border border-slate-200/80 dark:border-white/10 min-h-[36px] rounded-xl text-xs font-bold px-3 transition-all"
+            className="bg-slate-100 dark:bg-zinc-800 hover:bg-zinc-700 text-slate-700 dark:text-slate-200 hover:text-emerald-500 dark:hover:text-emerald-400 border border-slate-200/80 dark:border-zinc-800/80 min-h-[36px] rounded-xl text-xs font-bold px-3 transition-all"
           >
             Lihat Semua di Buku Besar
           </Button>
@@ -64,30 +64,30 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
         {isLoading ? (
           <div className="space-y-3 py-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse flex items-center justify-between py-2 border-b border-slate-100 dark:border-white/5 last:border-0">
+              <div key={i} className="animate-pulse flex items-center justify-between py-2 border-b border-slate-100 dark:border-zinc-800/80 last:border-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-[#021D17]" />
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-zinc-800" />
                   <div className="space-y-1.5">
-                    <div className="h-3.5 w-32 bg-slate-200 dark:bg-[#021D17] rounded" />
-                    <div className="h-2.5 w-20 bg-slate-100 dark:bg-[#021D17]/60 rounded" />
+                    <div className="h-3.5 w-32 bg-slate-200 dark:bg-zinc-800 rounded" />
+                    <div className="h-2.5 w-20 bg-slate-100 dark:bg-zinc-800/60 rounded" />
                   </div>
                 </div>
-                <div className="h-4 w-24 bg-slate-200 dark:bg-[#021D17] rounded" />
+                <div className="h-4 w-24 bg-slate-200 dark:bg-zinc-800 rounded" />
               </div>
             ))}
           </div>
         ) : displayItems.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center py-8 text-center my-auto">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-[#10B981] flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-3">
               <Receipt className="w-6 h-6" />
             </div>
             <p className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Belum ada transaksi tercatat</p>
-            <p className="text-[11px] text-slate-500 dark:text-emerald-200/70 max-w-xs mt-1">
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 max-w-xs mt-1">
               Mulai catat via AI Copilot atau menu Buku Besar.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/5 my-auto">
+          <div className="divide-y divide-slate-100 dark:divide-zinc-800/60 my-auto">
             {displayItems.map((tx) => {
               const txType = tx.type || (tx.ledger_entries?.some((e) => e.category_id) ? 'EXPENSE' : 'EXPENSE');
               const amount = tx.amount ?? tx.ledger_entries?.[0]?.amount ?? 0;
@@ -100,7 +100,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
                     <div
                       className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
                         txType === 'INCOME'
-                          ? 'bg-emerald-500/15 border-[#10B981]/30 text-[#0F766E] dark:text-[#10B981]'
+                          ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                           : txType === 'TRANSFER'
                           ? 'bg-sky-500/15 border-sky-500/30 text-sky-600 dark:text-sky-400'
                           : 'bg-rose-500/15 border-rose-500/30 text-rose-600 dark:text-rose-400'
@@ -121,12 +121,12 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
                           {formatDate(tx.transaction_date || tx.created_at || '')}
                         </span>
                         {accountName && (
-                          <span className="text-[10px] bg-slate-100 dark:bg-[#021D17] text-slate-700 dark:text-slate-300 font-medium px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-white/10">
+                          <span className="text-[10px] bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-slate-300 font-medium px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-zinc-800/80">
                             {accountName}
                           </span>
                         )}
                         {categoryName && (
-                          <span className="text-[10px] bg-slate-100/80 dark:bg-[#021D17]/80 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-200/60 dark:border-white/5">
+                          <span className="text-[10px] bg-slate-100/80 dark:bg-zinc-900/80 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-200/60 dark:border-zinc-800/60">
                             {categoryName}
                           </span>
                         )}
@@ -138,7 +138,7 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
                     <span
                       className={`text-xs font-mono tabular-nums font-bold ${
                         txType === 'INCOME'
-                          ? 'text-[#0F766E] dark:text-[#10B981]'
+                          ? 'text-emerald-600 dark:text-emerald-400'
                           : txType === 'TRANSFER'
                           ? 'text-sky-600 dark:text-sky-400'
                           : 'text-rose-600 dark:text-rose-400'

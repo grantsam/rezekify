@@ -8,7 +8,7 @@
   }
 
   body {
-    @apply bg-[#E6F7EF] text-slate-900 dark:bg-[#021D17] dark:text-zinc-100 antialiased font-sans min-h-screen selection:bg-[#10B981]/30 selection:text-[#10B981] transition-colors duration-300;
+    @apply bg-slate-50 text-slate-900 dark:bg-[#0c0c0e] dark:text-zinc-100 antialiased font-sans min-h-screen selection:bg-[#10B981]/30 selection:text-[#10B981] transition-colors duration-300;
   }
 
   .tabular-nums {
@@ -22,9 +22,9 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-[#E6F7EF] dark:bg-[#021D17];
+  @apply bg-slate-100 dark:bg-[#0c0c0e];
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-[#10B981]/40 rounded-full hover:bg-[#10B981];
+  @apply bg-slate-300 dark:bg-zinc-700/60 rounded-full hover:bg-slate-400 dark:hover:bg-zinc-600;
 }

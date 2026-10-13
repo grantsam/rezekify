@@ -204,14 +204,9 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] md:h-screen flex flex-col min-w-0 bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-white transition-colors duration-300 relative overflow-hidden">
-      
-      {/* AMBIENT RADIAL LIGHT DEKORATIF */}
-      <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-radial from-[#10B981]/15 via-[#0F766E]/10 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-radial from-[#34D399]/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
-
+    <div className="h-[calc(100vh-4rem)] md:h-screen flex flex-col min-w-0 bg-slate-50 dark:bg-[#0c0c0e] text-slate-900 dark:text-white transition-colors duration-300 relative overflow-hidden">
       {/* Sticky Telemetry Strip */}
-      <div className="sticky top-0 z-20 backdrop-blur-2xl bg-white/70 dark:bg-[#042421]/80 border-b border-slate-200/80 dark:border-[#10B981]/20 shadow-xs">
+      <div className="sticky top-0 z-20 backdrop-blur-2xl bg-white/70 dark:bg-[#141417]/90 border-b border-slate-200/80 dark:border-zinc-800/80 shadow-xs">
         <ChatTelemetryStrip
           telemetry={telemetry}
           onResetChat={handleResetChat}
@@ -234,7 +229,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
       </div>
 
       {/* Pinned Bottom Omni Input */}
-      <div className="p-3 sm:p-4 bg-white/80 dark:bg-[#042421]/90 backdrop-blur-2xl border-t border-slate-200/80 dark:border-[#10B981]/30 shadow-lg relative z-20">
+      <div className="p-3 sm:p-4 bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border-t border-slate-200/80 dark:border-zinc-800/80 shadow-lg relative z-20">
         <ChatOmniInput
           onSubmit={handleSubmit}
           onVoiceSubmit={handleVoiceSubmit}

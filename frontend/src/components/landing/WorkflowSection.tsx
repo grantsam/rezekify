@@ -117,8 +117,8 @@ export default function HowItWorksSection() {
                   onClick={() => setActiveStep(idx)}
                   className={`group cursor-pointer p-5 rounded-3xl backdrop-blur-2xl border transition-all duration-300 text-left flex flex-col justify-between relative ${
                     isActive
-                      ? 'bg-white/90 dark:bg-[#042421]/90 border-[#10B981] shadow-xl shadow-[#10B981]/20 -translate-y-1.5'
-                      : 'bg-white/50 dark:bg-[#042421]/50 border-white/80 dark:border-[#10B981]/20 hover:border-[#10B981]/50 hover:bg-white/70 dark:hover:bg-[#042421]/70'
+                      ? 'bg-white/90 dark:bg-[#141417] border-emerald-500 shadow-xl shadow-black/20 -translate-y-1.5'
+                      : 'bg-white/50 dark:bg-[#141417]/50 border-white/80 dark:border-zinc-800/80 hover:border-zinc-700/60 hover:bg-white/70 dark:hover:bg-[#141417]/70'
                   }`}
                 >
                   <div className="space-y-4">
@@ -159,9 +159,9 @@ export default function HowItWorksSection() {
           </div>
         </div>
 
-        <div className="bg-white/60 dark:bg-[#042421]/70 backdrop-blur-2xl border border-white/80 dark:border-[#10B981]/30 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-500">
+        <div className="bg-white/60 dark:bg-[#141417] backdrop-blur-2xl border border-white/80 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-500">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center text-left">
-            
+
             <div className="lg:col-span-7 space-y-4">
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-[#10B981] text-white font-extrabold flex items-center justify-center text-xs shadow-md">
@@ -181,11 +181,11 @@ export default function HowItWorksSection() {
               </p>
             </div>
 
-            <div className="lg:col-span-5 bg-white/70 dark:bg-[#052E2B]/80 rounded-2xl p-5 border border-white/60 dark:border-[#10B981]/20 shadow-inner flex items-center justify-between gap-4">
+            <div className="lg:col-span-5 bg-white/70 dark:bg-zinc-900/80 rounded-2xl p-5 border border-white/60 dark:border-zinc-800/80 shadow-inner flex items-center justify-between gap-4">
               <div className="space-y-1">
                 <p className="text-[10px] uppercase tracking-wider font-bold text-[#10B981]">Status Alur Kerja</p>
                 <p className="text-sm font-bold text-slate-800 dark:text-white">Kelola Keuangan Kapan Saja</p>
-                <p className="text-xs text-slate-500 dark:text-emerald-200/70">Akses fleksibel dari Web & Mobile</p>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">Akses fleksibel dari Web & Mobile</p>
               </div>
 
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-xl shadow-lg shrink-0 animate-pulse">

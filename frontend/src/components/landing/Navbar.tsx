@@ -32,8 +32,8 @@ export default function Navbar() {
       <div
         className={`max-w-7xl mx-auto rounded-full px-6 py-3 flex items-center justify-between transition-all duration-300 ${
           isScrolled
-            ? 'bg-white/70 dark:bg-[#052E2B]/80 backdrop-blur-lg shadow-lg border border-white/40 dark:border-[#10B981]/20'
-            : 'bg-white/40 dark:bg-[#052E2B]/50 backdrop-blur-md border border-white/20 dark:border-white/10'
+            ? 'bg-white/70 dark:bg-[#141417]/90 backdrop-blur-lg shadow-lg border border-white/40 dark:border-zinc-800/80'
+            : 'bg-white/40 dark:bg-[#141417]/60 backdrop-blur-md border border-white/20 dark:border-zinc-800/80'
         }`}
       >
         <Link to="/" className="flex items-center group">

@@ -81,14 +81,11 @@ export default function FooterSection() {
   ];
 
   return (
-    <footer className="relative pt-16 pb-12 overflow-hidden select-none bg-[#E6F7EF]/60 dark:bg-[#021D17] border-t border-[#10B981]/20 transition-colors duration-300 text-left">
-      
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-radial from-[#10B981]/15 via-[#0F766E]/10 to-transparent rounded-full blur-[120px] pointer-events-none -z-10" />
-
+    <footer className="relative pt-16 pb-12 overflow-hidden select-none bg-slate-100/60 dark:bg-[#0c0c0e] border-t border-slate-200/80 dark:border-zinc-800/80 transition-colors duration-300 text-left">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        <div className="flex flex-col lg:flex-row justify-between items-start gap-8 lg:gap-6 pb-12 border-b border-slate-900/10 dark:border-white/10">
-          
+
+        <div className="flex flex-col lg:flex-row justify-between items-start gap-8 lg:gap-6 pb-12 border-b border-slate-900/10 dark:border-zinc-800/80">
+
           <div className="w-full lg:w-[28%] space-y-4">
             <div className="flex items-center">
               <img
@@ -105,7 +102,7 @@ export default function FooterSection() {
               Platform manajemen keuangan cerdas berbasis AI untuk membantu individu mengoptimalkan aset finansial masa depan.
             </p>
 
-            <div className="p-3 rounded-2xl bg-white/80 dark:bg-[#042421]/90 backdrop-blur-xl border border-[#10B981]/30 shadow-md flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-white/80 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 shadow-md flex items-center gap-3">
               <div className="bg-white p-1.5 rounded-xl shrink-0 flex items-center justify-center border border-slate-200/80">
                 <img
                   src={vigrisLabsLogo}
@@ -117,7 +114,7 @@ export default function FooterSection() {
                 />
               </div>
 
-              <div className="space-y-0.5 border-l border-slate-200 dark:border-white/10 pl-2.5">
+              <div className="space-y-0.5 border-l border-slate-200 dark:border-zinc-800/80 pl-2.5">
                 <p className="text-[9px] uppercase font-bold text-[#10B981] tracking-wider">Developed By</p>
                 <h4 className="text-xs font-extrabold text-slate-900 dark:text-white leading-snug">Vigris Labs</h4>
                 <p className="text-[9px] text-slate-500 dark:text-slate-400">Software & AI Innovations</p>
@@ -183,7 +180,7 @@ export default function FooterSection() {
                   placeholder="Masukkan email kamu..."
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-full bg-white/80 dark:bg-[#042421]/90 border border-[#10B981]/30 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#10B981] shadow-sm pr-20"
+                  className="w-full px-4 py-2.5 rounded-full bg-white/80 dark:bg-[#0c0c0e] border border-slate-200/80 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-zinc-600 shadow-sm pr-20"
                 />
                 <button
                   type="submit"
@@ -204,7 +201,7 @@ export default function FooterSection() {
         </div>
 
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
-          
+
           <p className="text-center sm:text-left">
             © {new Date().getFullYear()} <strong className="text-slate-800 dark:text-white">Rezekify</strong>. All rights reserved. Powered by <span className="text-[#10B981] font-bold">Vigris Labs</span>.
           </p>
@@ -217,7 +214,7 @@ export default function FooterSection() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label={social.name}
-                className="w-9 h-9 rounded-full bg-white/80 dark:bg-[#042421]/80 border border-[#10B981]/30 text-slate-600 dark:text-slate-300 hover:text-[#10B981] dark:hover:text-[#34D399] hover:border-[#10B981] hover:scale-110 transition-all flex items-center justify-center shadow-sm"
+                className="w-9 h-9 rounded-full bg-white/80 dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800/80 text-slate-600 dark:text-slate-300 hover:text-[#10B981] dark:hover:text-[#34D399] hover:border-[#10B981] hover:scale-110 transition-all flex items-center justify-center shadow-sm"
               >
                 {social.icon}
               </a>

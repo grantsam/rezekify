@@ -82,14 +82,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`hidden md:flex flex-col justify-between border-r border-slate-200/80 dark:border-[#10B981]/20 bg-white/85 dark:bg-[#042421]/90 backdrop-blur-2xl fixed top-0 left-0 bottom-0 h-screen transition-all duration-300 select-none z-30 shrink-0 overflow-hidden ${
+      className={`hidden md:flex flex-col justify-between border-r border-slate-200/80 dark:border-zinc-800/80 bg-white/85 dark:bg-[#141417]/90 backdrop-blur-2xl fixed top-0 left-0 bottom-0 h-screen transition-all duration-300 select-none z-30 shrink-0 overflow-hidden ${
         isCollapsed ? 'w-24 p-3' : 'w-64 p-4'
       }`}
     >
       <div className="flex flex-col gap-5 overflow-y-auto overflow-x-hidden no-scrollbar flex-1 w-full">
         {/* Top Brand Logo & Toggle Button */}
         <div
-          className={`flex items-center pb-3 border-b border-slate-200/60 dark:border-white/10 shrink-0 w-full ${
+          className={`flex items-center pb-3 border-b border-slate-200/60 dark:border-zinc-800/80 shrink-0 w-full ${
             isCollapsed ? 'flex-col gap-3 justify-center' : 'justify-between'
           }`}
         >
@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               variant="light"
               onPress={onToggleCollapse}
               aria-label={isCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
-              className="p-1 min-w-[32px] min-h-[32px] text-slate-500 dark:text-emerald-200 hover:text-[#10B981] dark:hover:text-white bg-transparent rounded-xl"
+              className="p-1 min-w-[32px] min-h-[32px] text-slate-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-transparent rounded-xl"
             >
               {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </Button>
@@ -149,12 +149,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : 'w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl text-xs min-h-[42px] h-auto'
                 } ${
                   isActive
-                    ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20 border border-[#10B981]/30'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-[#10B981] dark:hover:text-white hover:bg-[#10B981]/10 bg-transparent'
+                    ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20 border border-emerald-500/30'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-white hover:bg-zinc-800/50 bg-transparent'
                 }`}
               >
                 <div className="flex items-center justify-center gap-3 truncate">
-                  <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400 dark:text-emerald-300/70'}`} />
+                  <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400 dark:text-zinc-400'}`} />
                   {!isCollapsed && <span className="truncate">{item.label}</span>}
                 </div>
                 {!isCollapsed && item.badge !== undefined && (
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                         : isActive
                         ? 'bg-white/20 text-white'
-                        : 'bg-slate-100 dark:bg-[#021D17] text-slate-600 dark:text-emerald-300'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300'
                     }`}
                   >
                     {item.badge}
@@ -177,9 +177,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Account Balances Section (Hanya saat terbuka) */}
         {!isCollapsed && (
-          <div className="flex flex-col gap-2 pt-3 border-t border-slate-200/60 dark:border-white/10 flex-1 min-h-0">
+          <div className="flex flex-col gap-2 pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 flex-1 min-h-0">
             <div className="flex items-center justify-between px-1 shrink-0">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-emerald-200/60">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                 Rekening Kas
               </span>
               <Button
@@ -202,12 +202,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   .map((acc) => (
                     <div
                       key={acc.id}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-[#021D17]/60 border border-slate-200/80 dark:border-white/10 text-xs shadow-2xs shrink-0"
+                      className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-xs shadow-2xs shrink-0"
                     >
                       <span className="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[100px]">
                         {acc.name}
                       </span>
-                      <span className="text-slate-900 dark:text-emerald-300 font-mono font-bold tabular-nums">
+                      <span className="text-slate-900 dark:text-emerald-400 font-mono font-bold tabular-nums">
                         Rp {acc.current_balance.toLocaleString('id-ID')}
                       </span>
                     </div>
@@ -219,13 +219,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer: User profile, Theme Toggle, & Logout */}
-      <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-200/60 dark:border-white/10 shrink-0 w-full overflow-hidden">
+      <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 shrink-0 w-full overflow-hidden">
         {!isCollapsed && (
           <div
             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-extrabold border ${
               user?.telegram_chat_id
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-300'
-                : 'bg-slate-100 dark:bg-[#021D17]/80 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                : 'bg-slate-100 dark:bg-zinc-900/60 border-slate-200 dark:border-zinc-800/80 text-slate-500 dark:text-zinc-400'
             }`}
           >
             <span
@@ -270,7 +270,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onPress={onToggleTheme}
                 aria-label="Ubah Tema"
                 title={isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
-                className="p-1 min-w-[32px] min-h-[32px] text-slate-500 dark:text-emerald-300 hover:text-[#10B981] bg-transparent rounded-xl"
+                className="p-1 min-w-[32px] min-h-[32px] text-slate-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-transparent rounded-xl"
               >
                 {isDarkMode ? (
                   <Sun className="w-4 h-4 text-amber-400" />

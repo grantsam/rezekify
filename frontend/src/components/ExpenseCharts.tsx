@@ -48,17 +48,17 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
     : (monthlyData?.items && monthlyData.items.length > 0);
 
   return (
-    <Card className="bg-white/85 dark:bg-[#042421]/90 backdrop-blur-xl border border-emerald-500/20 dark:border-[#10B981]/30 rounded-2xl shadow-lg shadow-emerald-950/5 text-slate-900 dark:text-white select-none text-left">
+    <Card className="bg-white/85 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl shadow-lg shadow-black/5 text-slate-900 dark:text-white select-none text-left">
       <CardBody className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/30 text-[#10B981] shadow-xs">
+              <div className="p-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 shadow-xs">
                 <BarChart3 className="w-5 h-5" />
               </div>
               <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">Analitik Pengeluaran Terarah</h3>
             </div>
-            <p className="text-xs text-slate-500 dark:text-emerald-200/80 font-medium mt-1">
+            <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-1">
               {period === 'daily'
                 ? 'Tren belanja 7 hari terakhir vs ambang batas Daily Safe Runway'
                 : 'Distribusi pengeluaran per kategori pada siklus berjalan'}
@@ -67,7 +67,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           <div
             role="tablist"
             aria-label="Pilih rentang waktu analitik"
-            className="flex bg-slate-100 dark:bg-[#021D17] p-1 rounded-2xl text-xs self-start sm:self-auto border border-slate-200/80 dark:border-white/10"
+            className="flex bg-slate-100 dark:bg-zinc-900/60 p-1 rounded-2xl text-xs self-start sm:self-auto border border-slate-200/80 dark:border-zinc-800/80"
           >
             <Button
               size="sm"
@@ -77,8 +77,8 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               onPress={() => setPeriod('daily')}
               className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
                 period === 'daily'
-                  ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
+                  ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
               }`}
             >
               Harian (Daily)
@@ -91,8 +91,8 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               onPress={() => setPeriod('monthly')}
               className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
                 period === 'monthly'
-                  ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-[#10B981] bg-transparent'
+                  ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
               }`}
             >
               Bulanan (Monthly)
@@ -108,25 +108,25 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           >
             <div className="h-32 flex items-end justify-between gap-2 sm:gap-3">
               {[45, 65, 25, 90, 50, 20, 75].map((heightPct, idx) => (
-                <div key={idx} className="flex-1 bg-slate-100 dark:bg-[#021D17] rounded-t-xl h-full flex items-end overflow-hidden">
+                <div key={idx} className="flex-1 bg-slate-100 dark:bg-zinc-900 rounded-t-xl h-full flex items-end overflow-hidden">
                   <div
-                    className="w-full bg-slate-200 dark:bg-[#10B981]/20 rounded-t-lg"
+                    className="w-full bg-slate-200 dark:bg-zinc-800 rounded-t-lg"
                     style={{ height: `${heightPct}%` }}
                   />
                 </div>
               ))}
             </div>
-            <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-slate-200/80 dark:border-white/10 pb-2">
+            <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-slate-200/80 dark:border-zinc-800/80 pb-2">
               {[...Array(7)].map((_, idx) => (
                 <div key={idx} className="flex-1 flex justify-center">
-                  <div className="h-3 w-6 bg-slate-200 dark:bg-[#021D17] rounded-md" />
+                  <div className="h-3 w-6 bg-slate-200 dark:bg-zinc-900 rounded-md" />
                 </div>
               ))}
             </div>
           </div>
         ) : error ? (
-          <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 dark:border-white/10 rounded-2xl">
-            <AlertCircle className="w-6 h-6 text-[#10B981] mb-2" />
+          <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 dark:border-zinc-800/80 rounded-2xl">
+            <AlertCircle className="w-6 h-6 text-emerald-500 mb-2" />
             <p className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
               {error.toLowerCase().includes('authenticated') ? 'Perlu Autentikasi' : 'Gagal Memuat Analitik'}
             </p>
@@ -137,7 +137,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
             </p>
           </div>
         ) : !hasExpenses ? (
-          <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 dark:border-white/10 rounded-2xl">
+          <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 dark:border-zinc-800/80 rounded-2xl">
             <BarChart3 className="w-8 h-8 text-slate-400 dark:text-slate-600 mb-2 opacity-60" />
             <p className="font-extrabold text-xs text-slate-800 dark:text-slate-200">Belum Ada Pengeluaran Tercatat</p>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs mt-0.5 font-medium">
@@ -156,7 +156,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                 className="absolute inset-x-0 pointer-events-none z-10 border-t-2 border-dashed border-amber-500/80 flex items-center justify-end"
                 style={{ bottom: `${thresholdPct}%` }}
               >
-                <span className="text-[10px] font-extrabold tracking-tight text-amber-700 dark:text-amber-300 bg-white/90 dark:bg-[#042421]/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-amber-400/40 dark:border-amber-500/40 shadow-sm -translate-y-1/2 select-none tabular-nums font-mono">
+                <span className="text-[10px] font-extrabold tracking-tight text-amber-700 dark:text-amber-300 bg-white/90 dark:bg-[#141417]/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-amber-400/40 dark:border-amber-500/40 shadow-sm -translate-y-1/2 select-none tabular-nums font-mono">
                   Batas Aman: Rp {threshold.toLocaleString('id-ID')}
                 </span>
               </div>
@@ -192,12 +192,12 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                         </span>
                       </div>
                     }
-                    className="bg-slate-900/95 dark:bg-[#021D17]/95 border border-slate-700 dark:border-[#10B981]/40 rounded-2xl shadow-2xl backdrop-blur-xl"
+                    className="bg-slate-900/95 dark:bg-[#141417]/95 border border-slate-700 dark:border-zinc-800/80 rounded-2xl shadow-2xl backdrop-blur-xl"
                   >
                     <div
                       tabIndex={0}
                       aria-label={`${item.day_label}, ${item.date}: Rp ${item.amount.toLocaleString('id-ID')} (${isOver ? 'Melebihi Jatah' : 'Sesuai Jatah'})`}
-                      className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] rounded-t-xl"
+                      className="flex-1 h-full flex flex-col justify-end items-center group relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-t-xl"
                     >
                       <span className="sr-only">
                         {isOver
@@ -206,7 +206,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                       </span>
 
                       {/* Bar track */}
-                      <div className="w-full bg-slate-100 dark:bg-[#021D17]/60 rounded-t-xl h-full relative flex items-end overflow-hidden">
+                      <div className="w-full bg-slate-100 dark:bg-zinc-900/60 rounded-t-xl h-full relative flex items-end overflow-hidden">
                         <motion.div
                           style={{ originY: 1, height: '100%' }}
                           initial={{ scaleY: 0 }}
@@ -226,7 +226,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
             </div>
 
             {/* Day Labels Row */}
-            <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-slate-200/80 dark:border-white/10 pb-2">
+            <div className="flex justify-between gap-2 sm:gap-3 pt-2 border-b border-slate-200/80 dark:border-zinc-800/80 pb-2">
               {dailyData.items.map((item) => (
                 <div key={item.date} className="flex-1 text-center text-[11px] font-bold text-slate-500 dark:text-slate-400">
                   {item.day_label}

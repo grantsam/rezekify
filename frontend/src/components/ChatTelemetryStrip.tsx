@@ -18,7 +18,7 @@ const formatCurrency = (val: number): string => {
 };
 
 const HEALTH_BADGE_STYLES: Record<string, string> = {
-  HEALTHY: 'bg-emerald-500/15 text-[#0F766E] dark:text-[#10B981] border-[#10B981]/30',
+  HEALTHY: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
   WARNING: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
   CRITICAL: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
 };
@@ -30,7 +30,7 @@ export const ChatTelemetryStrip: React.FC<ChatTelemetryStripProps> = ({
   providerLabel,
 }) => {
   return (
-    <header className="sticky top-0 z-20 backdrop-blur-xl bg-white/80 dark:bg-[#042421]/90 border-b border-slate-200/80 dark:border-[#10B981]/30 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-left select-none shadow-xs">
+    <header className="sticky top-0 z-20 backdrop-blur-xl bg-white/80 dark:bg-[#141417]/90 border-b border-slate-200/80 dark:border-zinc-800/80 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-left select-none shadow-xs">
       {telemetry ? (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
           {/* Saldo Bebas */}
@@ -72,7 +72,7 @@ export const ChatTelemetryStrip: React.FC<ChatTelemetryStripProps> = ({
       {/* Provider Label & Reset Chat Button */}
       <div className="flex items-center gap-2 ml-auto">
         {providerLabel && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-extrabold tracking-wide bg-[#10B981]/15 text-[#0F766E] dark:text-[#10B981] border border-[#10B981]/30">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-extrabold tracking-wide bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
             {providerLabel}
           </span>
         )}
@@ -82,7 +82,7 @@ export const ChatTelemetryStrip: React.FC<ChatTelemetryStripProps> = ({
           disabled={isResetting}
           aria-label="Bersihkan riwayat percakapan"
           title="Bersihkan riwayat percakapan"
-          className="min-h-[36px] min-w-[36px] p-2 inline-flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 active:scale-95 transition-all border border-slate-200/80 dark:border-white/10 disabled:opacity-50 disabled:pointer-events-none bg-transparent"
+          className="min-h-[36px] min-w-[36px] p-2 inline-flex items-center justify-center rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 active:scale-95 transition-all border border-slate-200/80 dark:border-zinc-800/80 disabled:opacity-50 disabled:pointer-events-none bg-transparent"
         >
           {isResetting ? (
             <Loader2 className="w-4 h-4 animate-spin text-[#10B981]" />

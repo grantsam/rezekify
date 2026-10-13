@@ -46,12 +46,12 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
       className="space-y-6 text-left select-none"
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/80 dark:bg-[#042421]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-[#10B981]/30 p-5 rounded-[28px] shadow-xl shadow-[#10B981]/5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/80 dark:bg-[#141417] backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 p-5 rounded-[28px] shadow-xl shadow-black/5">
         <div>
           <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
             Komitmen & Vaults
           </h2>
-          <p className="text-xs text-slate-600 dark:text-emerald-200/80 font-medium mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-zinc-400 font-medium mt-0.5">
             Alokasi pos dana aman dan sinking funds untuk mengunci kas operasional.
           </p>
         </div>
@@ -61,7 +61,7 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           onPress={onOpenCreateVault}
           aria-label="+ Tambah Vault"
           startContent={<Plus className="w-4 h-4" />}
-          className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold min-h-[40px] px-5 rounded-2xl text-xs shadow-lg shadow-[#10B981]/20 transition-all"
+          className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold min-h-[40px] px-5 rounded-2xl text-xs shadow-lg shadow-emerald-900/20 transition-all"
         >
           + Tambah Vault
         </Button>
@@ -95,20 +95,20 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
       )}
 
       {/* Filter Tabs Toolbar */}
-      <div className="flex items-center gap-2 border-b border-slate-200/80 dark:border-white/10 pb-3 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-slate-200/80 dark:border-zinc-800/80 pb-3 overflow-x-auto">
         <Button
           size="sm"
           variant="light"
           onPress={() => setActiveTab('ALL')}
           className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-extrabold transition-all min-h-[38px] h-auto ${
             activeTab === 'ALL'
-              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-              : 'text-slate-600 dark:text-slate-300 hover:text-[#10B981] bg-transparent'
+              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+              : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 bg-transparent'
           }`}
         >
           <span>Semua</span>
           <span className={`text-[10px] py-0.5 px-2 rounded-lg font-mono ${
-            activeTab === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-[#021D17] text-slate-700 dark:text-emerald-300'
+            activeTab === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300'
           }`}>
             {countAll}
           </span>
@@ -120,13 +120,13 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           onPress={() => setActiveTab('FIXED_BILL')}
           className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-extrabold transition-all min-h-[38px] h-auto ${
             activeTab === 'FIXED_BILL'
-              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-              : 'text-slate-600 dark:text-slate-300 hover:text-[#10B981] bg-transparent'
+              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+              : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 bg-transparent'
           }`}
         >
           <span>Tagihan Tetap</span>
           <span className={`text-[10px] py-0.5 px-2 rounded-lg font-mono ${
-            activeTab === 'FIXED_BILL' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-[#021D17] text-slate-700 dark:text-emerald-300'
+            activeTab === 'FIXED_BILL' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300'
           }`}>
             {countBills}
           </span>
@@ -138,13 +138,13 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           onPress={() => setActiveTab('SAVINGS')}
           className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-extrabold transition-all min-h-[38px] h-auto ${
             activeTab === 'SAVINGS'
-              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-              : 'text-slate-600 dark:text-slate-300 hover:text-[#10B981] bg-transparent'
+              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
+              : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 bg-transparent'
           }`}
         >
           <span>Tabungan</span>
           <span className={`text-[10px] py-0.5 px-2 rounded-lg font-mono ${
-            activeTab === 'SAVINGS' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-[#021D17] text-slate-700 dark:text-emerald-300'
+            activeTab === 'SAVINGS' ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300'
           }`}>
             {countSavings}
           </span>
@@ -153,8 +153,8 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
 
       {/* Bento Grid */}
       {filteredVaults.length === 0 ? (
-        <div className="bg-white/80 dark:bg-[#042421]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-[#10B981]/30 rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-xl">
-          <PiggyBank className="w-12 h-12 text-[#10B981] mb-3 stroke-[1.5]" />
+        <div className="bg-white/80 dark:bg-[#141417] backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-xl">
+          <PiggyBank className="w-12 h-12 text-emerald-500 mb-3 stroke-[1.5]" />
           <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mb-1">
             Belum ada komitmen atau vault aktif
           </h3>
@@ -164,7 +164,7 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           <Button
             size="sm"
             onPress={onOpenCreateVault}
-            className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold rounded-2xl text-xs min-h-[40px] px-5 shadow-lg shadow-[#10B981]/20"
+            className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold rounded-2xl text-xs min-h-[40px] px-5 shadow-lg shadow-emerald-900/20"
           >
             Buat Vault Pertama
           </Button>

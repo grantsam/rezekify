@@ -12,7 +12,7 @@ import ScrollReveal from '../components/common/ScrollReveal';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-white transition-colors duration-300 overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0c0c0e] text-slate-900 dark:text-white transition-colors duration-300 overflow-hidden">
       <Navbar />
 
       <main>

@@ -41,7 +41,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const upcomingBillsCount = upcomingBills.length;
 
   return (
-    <div className="min-h-screen w-full bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row antialiased">
+    <div className="min-h-screen w-full bg-slate-50 dark:bg-[#0c0c0e] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row antialiased">
       {/* Desktop Fixed Sidebar */}
       <Sidebar
         activeView={activeView}
@@ -67,9 +67,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         }`}
       >
         {/* Global Header Bar */}
-        <header className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-white/70 dark:bg-[#042421]/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-[#10B981]/20">
+        <header className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-white/70 dark:bg-[#141417]/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-zinc-800/80">
           <div className="flex items-center gap-2 md:hidden">
-            <div className="relative flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/20 border border-[#10B981]/30">
+            <div className="relative flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
               <span className="font-mono font-bold text-slate-900 dark:text-white text-xs">R</span>
               <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
             </div>
@@ -77,7 +77,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           </div>
 
           <div className="hidden md:block">
-            <span className="text-xs text-slate-500 dark:text-emerald-200/70 font-bold capitalize">{activeView}</span>
+            <span className="text-xs text-slate-500 dark:text-zinc-400 font-bold capitalize">{activeView}</span>
           </div>
 
           <div className="flex items-center gap-3 ml-auto">

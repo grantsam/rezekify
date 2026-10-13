@@ -113,7 +113,7 @@ export default function BenefitsSection() {
                     className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer backdrop-blur-2xl border transition-all duration-300 flex items-center gap-3.5 ${
                       isActive
                         ? 'bg-[#0F766E]/15 dark:bg-[#0F766E]/30 border-[#10B981] shadow-lg shadow-[#10B981]/15 translate-x-1.5'
-                        : 'bg-[#10B981]/5 dark:bg-[#042421]/30 border-white/40 dark:border-[#10B981]/15 hover:border-[#10B981]/40 hover:bg-[#10B981]/10'
+                        : 'bg-white/40 dark:bg-[#141417]/50 border-white/40 dark:border-zinc-800/80 hover:border-zinc-700/60 hover:bg-zinc-800/20'
                     }`}
                   >
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${
@@ -145,15 +145,15 @@ export default function BenefitsSection() {
           </div>
 
           <div className="lg:col-span-6 flex">
-            <div className="w-full bg-[#0F766E]/10 dark:bg-[#042421]/40 backdrop-blur-3xl border border-white/50 dark:border-[#10B981]/30 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-[#10B981]/10 flex flex-col justify-between text-left transition-all duration-500 relative overflow-hidden">
-              
+            <div className="w-full bg-[#0F766E]/10 dark:bg-[#141417] backdrop-blur-3xl border border-white/50 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/10 flex flex-col justify-between text-left transition-all duration-500 relative overflow-hidden">
+
               <div className="absolute -top-16 -right-16 w-36 h-36 bg-gradient-to-br from-white/30 dark:from-[#10B981]/20 to-transparent rounded-full blur-2xl pointer-events-none" />
 
               <div className="space-y-6 relative z-10">
-                <div className="flex items-center justify-between border-b border-slate-900/10 dark:border-white/10 pb-4">
+                <div className="flex items-center justify-between border-b border-slate-900/10 dark:border-zinc-800/80 pb-4">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping" />
-                    <span className="text-xs font-bold text-slate-800 dark:text-emerald-100">
+                    <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
                       Fokus Manfaat {current.number}
                     </span>
                   </div>
@@ -172,7 +172,7 @@ export default function BenefitsSection() {
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[#10B981]/10 dark:bg-[#052E2B]/50 backdrop-blur-xl border border-white/40 dark:border-[#10B981]/20 flex items-center gap-4 shadow-sm">
+                <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-zinc-800/80 flex items-center gap-4 shadow-sm">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-2xl shadow-md shrink-0">
                     {current.metricIcon}
                   </div>
@@ -180,14 +180,14 @@ export default function BenefitsSection() {
                     <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                       {current.highlightVal}
                     </p>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-emerald-200/80">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
                       {current.highlightLabel}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 p-4 rounded-2xl bg-[#10B981]/10 dark:bg-[#052E2B]/50 backdrop-blur-xl border border-white/40 dark:border-[#10B981]/20 space-y-3 relative z-10">
+              <div className="mt-6 pt-4 p-4 rounded-2xl bg-emerald-500/10 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-zinc-800/80 space-y-3 relative z-10">
                 <div className="flex justify-between items-center text-xs font-bold text-slate-800 dark:text-slate-200">
                   <span>Proyeksi Dampak Keuangan</span>
                   <span className="text-[#10B981]">Terverifikasi AI</span>
