@@ -360,7 +360,7 @@ export const ChatOmniInput: React.FC<ChatOmniInputProps> = ({
               disabled={isSubmitDisabled}
               aria-label="Kirim pesan"
               title="Kirim pesan (Enter)"
-              className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold active:scale-95 transition-all shadow-md shadow-emerald-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="min-w-[38px] min-h-[38px] p-2 inline-flex items-center justify-center rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold active:scale-95 transition-all shadow-md shadow-emerald-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />

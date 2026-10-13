@@ -181,7 +181,7 @@ export const AuthPage: React.FC = () => {
           </h1>
 
           <div className="relative pt-2">
-            <div className="absolute -top-3 right-4 z-20 bg-white/95 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 p-3 rounded-2xl shadow-xl animate-bounce duration-[4000ms] flex items-center gap-2">
+            <div className="absolute -top-3 right-4 z-20 bg-white/95 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 p-3 rounded-2xl shadow-xl transition-all duration-300 ease-out flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#10B981]" />
               <p className="text-[11px] font-bold text-slate-800 dark:text-white">
                 Otomatis Terkategori oleh AI ✨

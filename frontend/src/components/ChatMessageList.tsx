@@ -136,7 +136,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         if (isUser) {
           return (
             <div key={msg.id} className="flex flex-col items-end">
-              <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-gradient-to-r from-[#0F766E] to-[#10B981] px-4 py-3 text-xs sm:text-sm text-white font-medium shadow-md shadow-emerald-900/15 leading-relaxed whitespace-pre-wrap break-words select-text">
+              <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-zinc-800 text-white dark:bg-zinc-800 dark:text-zinc-100 px-4 py-3 text-xs sm:text-sm font-medium shadow-md shadow-zinc-900/10 leading-relaxed whitespace-pre-wrap break-words select-text">
                 {msg.content}
               </div>
               {formattedTime && (
@@ -169,7 +169,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                     type="button"
                     onClick={() => toggleTrace(msg.id)}
                     aria-expanded={isTraceOpen}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/15 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 border border-emerald-500/20 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold transition-all active:scale-[0.99] w-fit shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-800/80 border border-slate-200 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 text-xs font-semibold transition-all active:scale-[0.99] w-fit shadow-xs"
                   >
                     <span>💭</span>
                     <span>
@@ -178,20 +178,20 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                         : 'Proses Berpikir & Aktivitas'}
                     </span>
                     {isTraceOpen ? (
-                      <ChevronUp className="w-3.5 h-3.5 ml-0.5 text-emerald-600 dark:text-emerald-400" />
+                      <ChevronUp className="w-3.5 h-3.5 ml-0.5 text-zinc-500 dark:text-zinc-400" />
                     ) : (
-                      <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-emerald-600 dark:text-emerald-400" />
+                      <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-zinc-500 dark:text-zinc-400" />
                     )}
                   </button>
 
                   {isTraceOpen && (
                     <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-slate-50/80 dark:bg-zinc-900/80 border border-slate-200/80 dark:border-zinc-800/80 text-xs animate-in fade-in duration-150 select-text">
                       {thought && (
-                        <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200 text-xs leading-relaxed select-text">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block mb-0.5">
+                        <div className="p-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 text-xs leading-relaxed select-text">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-0.5">
                             Penalaran Asisten
                           </span>
-                          <p className="italic font-serif">"{thought}"</p>
+                          <p className="italic font-sans">"{thought}"</p>
                         </div>
                       )}
 
@@ -213,13 +213,13 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                             className="p-2.5 rounded-lg bg-white/90 dark:bg-zinc-950/80 border border-slate-200/80 dark:border-zinc-800/80 space-y-1.5"
                           >
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-zinc-200/80 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300">
                                 Langkah {stepNum}
                               </span>
                               {toolName ? (
                                 <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
                                   Memanggil{' '}
-                                  <code className="font-mono text-emerald-700 dark:text-emerald-400 px-1 py-0.5 rounded bg-slate-100 dark:bg-zinc-900 text-[11px]">
+                                  <code className="font-mono text-zinc-800 dark:text-zinc-200 px-1 py-0.5 rounded bg-zinc-100 dark:bg-zinc-900 text-[11px]">
                                     {toolName}
                                   </code>
                                 </span>
@@ -231,7 +231,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                             </div>
 
                             {traceThought && traceThought !== thought && (
-                              <p className="text-[11px] italic text-slate-600 dark:text-zinc-300 font-serif pl-1">
+                              <p className="text-[11px] italic text-zinc-600 dark:text-zinc-400 font-sans pl-1">
                                 "{traceThought}"
                               </p>
                             )}

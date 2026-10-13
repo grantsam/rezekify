@@ -94,6 +94,9 @@ describe('OverviewView Component', () => {
     // Health badge
     expect(screen.getByText('Aman Terkendali')).toBeInTheDocument();
 
+    const statusTitle = screen.getByText('STATUS KEUANGAN HARI INI');
+    expect(statusTitle).toHaveClass('text-emerald-600');
+
     // Jatah Belanja Hari Ini
     expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
     expect(screen.getByText(/Rp\s*133\.333/)).toBeInTheDocument();
@@ -136,6 +139,7 @@ describe('OverviewView Component', () => {
     );
 
     expect(screen.getByText('Waspada')).toBeInTheDocument();
+    expect(screen.getByText('STATUS KEUANGAN HARI INI')).toHaveClass('text-amber-600');
     expect(screen.getByText(/Melebihi jatah:\s*Rp\s*50\.000/i)).toBeInTheDocument();
   });
 
@@ -193,6 +197,10 @@ describe('OverviewView Component', () => {
     expect(screen.getByText('Dana Darurat')).toBeInTheDocument();
     expect(screen.getByText('Rp 1.000.000')).toBeInTheDocument();
     expect(screen.getByText('/ Rp 1.500.000')).toBeInTheDocument();
+
+    const vaultProgress = screen.getByRole('progressbar', { name: /Progres Simpanan Pajak/i });
+    expect(vaultProgress).toBeInTheDocument();
+    expect(vaultProgress).toHaveAttribute('aria-valuenow', '67');
 
     // Simulate button in vaults card
     const simBtn = screen.getByRole('button', { name: /Simulasi Belanja/i });

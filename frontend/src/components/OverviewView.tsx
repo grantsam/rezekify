@@ -54,6 +54,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           label: 'Aman Terkendali',
           color: 'success' as const,
           chipClass: 'bg-emerald-500/15 text-[#0F766E] dark:text-[#10B981] border border-[#10B981]/30 font-extrabold',
+          titleColor: 'text-emerald-600 dark:text-emerald-400',
           progressColor: 'success' as const,
         };
       case 'WARNING':
@@ -61,6 +62,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           label: 'Waspada',
           color: 'warning' as const,
           chipClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-extrabold',
+          titleColor: 'text-amber-600 dark:text-amber-400',
           progressColor: 'warning' as const,
         };
       case 'CRITICAL':
@@ -68,13 +70,15 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           label: 'Hemat Ketat',
           color: 'danger' as const,
           chipClass: 'bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30 font-extrabold',
+          titleColor: 'text-rose-600 dark:text-rose-400',
           progressColor: 'danger' as const,
         };
       default:
         return {
           label: status || 'UNKNOWN',
           color: 'default' as const,
-          chipClass: 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700',
+          chipClass: 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700',
+          titleColor: 'text-zinc-500 dark:text-zinc-400',
           progressColor: 'default' as const,
         };
     }
@@ -89,7 +93,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const spentPercentage = dailyRunway > 0 ? Math.min(100, Math.max(0, Math.round((todaySpent / dailyRunway) * 100))) : (todaySpent > 0 ? 100 : 0);
 
   return (
-    <div className="space-y-6 text-left select-none pb-8">
+    <div className="space-y-6 text-left pb-8">
       {/* 1. ONBOARDING BANNER (JIKA REKENING KOSONG) */}
       {!isLoading && activeAccounts.length === 0 && (
         <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5">
@@ -102,7 +106,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
                   Mulai Hitung Batas Belanja Harian
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mt-1">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed mt-1">
                   Tambahkan rekening atau dompet pertama Anda (BCA, GoPay, atau Tunai) untuk mengaktifkan telemetri runway otomatis dan kalkulasi belanja harian bebas risiko.
                 </p>
               </div>
@@ -110,7 +114,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <Button
               onPress={onOpenCreateAccount}
               startContent={<Building2 className="w-4 h-4" />}
-              className="font-extrabold text-xs py-2.5 px-5 min-h-[42px] rounded-2xl shrink-0 bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white shadow-lg shadow-emerald-900/25 transition-all"
+              className="font-extrabold text-xs py-2.5 px-5 min-h-[42px] rounded-2xl shrink-0 bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-900/25 transition-all"
             >
               + Tambah Rekening Pertama
             </Button>
@@ -124,7 +128,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           {/* Top Bar: Title & Health Status Badge */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-zinc-800/80 pb-4">
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-1">
+              <span className={`text-[10px] font-extrabold uppercase tracking-wider ${statusConfig.titleColor} block mb-1`}>
                 STATUS KEUANGAN HARI INI
               </span>
               <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
@@ -150,7 +154,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </span>
                 <span className="text-slate-500 dark:text-zinc-400 text-sm sm:text-base font-bold">/ hari</span>
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 font-medium">
+              <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1.5 font-medium">
                 Batas belanja aman harian agar cadangan operasional bertahan hingga akhir siklus.
               </p>
             </div>
@@ -160,7 +164,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <div className="bg-slate-50/90 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl p-4 space-y-3.5 shadow-inner">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
-                <span className="text-slate-500 dark:text-slate-400 font-bold">Pengeluaran Hari Ini:</span>
+                <span className="text-slate-500 dark:text-zinc-400 font-bold">Pengeluaran Hari Ini:</span>
                 <span className="text-slate-900 dark:text-white font-mono font-bold tabular-nums">
                   {formatRupiah(todaySpent)}
                 </span>
@@ -173,7 +177,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   </span>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 font-bold">Sisa Jatah Hari Ini:</span>
+                    <span className="text-slate-500 dark:text-zinc-400 font-bold">Sisa Jatah Hari Ini:</span>
                     <span className="text-emerald-600 dark:text-emerald-400 font-black font-mono tabular-nums">
                       {formatRupiah(remainingBudget)}
                     </span>
@@ -196,7 +200,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 text-xs">
               <div className="flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span className="text-slate-500 dark:text-slate-400 font-medium">Saldo Bebas Pakai:</span>
+                <span className="text-slate-500 dark:text-zinc-400 font-medium">Saldo Bebas Pakai:</span>
                 <span className="text-slate-900 dark:text-white font-mono font-bold tabular-nums">
                   {formatRupiah(summary?.operational_free_cash ?? 0)}
                 </span>
@@ -270,7 +274,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </div>
 
               {vaults.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 font-medium my-auto">
+                <div className="py-8 text-center text-xs text-slate-500 dark:text-zinc-400 font-medium my-auto">
                   Belum ada pos komitmen atau vault aktif.
                 </div>
               ) : (
@@ -299,7 +303,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                           </div>
                         </div>
 
-                        <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden my-1.5">
+                        <div
+                          role="progressbar"
+                          aria-valuenow={pct}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`Progres ${vault.name}`}
+                          className="h-2 w-full bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden my-1.5"
+                        >
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${pct}%` }}
@@ -310,7 +321,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
                         <div className="flex items-center justify-between text-[11px] font-mono font-bold tabular-nums">
                           <span className="text-slate-900 dark:text-white">{formatRupiah(vault.allocated_amount)}</span>
-                          <span className="text-slate-400 dark:text-slate-500">/ {formatRupiah(vault.target_amount)}</span>
+                          <span className="text-slate-400 dark:text-zinc-500">/ {formatRupiah(vault.target_amount)}</span>
                         </div>
                       </div>
                     );

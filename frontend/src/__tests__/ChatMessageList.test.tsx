@@ -58,7 +58,10 @@ describe('ChatMessageList Component', () => {
       />
     );
 
-    expect(screen.getByText('Halo AI, apa kabar?')).toBeInTheDocument();
+    const userBubble = screen.getByText('Halo AI, apa kabar?');
+    expect(userBubble).toBeInTheDocument();
+    expect(userBubble).toHaveClass('bg-zinc-800');
+    expect(userBubble).toHaveClass('select-text');
     expect(screen.getByText('Halo! Saya siap membantu mengatur keuangan Anda.')).toBeInTheDocument();
   });
 
