@@ -627,3 +627,39 @@ def test_faceted_query_uncategorized_expense_and_transfer_separation(db_session:
     assert res_trf.items[0]["description"] == "Transfer Antar Rekening"
 
 
+def test_faceted_query_default_date_range_90_days_for_raw_items(db_session: Session, sample_user: User):
+    """Verifies that start_date=None defaults to 90 days for group_by='none' and current month for grouped queries."""
+    from datetime import timedelta
+    _seed_sample_ledger(db_session, sample_user)
+    engine = FacetedQueryEngine(db_session)
+
+    # With group_by="none" and start_date=None, start defaults to today - 90 days
+    # Seeded data has Sep 20 (Makan Siang September) and Oct transactions.
+    # When start_date is None, Sep 20 must be included if within 90 days of today.
+    raw_params = FacetedQueryParams(
+        flow_type="EXPENSE",
+        start_date=None,
+        end_date=None,
+        group_by="none",
+        order_by="date_desc",
+    )
+    res_raw = engine.execute(sample_user.id, raw_params)
+    assert res_raw.status == "success"
+    today = date.today()
+    expected_start = today - timedelta(days=90)
+    assert res_raw.query_metadata["period_current"]["start"] == expected_start.isoformat()
+
+    # With group_by="category" and start_date=None, start defaults to start of current month
+    grp_params = FacetedQueryParams(
+        flow_type="EXPENSE",
+        start_date=None,
+        end_date=None,
+        group_by="category",
+    )
+    res_grp = engine.execute(sample_user.id, grp_params)
+    assert res_grp.status == "success"
+    expected_month_start = date(today.year, today.month, 1)
+    assert res_grp.query_metadata["period_current"]["start"] == expected_month_start.isoformat()
+
+
+

@@ -81,7 +81,7 @@ export const DashboardPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-slate-100 transition-colors duration-300 overflow-hidden select-none">
+    <div className="relative min-h-screen bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-slate-100 transition-colors duration-300 overflow-hidden">
       {/* AMBIENT RADIAL LIGHT DEKORATIF DENGAN WAKTU SCROLL SMOOTH */}
       <div className="absolute top-10 left-1/4 w-[600px] h-[600px] bg-radial from-[#10B981]/15 via-[#0F766E]/10 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-radial from-[#34D399]/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />

@@ -344,3 +344,70 @@ def test_dispatcher_record_transaction_exact_account_name_match(db_session: Sess
     assert res_sub["status"] == "success"
     assert res_sub["transaction"]["account_name"] == "BCA Prioritas"
 
+
+def test_query_ledger_args_with_null_fields(db_session: Session, seeded_tools_db: User):
+    """Verifies QueryLedgerArgs accepts null fields without validation errors and dispatches successfully."""
+    from rezekify.agent.tools import QueryLedgerArgs
+
+    payload = {
+        "flow_type": "all",
+        "start_date": None,
+        "end_date": None,
+        "categories": None,
+        "accounts": None,
+        "keyword": None,
+        "group_by": None,
+        "compare_with_previous_period": None,
+    }
+    args = QueryLedgerArgs(**payload)
+    assert args.flow_type == "ALL"
+    assert args.group_by == "none"
+    assert args.compare_with_previous_period is False
+    assert args.limit == 50
+    assert args.order_by == "date_desc"
+
+    dispatcher = AgentToolDispatcher(db_session)
+    result = dispatcher.dispatch(seeded_tools_db.id, "query_financial_ledger", payload)
+    assert result["status"] == "success"
+    assert "summary" in result
+
+
+def test_string_amount_and_null_stripping_validation(db_session: Session, seeded_tools_db: User):
+    """Verifies SimulatePurchaseArgs and RecordTransactionArgs convert string amounts and strip null fields."""
+    from rezekify.agent.tools import RecordTransactionArgs, SimulatePurchaseArgs
+
+    # SimulatePurchaseArgs with string amount and null optional fields
+    sim_args = SimulatePurchaseArgs(**{"planned_amount": "50,000", "category_name": None, "account_name": None})
+    assert sim_args.planned_amount == Decimal("50000")
+    assert sim_args.category_name is None
+    assert sim_args.account_name is None
+
+    # RecordTransactionArgs with string amount and null optional fields
+    rec_args = RecordTransactionArgs(
+        **{
+            "action": "expense",
+            "amount": "50,000",
+            "account_name": "BCA",
+            "category_name": None,
+            "to_account": None,
+            "to_account_name": None,
+            "note": None,
+            "description": None,
+        }
+    )
+    assert rec_args.amount == Decimal("50000")
+    assert rec_args.description == "Transaksi"
+
+    dispatcher = AgentToolDispatcher(db_session)
+    sim_res = dispatcher.dispatch(seeded_tools_db.id, "simulate_purchase", {"planned_amount": "50,000"})
+    assert sim_res["status"] == "success"
+
+    rec_res = dispatcher.dispatch(
+        seeded_tools_db.id,
+        "record_transaction",
+        {"action": "expense", "amount": "25,000", "account_name": "BCA", "category_name": None},
+    )
+    assert rec_res["status"] == "success"
+    assert rec_res["transaction"]["amount"] == Decimal("25000.00")
+
+

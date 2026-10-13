@@ -79,7 +79,12 @@ class FacetedQueryEngine:
 
         # Normalize date range defaults
         today = date.today()
-        start = params.start_date or date(today.year, today.month, 1)
+        if params.start_date is not None:
+            start = params.start_date
+        elif params.group_by == "none":
+            start = today - timedelta(days=90)
+        else:
+            start = date(today.year, today.month, 1)
         end = params.end_date or today
         if start > end:
             start, end = end, start
@@ -402,8 +407,10 @@ class FacetedQueryEngine:
             order_clause = Transaction.transaction_date.asc()
         elif params.order_by == "amount_asc":
             order_clause = LedgerEntry.amount.asc()
-        else:
+        elif params.order_by == "amount_desc":
             order_clause = LedgerEntry.amount.desc()
+        else:
+            order_clause = Transaction.transaction_date.desc()
 
         query = (
             self.db.query(

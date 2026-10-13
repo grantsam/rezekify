@@ -63,6 +63,11 @@ AGENT_TOOL_DEFINITIONS: List[Dict[str, Any]] = [
                     "type": "integer",
                     "description": "Maximum number of items/groups to return (capped at 200).",
                 },
+                "order_by": {
+                    "type": "string",
+                    "enum": ["date_desc", "date_asc", "amount_desc", "amount_asc"],
+                    "description": "Sorting order for items query. Default: date_desc.",
+                },
             },
             "required": [],
         },
@@ -151,7 +156,7 @@ FINANCIAL_TOOLS: List[Dict[str, Any]] = AGENT_TOOL_DEFINITIONS
 
 
 class QueryLedgerArgs(BaseModel):
-    flow_type: str = "EXPENSE"
+    flow_type: Optional[str] = "EXPENSE"
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     categories: Optional[List[str]] = None
@@ -159,15 +164,55 @@ class QueryLedgerArgs(BaseModel):
     keyword: Optional[str] = None
     min_amount: Optional[Decimal] = None
     max_amount: Optional[Decimal] = None
-    group_by: str = "none"
-    compare_with_previous_period: bool = False
-    limit: int = 50
+    group_by: Optional[str] = "none"
+    compare_with_previous_period: Optional[bool] = False
+    limit: Optional[int] = 50
+    order_by: Optional[str] = "date_desc"
+
+    @model_validator(mode="before")
+    @classmethod
+    def sanitize_arguments(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            d = dict(data)
+            raw_flow = d.get("flow_type")
+            if not raw_flow:
+                d["flow_type"] = "EXPENSE"
+            elif isinstance(raw_flow, str):
+                f_upper = raw_flow.strip().upper()
+                d["flow_type"] = "ALL" if f_upper in ("ALL", "SEMUA") else f_upper
+            if d.get("group_by") is None:
+                d["group_by"] = "none"
+            if d.get("compare_with_previous_period") is None:
+                d["compare_with_previous_period"] = False
+            if d.get("limit") is None:
+                d["limit"] = 50
+            if d.get("order_by") is None:
+                d["order_by"] = "date_desc"
+            return d
+        return data
 
 
 class SimulatePurchaseArgs(BaseModel):
     planned_amount: Decimal = Field(gt=0)
     category_name: Optional[str] = None
     account_name: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def sanitize_arguments(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            d = dict(data)
+            amt = d.get("planned_amount")
+            if isinstance(amt, str):
+                cleaned = amt.strip().replace("Rp", "").replace("rp", "").replace(" ", "").replace(",", "")
+                try:
+                    d["planned_amount"] = Decimal(cleaned)
+                except Exception:
+                    pass
+            elif isinstance(amt, (int, float)) and not isinstance(amt, bool):
+                d["planned_amount"] = Decimal(str(amt))
+            return {k: v for k, v in d.items() if v is not None}
+        return data
 
 
 class RecordTransactionArgs(BaseModel):
@@ -180,6 +225,23 @@ class RecordTransactionArgs(BaseModel):
     category_name: Optional[str] = None
     to_account_name: Optional[str] = None
     to_account: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def sanitize_arguments(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            d = dict(data)
+            amt = d.get("amount")
+            if isinstance(amt, str):
+                cleaned = amt.strip().replace("Rp", "").replace("rp", "").replace(" ", "").replace(",", "")
+                try:
+                    d["amount"] = Decimal(cleaned)
+                except Exception:
+                    pass
+            elif isinstance(amt, (int, float)) and not isinstance(amt, bool):
+                d["amount"] = Decimal(str(amt))
+            return {k: v for k, v in d.items() if v is not None}
+        return data
 
     @model_validator(mode="after")
     def validate_accounts(self) -> "RecordTransactionArgs":
@@ -241,7 +303,7 @@ class AgentToolDispatcher:
         e_date = date.fromisoformat(validated.end_date) if validated.end_date else None
 
         params = FacetedQueryParams(
-            flow_type=validated.flow_type,
+            flow_type=validated.flow_type or "EXPENSE",
             start_date=s_date,
             end_date=e_date,
             categories=validated.categories,
@@ -249,9 +311,10 @@ class AgentToolDispatcher:
             keyword=validated.keyword,
             min_amount=validated.min_amount,
             max_amount=validated.max_amount,
-            group_by=validated.group_by,
-            compare_with_previous_period=validated.compare_with_previous_period,
-            limit=validated.limit,
+            group_by=validated.group_by or "none",
+            compare_with_previous_period=bool(validated.compare_with_previous_period),
+            limit=validated.limit or 50,
+            order_by=validated.order_by or "date_desc",
         )
         res = self.faceted_engine.execute(user_id, params)
 

@@ -185,9 +185,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   </button>
 
                   {isTraceOpen && (
-                    <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-slate-50/80 dark:bg-[#03201B]/80 border border-slate-200/80 dark:border-[#10B981]/25 text-xs animate-in fade-in duration-150">
+                    <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-slate-50/80 dark:bg-[#03201B]/80 border border-slate-200/80 dark:border-[#10B981]/25 text-xs animate-in fade-in duration-150 select-text">
                       {thought && (
-                        <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200 text-xs leading-relaxed">
+                        <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200 text-xs leading-relaxed select-text">
                           <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block mb-0.5">
                             Penalaran Asisten
                           </span>
@@ -241,7 +241,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                                 <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-400 dark:text-emerald-400/60 block mb-0.5">
                                   Parameter
                                 </span>
-                                <pre className="whitespace-pre-wrap break-words">
+                                <pre className="whitespace-pre-wrap break-words select-text cursor-text">
                                   {JSON.stringify(trace.tool_args, null, 2)}
                                 </pre>
                               </div>
@@ -252,7 +252,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                                 <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-400 dark:text-emerald-400/60 block mb-0.5">
                                   Observasi
                                 </span>
-                                <pre className="whitespace-pre-wrap break-words">
+                                <pre className="whitespace-pre-wrap break-words select-text cursor-text">
                                   {typeof trace.observation === 'object'
                                     ? JSON.stringify(trace.observation, null, 2)
                                     : String(trace.observation)}
@@ -267,7 +267,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 </div>
               )}
 
-              <div className="rounded-2xl rounded-tl-xs bg-white dark:bg-[#042421] border border-slate-200/80 dark:border-[#10B981]/30 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white font-medium shadow-md shadow-[#10B981]/5 leading-relaxed whitespace-pre-wrap break-words select-text">
+              <div className="rounded-2xl rounded-tl-xs bg-white dark:bg-[#042421] border border-slate-200/80 dark:border-[#10B981]/30 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white font-medium shadow-md shadow-[#10B981]/5 leading-relaxed whitespace-pre-wrap break-words select-text cursor-text">
                 {msg.content}
               </div>
 
