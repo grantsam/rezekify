@@ -347,6 +347,7 @@ class AgentToolDispatcher:
             }
 
         action = validated.action.lower()
+        category = None
         if action == "expense":
             cat_name = validated.category_name or "Umum"
             category = (
@@ -419,13 +420,16 @@ class AgentToolDispatcher:
             return {"status": "error", "message": err_msg, "error": err_msg}
 
         self.db.refresh(account)
+        category_name = category.name if category else ("Transfer" if action == "transfer" else None)
         return {
             "status": "success",
             "transaction": {
                 "id": str(tx.id),
                 "action": action,
+                "type": action.upper(),
                 "amount": validated.amount,
                 "account_name": account.name,
+                "category_name": category_name,
                 "description": validated.description,
                 "account_balance_after": account.current_balance,
             },
