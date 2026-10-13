@@ -47,21 +47,21 @@ def build_cognitive_system_prompt(
 
     if report is not None:
         if isinstance(report, dict):
-            free_cash = report.get("operational_free_cash", 0)
-            daily_runway = report.get("daily_safe_runway", 0)
-            days_rem = report.get("days_remaining", 0)
-            health = report.get("health_status", "UNKNOWN")
-            raw_bills = report.get("upcoming_bills", [])
+            free_cash = float(report.get("operational_free_cash") or 0)
+            daily_runway = float(report.get("daily_safe_runway") or 0)
+            days_rem = int(report.get("days_remaining") or 0)
+            health = report.get("health_status") or "UNKNOWN"
+            raw_bills = report.get("upcoming_bills") or []
             bills_lines = []
             for b in raw_bills:
                 if isinstance(b, dict):
                     name = b.get("name", "Tagihan")
-                    amount = b.get("target_amount", 0)
-                    due = b.get("days_until_due", 0)
+                    amount = b.get("target_amount") or 0
+                    due = b.get("days_until_due") or 0
                 else:
                     name = getattr(b, "name", "Tagihan")
-                    amount = getattr(b, "target_amount", 0)
-                    due = getattr(b, "days_until_due", 0)
+                    amount = getattr(b, "target_amount", 0) or 0
+                    due = getattr(b, "days_until_due", 0) or 0
                 bills_lines.append(f"- {name}: Rp {float(amount):,.0f} (sisa {due} hari)")
             bills_summary = "\n".join(bills_lines) if bills_lines else "Tidak ada tagihan mendesak (H-7)."
 
@@ -122,20 +122,24 @@ Jika Anda telah memiliki data lengkap dari hasil observasi atau tidak memerlukan
 }}"""
 
 
-def parse_agent_turn(response_text: str) -> AgentTurnResult:
+def parse_agent_turn(response_text: Union[str, Dict[str, Any]]) -> AgentTurnResult:
     """Parses model response into structured tool call or final answer.
 
     ponytail: Regex + JSON decode parser; upgrade to grammar-constrained json schema generation if model syntax errors exceed 2%.
     """
-    text = (response_text or "").strip()
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        return AgentTurnResult(is_tool_call=False, final_response=text)
+    if isinstance(response_text, dict):
+        parsed = response_text
+        text = json.dumps(response_text)
+    else:
+        text = (response_text or "").strip()
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            return AgentTurnResult(is_tool_call=False, final_response=text)
 
-    try:
-        parsed = json.loads(match.group(0))
-    except Exception:
-        return AgentTurnResult(is_tool_call=False, final_response=text)
+        try:
+            parsed = json.loads(match.group(0))
+        except Exception:
+            return AgentTurnResult(is_tool_call=False, final_response=text)
 
     # Check for tool_call structure
     tool_call = parsed.get("tool_call") or parsed.get("call_tool")
@@ -170,7 +174,7 @@ def parse_agent_turn(response_text: str) -> AgentTurnResult:
         tool_args = {
             "action": action,
             "amount": parsed.get("amount", 0),
-            "account_name": parsed.get("account_name", ""),
+            "account_name": parsed.get("account_name") or parsed.get("from_account", ""),
             "category_name": parsed.get("category_name"),
             "description": parsed.get("note") or parsed.get("description", ""),
         }

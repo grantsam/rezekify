@@ -592,6 +592,56 @@ def test_parse_agent_turn_detects_final_response():
     assert "Rp 850.000" in (turn.final_response or "")
 
 
+def test_build_cognitive_system_prompt_with_none_values():
+    """Verifies safe null coercion in cognitive prompt when keys have None values."""
+    user_context = {
+        "operational_free_cash": None,
+        "daily_safe_runway": None,
+        "days_remaining": None,
+        "health_status": "UNKNOWN",
+    }
+    prompt = build_cognitive_system_prompt(user_context=user_context)
+    assert "Rp 0" in prompt
+    assert "0 hari" in prompt
+
+
+def test_parse_agent_turn_with_dict_response():
+    """Verifies parse_agent_turn accepts dict response directly without calling .strip()."""
+    dict_tool = {
+        "thought": "Cek data ledger",
+        "tool_call": {
+            "name": "query_financial_ledger",
+            "arguments": {"flow_type": "EXPENSE"},
+        },
+    }
+    turn = parse_agent_turn(dict_tool)
+    assert turn.is_tool_call is True
+    assert turn.tool_name == "query_financial_ledger"
+    assert turn.tool_args == {"flow_type": "EXPENSE"}
+
+    dict_response = {"thought": "Selesai", "final_response": "Semua aman."}
+    turn_resp = parse_agent_turn(dict_response)
+    assert turn_resp.is_tool_call is False
+    assert turn_resp.final_response == "Semua aman."
+
+
+def test_parse_agent_turn_legacy_transfer_uses_from_account():
+    """Verifies legacy transfer mapping falls back to from_account when account_name is absent."""
+    raw_transfer = """{
+      "action": "transfer",
+      "amount": 100000,
+      "from_account": "BCA",
+      "to_account": "GoPay",
+      "note": "Top up e-wallet"
+    }"""
+    turn = parse_agent_turn(raw_transfer)
+    assert turn.is_tool_call is True
+    assert turn.tool_name == "record_transaction"
+    assert turn.tool_args["action"] == "transfer"
+    assert turn.tool_args["account_name"] == "BCA"
+    assert turn.tool_args["to_account_name"] == "GoPay"
+
+
 def test_parse_agent_turn_handles_plain_conversational_text():
     """Verifies fallback when model returns unstructured plain text."""
     plain_text = "Halo! Ada yang bisa saya bantu terkait keuangan Anda hari ini?"
@@ -599,6 +649,8 @@ def test_parse_agent_turn_handles_plain_conversational_text():
 
     assert turn.is_tool_call is False
     assert turn.final_response == plain_text
+
+
 
 
 def test_parse_agent_turn_handles_markdown_wrapped_json():
