@@ -537,6 +537,33 @@ def test_handle_message_byok_provider_error_with_vision_detail(db_session, sampl
     assert "gpt-4o" in reply
 
 
+def test_orchestrator_preserves_conversational_raw_reply(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={"action": "unknown", "raw": "Halo! Ada yang bisa saya bantu hari ini?"}
+    )
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="halo apa kabar")
+    assert reply == "Halo! Ada yang bisa saya bantu hari ini?"
+
+
+def test_orchestrator_preserves_conversational_message_reply(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={"action": "unknown", "message": "Selamat pagi! Silakan catat keuanganmu."}
+    )
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="pagi")
+    assert reply == "Selamat pagi! Silakan catat keuanganmu."
+
+
+def test_orchestrator_ignores_json_raw_reply_and_uses_default(db_session, sample_user):
+    orchestrator = AgentOrchestrator(db=db_session)
+    orchestrator.extract_entities = MagicMock(
+        return_value={"action": "unknown", "raw": '{"unparsed": "data"}'}
+    )
+    reply = orchestrator.handle_message(user_id=sample_user.id, text="random")
+    assert "Saya siap membantu mencatat pengeluaran" in reply
+
+
 def test_handle_message_byok_generic_provider_error(db_session, sample_user):
     orchestrator = AgentOrchestrator(db=db_session)
     orchestrator.extract_entities = MagicMock(

@@ -408,6 +408,15 @@ class AgentOrchestrator:
                 "telemetry": telemetry,
             }
 
+        raw_reply = entities.get("raw") or entities.get("message")
+        if raw_reply and isinstance(raw_reply, str) and raw_reply.strip() and not raw_reply.strip().startswith("{"):
+            return {
+                "reply": raw_reply.strip(),
+                "transaction_id": None,
+                "transaction": None,
+                "telemetry": self._safe_get_telemetry(user_id),
+            }
+
         return {
             "reply": "Saya siap membantu mencatat pengeluaran, pemasukan, transfer, atau memeriksa status jatah belanja harian Anda.",
             "transaction_id": None,
