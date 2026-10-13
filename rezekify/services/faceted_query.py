@@ -6,8 +6,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import String, func
+from sqlalchemy.orm import Session, aliased
 
 from rezekify.db.models import (
     Account,
@@ -318,11 +318,13 @@ class FacetedQueryEngine:
 
         if params.group_by == "category":
             group_expr = func.coalesce(Category.name, "Lainnya")
+        elif params.group_by == "account":
+            group_expr = func.coalesce(Account.name, "Akun Utama")
         elif params.group_by == "month":
             # Substring YYYY-MM ANSI compatible across PostgreSQL and SQLite
-            group_expr = func.substr(func.date(Transaction.transaction_date), 1, 7)
+            group_expr = func.substr(func.cast(Transaction.transaction_date, String), 1, 7)
         elif params.group_by == "day":
-            group_expr = func.date(Transaction.transaction_date)
+            group_expr = func.substr(func.cast(Transaction.transaction_date, String), 1, 10)
         else:
             group_expr = func.coalesce(Category.name, "Umum")
 
@@ -335,7 +337,22 @@ class FacetedQueryEngine:
             .select_from(Transaction)
             .join(LedgerEntry, LedgerEntry.transaction_id == Transaction.id)
             .outerjoin(Category, LedgerEntry.category_id == Category.id)
-            .filter(*filters)
+        )
+
+        if params.group_by == "account":
+            account_leg = aliased(LedgerEntry)
+            query = query.outerjoin(
+                account_leg,
+                LedgerEntry.account_id.is_(None)
+                & (account_leg.transaction_id == Transaction.id)
+                & (account_leg.account_id.isnot(None)),
+            ).outerjoin(
+                Account,
+                Account.id == func.coalesce(LedgerEntry.account_id, account_leg.account_id),
+            )
+
+        query = (
+            query.filter(*filters)
             .group_by(group_expr)
             .order_by(func.sum(LedgerEntry.amount).desc())
             .limit(limit)

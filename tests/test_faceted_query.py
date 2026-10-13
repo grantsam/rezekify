@@ -441,3 +441,88 @@ def test_faceted_query_execute_query_aliases_and_compare_periods(db_session: Ses
     assert cmp_res.delta_amount == Decimal("120000.00")
     assert cmp_res.trend == "INCREASE"
 
+
+def test_faceted_query_group_by_account(db_session: Session, sample_user: User):
+    """Verifies grouping by account with percentages and descending order."""
+    _seed_sample_ledger(db_session, sample_user)
+    engine = FacetedQueryEngine(db_session)
+    params = FacetedQueryParams(
+        flow_type="EXPENSE",
+        start_date=date(2026, 10, 1),
+        end_date=date(2026, 10, 10),
+        group_by="account",
+    )
+    result = engine.execute(sample_user.id, params)
+
+    assert len(result.groups) == 2
+    # BCA: 150.000 / 220.000 = 68.18%
+    assert result.groups[0].key == "BCA"
+    assert result.groups[0].total_amount == Decimal("150000.00")
+    assert result.groups[0].count == 1
+    assert result.groups[0].percentage_of_total == Decimal("68.18")
+
+    # Cash: 70.000 / 220.000 = 31.82%
+    assert result.groups[1].key == "Cash"
+    assert result.groups[1].total_amount == Decimal("70000.00")
+    assert result.groups[1].count == 2
+    assert result.groups[1].percentage_of_total == Decimal("31.82")
+
+
+def test_faceted_query_group_by_month(db_session: Session, sample_user: User):
+    """Verifies grouping by month (YYYY-MM)."""
+    _seed_sample_ledger(db_session, sample_user)
+    engine = FacetedQueryEngine(db_session)
+    params = FacetedQueryParams(
+        flow_type="EXPENSE",
+        start_date=date(2026, 9, 1),
+        end_date=date(2026, 10, 10),
+        group_by="month",
+    )
+    result = engine.execute(sample_user.id, params)
+
+    assert len(result.groups) == 2
+    # Oct: 220.000 / 320.000 = 68.75%
+    assert result.groups[0].key == "2026-10"
+    assert result.groups[0].total_amount == Decimal("220000.00")
+    assert result.groups[0].count == 3
+    assert result.groups[0].percentage_of_total == Decimal("68.75")
+
+    # Sep: 100.000 / 320.000 = 31.25%
+    assert result.groups[1].key == "2026-09"
+    assert result.groups[1].total_amount == Decimal("100000.00")
+    assert result.groups[1].count == 1
+    assert result.groups[1].percentage_of_total == Decimal("31.25")
+
+
+def test_faceted_query_group_by_day(db_session: Session, sample_user: User):
+    """Verifies grouping by day (YYYY-MM-DD)."""
+    _seed_sample_ledger(db_session, sample_user)
+    engine = FacetedQueryEngine(db_session)
+    params = FacetedQueryParams(
+        flow_type="EXPENSE",
+        start_date=date(2026, 10, 1),
+        end_date=date(2026, 10, 10),
+        group_by="day",
+    )
+    result = engine.execute(sample_user.id, params)
+
+    assert len(result.groups) == 3
+    # 2026-10-05: 150.000
+    assert result.groups[0].key == "2026-10-05"
+    assert result.groups[0].total_amount == Decimal("150000.00")
+    assert result.groups[0].count == 1
+    assert result.groups[0].percentage_of_total == Decimal("68.18")
+
+    # 2026-10-02: 50.000
+    assert result.groups[1].key == "2026-10-02"
+    assert result.groups[1].total_amount == Decimal("50000.00")
+    assert result.groups[1].count == 1
+    assert result.groups[1].percentage_of_total == Decimal("22.73")
+
+    # 2026-10-08: 20.000
+    assert result.groups[2].key == "2026-10-08"
+    assert result.groups[2].total_amount == Decimal("20000.00")
+    assert result.groups[2].count == 1
+    assert result.groups[2].percentage_of_total == Decimal("9.09")
+
+
