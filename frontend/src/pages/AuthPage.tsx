@@ -42,8 +42,14 @@ export const AuthPage: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  const { login, register, forgotPassword, resetPassword } = useAuth();
+  const { isAuthenticated, login, register, forgotPassword, resetPassword } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -82,12 +88,14 @@ export const AuthPage: React.FC = () => {
       if (mode === 'login') {
         setSuccessMessage(null);
         await login(email, password);
+        navigate('/dashboard', { replace: true });
       } else if (mode === 'register') {
         setSuccessMessage(null);
         if (!fullName.trim()) {
           throw new Error('Nama lengkap wajib diisi.');
         }
         await register(email, password, fullName);
+        navigate('/dashboard', { replace: true });
       } else if (mode === 'forgot_password') {
         if (!email.trim()) {
           throw new Error('Alamat email wajib diisi.');
