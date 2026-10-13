@@ -2,7 +2,10 @@
 
 import base64
 import asyncio
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+import json
+import re
+from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
 import httpx
@@ -18,6 +21,185 @@ from rezekify.agent.providers import (
     extract_json,
     get_adapter,
 )
+from rezekify.services.runway import RunwayReport
+
+
+@dataclass
+class AgentTurnResult:
+    is_tool_call: bool
+    tool_name: Optional[str] = None
+    tool_args: Optional[Dict[str, Any]] = None
+    thought: Optional[str] = None
+    final_response: Optional[str] = None
+
+
+def build_cognitive_system_prompt(
+    runway_report: Optional[Union[RunwayReport, Dict[str, Any]]] = None,
+    user_currency: str = "IDR",
+    user_context: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Builds ReAct system prompt with situational telemetry working memory.
+
+    ponytail: static IDR currency formatting; upgrade to dynamic ISO currency formatter when multi-currency is supported.
+    """
+    report = runway_report if runway_report is not None else user_context
+    telemetry_block = "Status Keuangan: Data belum tersedia."
+
+    if report is not None:
+        if isinstance(report, dict):
+            free_cash = report.get("operational_free_cash", 0)
+            daily_runway = report.get("daily_safe_runway", 0)
+            days_rem = report.get("days_remaining", 0)
+            health = report.get("health_status", "UNKNOWN")
+            raw_bills = report.get("upcoming_bills", [])
+            bills_lines = []
+            for b in raw_bills:
+                if isinstance(b, dict):
+                    name = b.get("name", "Tagihan")
+                    amount = b.get("target_amount", 0)
+                    due = b.get("days_until_due", 0)
+                else:
+                    name = getattr(b, "name", "Tagihan")
+                    amount = getattr(b, "target_amount", 0)
+                    due = getattr(b, "days_until_due", 0)
+                bills_lines.append(f"- {name}: Rp {float(amount):,.0f} (sisa {due} hari)")
+            bills_summary = "\n".join(bills_lines) if bills_lines else "Tidak ada tagihan mendesak (H-7)."
+
+            telemetry_block = f"""[SITUATIONAL AWARENESS - REAL-TIME TELEMETRY]
+• Saldo Bebas Operasional: Rp {float(free_cash):,.0f}
+• Jatah Aman Belanja Hari Ini: Rp {float(daily_runway):,.0f}/hari
+• Sisa Hari Menuju Siklus Baru: {days_rem} hari
+• Status Kesehatan Finansial: {health}
+• Tagihan Mendesak Mendatang (H-7):
+{bills_summary}"""
+        else:
+            bills_summary = "Tidak ada tagihan mendesak (H-7)."
+            if getattr(report, "upcoming_bills", None):
+                bills_lines = [
+                    f"- {b.name}: Rp {b.target_amount:,.0f} (sisa {b.days_until_due} hari)"
+                    for b in report.upcoming_bills
+                ]
+                bills_summary = "\n".join(bills_lines)
+
+            telemetry_block = f"""[SITUATIONAL AWARENESS - REAL-TIME TELEMETRY]
+• Saldo Bebas Operasional: Rp {report.operational_free_cash:,.0f}
+• Jatah Aman Belanja Hari Ini: Rp {report.daily_safe_runway:,.0f}/hari
+• Sisa Hari Menuju Siklus Baru: {report.days_remaining} hari
+• Status Kesehatan Finansial: {report.health_status}
+• Tagihan Mendesak Mendatang (H-7):
+{bills_summary}"""
+
+    return f"""Anda adalah Rezekify Autonomous Cognitive Financial Copilot.
+Anda memiliki akses mandiri ke subsistem simbolik deterministik buku besar pengguna.
+
+{telemetry_block}
+
+[CORE INVARIANTS]
+1. LLM DILARANG MENGHITUNG ANGKA ARITMATIKA. Semua perhitungan total, rata-rata, komparasi periode, dan dampak belanja WAJIB menggunakan tool.
+2. Gunakan pendekatan Behavioral Nudge & Mental Accounting (Thaler): lindungi dana tagihan mendesak dan ingatkan depresiasi jatah belanja harian jika pembelian diskresioner berisiko.
+3. Selalu bersikap empatik, ringkas, jelas, dan faktual.
+
+[DAFTAR ALAT TERSEDIA]
+1. query_financial_ledger(flow_type, start_date, end_date, categories, accounts, keyword, group_by, compare_with_previous_period)
+2. get_runway_telemetry()
+3. simulate_purchase(planned_amount, category_name)
+4. record_transaction(action, amount, account_name, category_name, description)
+
+[PROTOKOL KELUARAN REACT]
+Jika Anda memerlukan data untuk menjawab pertanyaan pengguna, tanggapi HANYA dengan JSON:
+{{
+  "thought": "<alasan Anda mengapa alat ini dibutuhkan>",
+  "tool_call": {{
+    "name": "<nama_alat>",
+    "arguments": {{ <parameter> }}
+  }}
+}}
+
+Jika Anda telah memiliki data lengkap dari hasil observasi atau tidak memerlukan alat, tanggapi dengan JSON:
+{{
+  "thought": "<analisis kesimpulan data>",
+  "final_response": "<jawaban lengkap, ramah, dan empatik untuk pengguna>"
+}}"""
+
+
+def parse_agent_turn(response_text: str) -> AgentTurnResult:
+    """Parses model response into structured tool call or final answer.
+
+    ponytail: Regex + JSON decode parser; upgrade to grammar-constrained json schema generation if model syntax errors exceed 2%.
+    """
+    text = (response_text or "").strip()
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if not match:
+        return AgentTurnResult(is_tool_call=False, final_response=text)
+
+    try:
+        parsed = json.loads(match.group(0))
+    except Exception:
+        return AgentTurnResult(is_tool_call=False, final_response=text)
+
+    # Check for tool_call structure
+    tool_call = parsed.get("tool_call") or parsed.get("call_tool")
+    if tool_call and isinstance(tool_call, dict):
+        name = tool_call.get("name")
+        args = tool_call.get("arguments") or tool_call.get("parameters") or {}
+        return AgentTurnResult(
+            is_tool_call=True,
+            tool_name=name,
+            tool_args=args,
+            thought=parsed.get("thought"),
+        )
+    elif tool_call and isinstance(tool_call, str):
+        args = parsed.get("arguments") or parsed.get("parameters") or {}
+        return AgentTurnResult(
+            is_tool_call=True,
+            tool_name=tool_call,
+            tool_args=args,
+            thought=parsed.get("thought"),
+        )
+    elif "tool_name" in parsed:
+        return AgentTurnResult(
+            is_tool_call=True,
+            tool_name=parsed["tool_name"],
+            tool_args=parsed.get("arguments") or parsed.get("parameters") or {},
+            thought=parsed.get("thought"),
+        )
+
+    # Legacy single-shot action fallback
+    action = parsed.get("action")
+    if action in ("expense", "income", "transfer"):
+        tool_args = {
+            "action": action,
+            "amount": parsed.get("amount", 0),
+            "account_name": parsed.get("account_name", ""),
+            "category_name": parsed.get("category_name"),
+            "description": parsed.get("note") or parsed.get("description", ""),
+        }
+        if "to_account" in parsed or "to_account_name" in parsed:
+            tool_args["to_account_name"] = parsed.get("to_account_name") or parsed.get("to_account")
+        return AgentTurnResult(
+            is_tool_call=True,
+            tool_name="record_transaction",
+            tool_args=tool_args,
+            thought=parsed.get("thought"),
+        )
+    elif action == "query_runway":
+        return AgentTurnResult(
+            is_tool_call=True,
+            tool_name="get_runway_telemetry",
+            tool_args={},
+            thought=parsed.get("thought"),
+        )
+
+    final_resp = parsed.get("final_response") or parsed.get("reply") or parsed.get("message")
+    if final_resp:
+        return AgentTurnResult(
+            is_tool_call=False,
+            thought=parsed.get("thought"),
+            final_response=str(final_resp),
+        )
+
+    return AgentTurnResult(is_tool_call=False, final_response=text)
+
 
 SYSTEM_PROMPT = """Anda adalah asisten cerdas pencatatan keuangan Rezekify.
 Tugas Anda adalah mengekstrak entitas transaksi keuangan dari teks atau struk belanja pengguna.
@@ -75,7 +257,11 @@ class ReActAgent:
         return extract_json(text)
 
     def _byok_process_input(
-        self, text: str, image_bytes: Optional[bytes] = None, mime_type: str = "image/jpeg"
+        self,
+        text: str,
+        image_bytes: Optional[bytes] = None,
+        mime_type: str = "image/jpeg",
+        user_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Delegates a text/vision request to the configured BYOK adapter and maps errors."""
         adapter = get_adapter(self.byok)
@@ -120,10 +306,19 @@ class ReActAgent:
         text: str,
         image_bytes: Optional[bytes] = None,
         mime_type: str = "image/jpeg",
+        user_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Processes natural language text or receipt image into structured transaction entities."""
         if self.byok:
-            return self._byok_process_input(text, image_bytes=image_bytes, mime_type=mime_type)
+            return self._byok_process_input(
+                text, image_bytes=image_bytes, mime_type=mime_type, user_context=user_context
+            )
+
+        system_prompt = (
+            build_cognitive_system_prompt(user_context=user_context)
+            if user_context is not None
+            else SYSTEM_PROMPT
+        )
 
         # Try Gemini first using rotary key pool
         if self.gemini_pool and self.gemini_pool.keys:
@@ -131,7 +326,7 @@ class ReActAgent:
                 key = self.gemini_pool.get_current_key()
                 try:
                     client = self.gemini_pool.get_gemini_client(api_key=key)
-                    contents = [SYSTEM_PROMPT, f"Input pengguna: {text}"]
+                    contents = [system_prompt, f"Input pengguna: {text}"]
                     if image_bytes:
                         from google.genai import types
                         contents.append(
@@ -162,20 +357,28 @@ class ReActAgent:
         if self.groq_pool and self.groq_pool.keys:
             if image_bytes:
                 return self._fallback_groq_vision(
-                    text=text, image_bytes=image_bytes, mime_type=mime_type
+                    text=text,
+                    image_bytes=image_bytes,
+                    mime_type=mime_type,
+                    system_prompt=system_prompt,
                 )
-            return self._fallback_groq(text)
+            return self._fallback_groq(text, system_prompt=system_prompt)
 
         # Final graceful fallback if all attempts fail
         return {"action": "unknown", "text": text}
 
     def _fallback_groq_vision(
-        self, text: str, image_bytes: bytes, mime_type: str = "image/jpeg"
+        self,
+        text: str,
+        image_bytes: bytes,
+        mime_type: str = "image/jpeg",
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Executes fallback entity extraction from receipt image using Groq Vision."""
         if not self.groq_pool or not self.groq_pool.keys:
             return {"action": "unknown", "text": text}
 
+        sys_prompt = system_prompt or SYSTEM_PROMPT
         base64_img = base64.b64encode(image_bytes).decode("utf-8")
         data_url = f"data:{mime_type};base64,{base64_img}"
         user_prompt = text or "Ekstrak informasi transaksi dari struk belanja ini."
@@ -185,7 +388,7 @@ class ReActAgent:
             try:
                 client = self.groq_pool.get_groq_client(api_key=key)
                 messages = [
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": sys_prompt},
                     {
                         "role": "user",
                         "content": [
@@ -217,18 +420,19 @@ class ReActAgent:
 
         return {"action": "unknown", "text": text}
 
-    def _fallback_groq(self, text: str) -> Dict[str, Any]:
+    def _fallback_groq(self, text: str, system_prompt: Optional[str] = None) -> Dict[str, Any]:
         """Executes fallback entity extraction using Groq rotary key pool."""
         if not self.groq_pool or not self.groq_pool.keys:
             return {"action": "unknown", "text": text}
 
+        sys_prompt = system_prompt or SYSTEM_PROMPT
         for _ in range(len(self.groq_pool.keys)):
             key = self.groq_pool.get_current_key()
             try:
                 client = self.groq_pool.get_groq_client(api_key=key)
                 chat_completion = client.chat.completions.create(
                     messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "system", "content": sys_prompt},
                         {"role": "user", "content": text},
                     ],
                     model=self.groq_model,
@@ -361,9 +565,11 @@ class ReActAgent:
         text: str,
         image_bytes: Optional[bytes] = None,
         mime_type: str = "image/jpeg",
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={api_key}"
-        parts: list[Dict[str, Any]] = [{"text": SYSTEM_PROMPT}, {"text": f"Input pengguna: {text}"}]
+        sys_prompt = system_prompt or SYSTEM_PROMPT
+        parts: list[Dict[str, Any]] = [{"text": sys_prompt}, {"text": f"Input pengguna: {text}"}]
         if image_bytes:
             b64_data = base64.b64encode(image_bytes).decode("utf-8")
             parts.append({"inline_data": {"mime_type": mime_type, "data": b64_data}})
@@ -384,13 +590,19 @@ class ReActAgent:
             return self._clean_json_response(candidate_text)
 
     async def _call_groq_vision_rest_async(
-        self, api_key: str, text: str, image_bytes: bytes, mime_type: str = "image/jpeg"
+        self,
+        api_key: str,
+        text: str,
+        image_bytes: bytes,
+        mime_type: str = "image/jpeg",
+        system_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         url = "https://api.groq.com/openai/v1/chat/completions"
+        sys_prompt = system_prompt or SYSTEM_PROMPT
         b64_data = base64.b64encode(image_bytes).decode("utf-8")
         data_url = f"data:{mime_type};base64,{b64_data}"
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": sys_prompt},
             {
                 "role": "user",
                 "content": [
@@ -413,10 +625,16 @@ class ReActAgent:
             content = resp.json()["choices"][0]["message"]["content"]
             return self._clean_json_response(content)
 
-    async def _call_groq_chat_rest_async(self, api_key: str, text: str) -> Dict[str, Any]:
+    async def _call_groq_chat_rest_async(
+        self,
+        api_key: str,
+        text: str,
+        system_prompt: Optional[str] = None,
+    ) -> Dict[str, Any]:
         url = "https://api.groq.com/openai/v1/chat/completions"
+        sys_prompt = system_prompt or SYSTEM_PROMPT
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": sys_prompt},
             {"role": "user", "content": text},
         ]
         async with httpx.AsyncClient(timeout=20.0) as client:
@@ -486,7 +704,7 @@ class ReActAgent:
             candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
             return self._clean_json_response(candidate_text)
 
-    async def _afallback_groq(self, text: str) -> Dict[str, Any]:
+    async def _afallback_groq(self, text: str, system_prompt: Optional[str] = None) -> Dict[str, Any]:
         """Executes fallback entity extraction using Groq rotary key pool asynchronously."""
         if not self.groq_pool or not self.groq_pool.keys:
             return {"action": "unknown", "text": text}
@@ -494,7 +712,7 @@ class ReActAgent:
         for _ in range(len(self.groq_pool.keys)):
             key = self.groq_pool.get_current_key()
             try:
-                return await self._call_groq_chat_rest_async(api_key=key, text=text)
+                return await self._call_groq_chat_rest_async(api_key=key, text=text, system_prompt=system_prompt)
             except Exception as e:
                 err_str = str(e).lower()
                 if "401" in err_str or "invalid api key" in err_str:
@@ -517,19 +735,30 @@ class ReActAgent:
         text: str,
         image_bytes: Optional[bytes] = None,
         mime_type: str = "image/jpeg",
+        user_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Asynchronously processes natural language text or receipt image into structured transaction entities."""
         if self.byok:
             return await asyncio.to_thread(
-                self._byok_process_input, text, image_bytes, mime_type
+                self._byok_process_input, text, image_bytes, mime_type, user_context
             )
+
+        system_prompt = (
+            build_cognitive_system_prompt(user_context=user_context)
+            if user_context is not None
+            else SYSTEM_PROMPT
+        )
 
         if self.gemini_pool and self.gemini_pool.keys:
             for _ in range(len(self.gemini_pool.keys)):
                 key = self.gemini_pool.get_current_key()
                 try:
                     return await self._call_gemini_rest_async(
-                        api_key=key, text=text, image_bytes=image_bytes, mime_type=mime_type
+                        api_key=key,
+                        text=text,
+                        image_bytes=image_bytes,
+                        mime_type=mime_type,
+                        system_prompt=system_prompt,
                     )
                 except Exception as e:
                     err_str = str(e).lower()
@@ -550,7 +779,11 @@ class ReActAgent:
                     key = self.groq_pool.get_current_key()
                     try:
                         return await self._call_groq_vision_rest_async(
-                            api_key=key, text=text, image_bytes=image_bytes, mime_type=mime_type
+                            api_key=key,
+                            text=text,
+                            image_bytes=image_bytes,
+                            mime_type=mime_type,
+                            system_prompt=system_prompt,
                         )
                     except Exception as e:
                         err_str = str(e).lower()
@@ -565,7 +798,7 @@ class ReActAgent:
                             continue
                         break
             else:
-                return await self._afallback_groq(text)
+                return await self._afallback_groq(text, system_prompt=system_prompt)
 
         return {"action": "unknown", "text": text}
 

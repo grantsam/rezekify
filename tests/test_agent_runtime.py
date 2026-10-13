@@ -1,5 +1,6 @@
 """Tests for ReActAgent runtime and failover logic."""
 
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 import pytest
@@ -10,7 +11,13 @@ except ImportError:
     pass
 
 from rezekify.agent.key_pool import RotaryKeyPool
-from rezekify.agent.runtime import ReActAgent
+from rezekify.agent.runtime import (
+    AgentTurnResult,
+    ReActAgent,
+    build_cognitive_system_prompt,
+    parse_agent_turn,
+)
+from rezekify.services.runway import RunwayReport, UpcomingBill
 
 
 def test_react_agent_parses_json_cleanly():
@@ -460,6 +467,210 @@ def test_react_agent_process_audio_byok_unsupported_capability():
         assert res["action"] == "byok_error"
         assert res["reason"] == "unsupported_capability"
         assert res["detail"] == "no audio"
+
+
+def test_build_cognitive_system_prompt_injects_telemetry():
+    """Verifies that short-term telemetry memory is injected into prompt."""
+    bill = UpcomingBill(
+        name="WiFi Indihome",
+        target_amount=Decimal("350000.00"),
+        allocated_amount=Decimal("0.00"),
+        target_date=None,
+        days_until_due=3,
+    )
+    report = RunwayReport(
+        total_liquid_cash=Decimal("1500000.00"),
+        vault_locked_cash=Decimal("500000.00"),
+        operational_free_cash=Decimal("1000000.00"),
+        days_remaining=10,
+        daily_safe_runway=Decimal("100000.00"),
+        health_status="HEALTHY",
+        upcoming_bills=[bill],
+    )
+    prompt = build_cognitive_system_prompt(report)
+
+    assert "Rp 1,000,000" in prompt or "1000000" in prompt
+    assert "Rp 100,000" in prompt or "100000" in prompt
+    assert "10 hari" in prompt or "10" in prompt
+    assert "WiFi Indihome" in prompt
+    assert "query_financial_ledger" in prompt
+    assert "simulate_purchase" in prompt
+
+
+def test_build_cognitive_system_prompt_without_context():
+    """Verifies system prompt defaults gracefully when telemetry is absent."""
+    prompt = build_cognitive_system_prompt()
+    assert "Data belum tersedia" in prompt
+    assert "query_financial_ledger" in prompt
+    assert "record_transaction" in prompt
+
+
+def test_build_cognitive_system_prompt_with_dict_context():
+    """Verifies telemetry injection when user_context is passed as dict."""
+    user_context = {
+        "operational_free_cash": Decimal("750000.00"),
+        "daily_safe_runway": Decimal("75000.00"),
+        "days_remaining": 7,
+        "health_status": "CAUTION",
+        "upcoming_bills": [
+            {"name": "Listrik PLN", "target_amount": Decimal("200000.00"), "days_until_due": 2}
+        ],
+    }
+    prompt = build_cognitive_system_prompt(user_context=user_context)
+    assert "Rp 750,000" in prompt or "750000" in prompt
+    assert "Listrik PLN" in prompt
+    assert "CAUTION" in prompt
+
+
+def test_parse_agent_turn_detects_tool_call():
+    """Verifies parsing of structured tool call response."""
+    raw_llm_json = """{
+      "thought": "Pengguna menanyakan tren makan bulan ini, saya perlu memeriksa ledger.",
+      "tool_call": {
+        "name": "query_financial_ledger",
+        "arguments": {
+          "flow_type": "EXPENSE",
+          "categories": ["Makanan"],
+          "compare_with_previous_period": true
+        }
+      }
+    }"""
+    turn = parse_agent_turn(raw_llm_json)
+
+    assert turn.is_tool_call is True
+    assert turn.tool_name == "query_financial_ledger"
+    assert turn.tool_args["categories"] == ["Makanan"]
+    assert turn.tool_args["compare_with_previous_period"] is True
+    assert "memeriksa ledger" in (turn.thought or "")
+
+
+def test_parse_agent_turn_detects_call_tool_string_format():
+    """Verifies alternative call_tool format parsing."""
+    raw_llm_json = """{
+      "thought": "Cek runway saat ini.",
+      "call_tool": "get_runway_telemetry",
+      "parameters": {}
+    }"""
+    turn = parse_agent_turn(raw_llm_json)
+
+    assert turn.is_tool_call is True
+    assert turn.tool_name == "get_runway_telemetry"
+    assert turn.tool_args == {}
+    assert "Cek runway" in (turn.thought or "")
+
+
+def test_parse_agent_turn_detects_legacy_single_shot_action():
+    """Verifies backward compatibility mapping for direct single-shot actions."""
+    raw_llm_json = """{
+      "thought": "Mencatat pengeluaran bensin.",
+      "action": "expense",
+      "amount": 30000,
+      "account_name": "BCA",
+      "category_name": "Transport",
+      "note": "Bensin Pertalite"
+    }"""
+    turn = parse_agent_turn(raw_llm_json)
+
+    assert turn.is_tool_call is True
+    assert turn.tool_name == "record_transaction"
+    assert turn.tool_args["action"] == "expense"
+    assert turn.tool_args["amount"] == 30000
+    assert turn.tool_args["account_name"] == "BCA"
+    assert turn.tool_args["description"] == "Bensin Pertalite"
+
+
+def test_parse_agent_turn_detects_final_response():
+    """Verifies parsing of final conversational response."""
+    raw_llm_json = """{
+      "thought": "Data sudah lengkap dari observasi.",
+      "final_response": "Pengeluaran makan Anda bulan ini sebesar Rp 850.000, turun 20% dibanding bulan lalu."
+    }"""
+    turn = parse_agent_turn(raw_llm_json)
+
+    assert turn.is_tool_call is False
+    assert turn.tool_name is None
+    assert "Rp 850.000" in (turn.final_response or "")
+
+
+def test_parse_agent_turn_handles_plain_conversational_text():
+    """Verifies fallback when model returns unstructured plain text."""
+    plain_text = "Halo! Ada yang bisa saya bantu terkait keuangan Anda hari ini?"
+    turn = parse_agent_turn(plain_text)
+
+    assert turn.is_tool_call is False
+    assert turn.final_response == plain_text
+
+
+def test_parse_agent_turn_handles_markdown_wrapped_json():
+    """Verifies markdown code block extraction."""
+    wrapped_json = """Berikut hasilnya:
+```json
+{
+  "thought": "Simulasi dampak belanja sepatu",
+  "tool_call": {
+    "name": "simulate_purchase",
+    "arguments": {
+      "planned_amount": 500000,
+      "category_name": "Belanja"
+    }
+  }
+}
+```
+"""
+    turn = parse_agent_turn(wrapped_json)
+
+    assert turn.is_tool_call is True
+    assert turn.tool_name == "simulate_purchase"
+    assert turn.tool_args["planned_amount"] == 500000
+
+
+def test_react_agent_process_input_with_user_context():
+    """Verifies ReActAgent.process_input injects telemetry prompt when user_context is provided."""
+    gemini_pool = RotaryKeyPool(keys=["KEY_1"])
+    agent = ReActAgent(gemini_pool=gemini_pool)
+
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = '{"thought": "test", "final_response": "Saldo aman."}'
+    mock_client.models.generate_content.return_value = mock_response
+
+    user_ctx = {
+        "operational_free_cash": Decimal("1000000"),
+        "daily_safe_runway": Decimal("100000"),
+        "days_remaining": 10,
+        "health_status": "HEALTHY",
+    }
+    with patch.object(gemini_pool, "get_gemini_client", return_value=mock_client):
+        res = agent.process_input(
+            user_id=uuid4(),
+            text="cek saldo",
+            user_context=user_ctx,
+        )
+        assert res["final_response"] == "Saldo aman."
+        call_args = mock_client.models.generate_content.call_args.kwargs
+        contents = call_args["contents"]
+        assert "Saldo Bebas Operasional: Rp 1,000,000" in contents[0]
+
+
+@pytest.mark.asyncio
+async def test_react_agent_aprocess_input_with_user_context():
+    """Verifies ReActAgent.aprocess_input forwards user_context and cognitive prompt."""
+    gemini_pool = RotaryKeyPool(keys=["KEY_1"])
+    agent = ReActAgent(gemini_pool=gemini_pool)
+    user_ctx = {
+        "operational_free_cash": Decimal("500000"),
+        "daily_safe_runway": Decimal("50000"),
+        "days_remaining": 5,
+        "health_status": "CAUTION",
+    }
+    with patch.object(agent, "_call_gemini_rest_async", return_value={"final_response": "ok"}) as mock_call:
+        res = await agent.aprocess_input(user_id=uuid4(), text="halo", user_context=user_ctx)
+        assert res["final_response"] == "ok"
+        assert mock_call.call_count == 1
+        kwargs = mock_call.call_args.kwargs
+        assert "system_prompt" in kwargs
+        assert "Saldo Bebas Operasional: Rp 500,000" in kwargs["system_prompt"]
+
 
 
 
