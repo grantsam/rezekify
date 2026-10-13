@@ -3,31 +3,28 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-[#0c0c0e] text-zinc-100 antialiased font-sans min-h-screen selection:bg-indigo-500/30 selection:text-indigo-200;
+  html {
+    scroll-behavior: smooth;
   }
 
-  /* Tabular numbers for financial precision */
+  body {
+    @apply bg-[#E6F7EF] text-slate-900 dark:bg-[#021D17] dark:text-zinc-100 antialiased font-sans min-h-screen selection:bg-[#10B981]/30 selection:text-[#10B981] transition-colors duration-300;
+  }
+
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
 }
 
-/* Custom subtle scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0c0c0e;
+  @apply bg-[#E6F7EF] dark:bg-[#021D17];
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  @apply bg-[#10B981]/40 rounded-full hover:bg-[#10B981];
 }

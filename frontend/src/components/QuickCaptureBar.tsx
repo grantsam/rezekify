@@ -213,19 +213,19 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
 
   return (
     <div
-      className="relative w-full"
+      className="relative w-full text-left select-none"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Sleek 44px Command Strip */}
+      {/* Command Strip */}
       <div
-        className={`h-11 rounded-xl bg-[#141417] border px-3 flex items-center gap-2.5 transition-all ${
+        className={`h-12 rounded-2xl bg-white/80 dark:bg-[#042421]/90 backdrop-blur-xl border px-3 flex items-center gap-2.5 transition-all shadow-lg shadow-[#10B981]/5 ${
           isDraggingOver
-            ? 'border-zinc-500 bg-zinc-900/80 ring-1 ring-zinc-500'
+            ? 'border-[#10B981] bg-[#10B981]/15 ring-2 ring-[#10B981]/40'
             : isRecording
-            ? 'border-rose-500/50 bg-rose-950/20'
-            : 'border-zinc-800/80 focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-zinc-600'
+            ? 'border-rose-500/50 bg-rose-500/10'
+            : 'border-slate-200/80 dark:border-[#10B981]/30 focus-within:border-[#10B981] focus-within:ring-2 focus-within:ring-[#10B981]/30'
         }`}
       >
         {isRecording ? (
@@ -236,10 +236,10 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
           >
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
-              <span className="text-xs font-mono font-medium text-rose-400 tabular-nums">
+              <span className="text-xs font-mono font-extrabold text-rose-600 dark:text-rose-400 tabular-nums">
                 {formatDuration(recordingSeconds)}
               </span>
-              {/* 5 Equalizer frequency bars */}
+              {/* Equalizer bars */}
               <div className="flex items-center gap-1 h-4 px-1" aria-hidden="true">
                 {[0.4, 0.9, 0.5, 1.0, 0.6].map((scale, idx) => (
                   <motion.span
@@ -272,7 +272,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 variant="light"
                 onPress={handleCancelRecording}
                 aria-label="Batalkan rekaman"
-                className="p-1 min-w-[38px] min-h-[38px] text-zinc-400 hover:text-white bg-transparent flex items-center justify-center"
+                className="p-1 min-w-[36px] min-h-[36px] text-slate-400 hover:text-slate-900 dark:hover:text-white bg-transparent flex items-center justify-center rounded-xl"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -281,7 +281,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 size="sm"
                 onPress={handleStopRecording}
                 aria-label="Selesai dan kirim pesan suara"
-                className="min-w-[38px] min-h-[38px] bg-rose-600 hover:bg-rose-500 text-white rounded-lg flex items-center justify-center"
+                className="min-w-[36px] min-h-[36px] bg-rose-600 hover:bg-rose-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-rose-600/20"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
               </Button>
@@ -289,11 +289,11 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
           </div>
         ) : (
           <>
-            <Terminal className="w-4 h-4 text-zinc-500 shrink-0" />
+            <Terminal className="w-4 h-4 text-[#10B981] shrink-0" />
 
             {/* Attached receipt chip preview */}
             {file && (
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-800 border border-zinc-700/80 text-xs text-zinc-300 shrink-0 max-w-[140px] sm:max-w-[200px] truncate">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#10B981]/15 border border-[#10B981]/30 text-xs font-bold text-[#0F766E] dark:text-[#10B981] shrink-0 max-w-[140px] sm:max-w-[200px] truncate">
                 <span className="truncate">{file.name}</span>
                 <Button
                   isIconOnly
@@ -304,7 +304,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                     if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
                   aria-label="Hapus struk"
-                  className="text-zinc-400 hover:text-white ml-0.5 min-w-[38px] min-h-[38px] flex items-center justify-center p-2 bg-transparent"
+                  className="text-slate-400 hover:text-rose-500 ml-0.5 min-w-[28px] min-h-[28px] flex items-center justify-center p-1 bg-transparent"
                 >
                   <X className="w-3.5 h-3.5" />
                 </Button>
@@ -318,7 +318,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
               onKeyDown={handleKeyDown}
               disabled={isLoading}
               placeholder="Ketik mutasi, drop foto struk kasir, atau rekam suara..."
-              className="bg-transparent flex-1 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none min-w-0"
+              className="bg-transparent flex-1 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium focus:outline-none min-w-0"
             />
 
             <div className="flex items-center gap-1 shrink-0">
@@ -337,7 +337,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 onPress={() => fileInputRef.current?.click()}
                 isDisabled={isLoading}
                 aria-label="Pilih struk belanja"
-                className="p-1 min-w-[38px] min-h-[38px] text-zinc-400 hover:text-zinc-200 bg-transparent rounded-lg flex items-center justify-center"
+                className="p-1 min-w-[36px] min-h-[36px] text-slate-500 dark:text-slate-400 hover:text-[#10B981] bg-transparent rounded-xl flex items-center justify-center"
               >
                 <Camera className="w-4 h-4" />
               </Button>
@@ -349,15 +349,15 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 onPress={handleStartRecording}
                 isDisabled={isLoading}
                 aria-label="Rekam pesan suara"
-                className="p-1 min-w-[38px] min-h-[38px] text-zinc-400 hover:text-zinc-200 bg-transparent rounded-lg flex items-center justify-center"
+                className="p-1 min-w-[36px] min-h-[36px] text-slate-500 dark:text-slate-400 hover:text-[#10B981] bg-transparent rounded-xl flex items-center justify-center"
               >
                 <Mic className="w-4 h-4" />
               </Button>
 
               {isLoading ? (
-                <Loader2 className="w-4 h-4 text-zinc-400 animate-spin ml-1" />
+                <Loader2 className="w-4 h-4 text-[#10B981] animate-spin ml-1" />
               ) : (
-                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700/60 text-[10px] text-zinc-400 font-mono ml-1">
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-[#021D17] border border-slate-200/80 dark:border-white/10 text-[10px] text-slate-500 dark:text-slate-400 font-mono font-bold ml-1">
                   Ctrl ↵
                 </span>
               )}
@@ -366,7 +366,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
         )}
       </div>
 
-      {/* Floating Notification Toast (Bottom-Right) */}
+      {/* Floating Notification Toast */}
       <AnimatePresence>
         {toastMessage && (
           <motion.div
@@ -374,22 +374,22 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className={`fixed bottom-20 md:bottom-6 right-6 z-50 p-4 rounded-xl border flex items-start gap-3 shadow-xl max-w-sm sm:max-w-md ${
+            className={`fixed bottom-20 md:bottom-6 right-6 z-50 p-4 rounded-2xl border-2 backdrop-blur-2xl flex items-start gap-3 shadow-2xl max-w-sm sm:max-w-md ${
               toastMessage.isError
-                ? 'bg-[#181014] border-rose-500/30 text-rose-300'
-                : 'bg-[#101714] border-emerald-500/30 text-emerald-300'
+                ? 'bg-white/95 dark:bg-[#042421]/95 border-rose-500/40 text-rose-600 dark:text-rose-300 shadow-rose-500/10'
+                : 'bg-white/95 dark:bg-[#042421]/95 border-[#10B981]/40 text-[#0F766E] dark:text-emerald-300 shadow-[#10B981]/10'
             }`}
           >
             {toastMessage.isError ? (
-              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
             ) : (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-[#10B981] shrink-0 mt-0.5" />
             )}
             <div className="flex-1 text-xs sm:text-sm">
-              <p className="font-semibold text-[11px] uppercase tracking-wider text-zinc-400 mb-0.5">
+              <p className="font-extrabold text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-0.5">
                 {toastMessage.isError ? 'Gagal Memproses' : 'Hasil Konfirmasi AI'}
               </p>
-              <p className="text-zinc-200 whitespace-pre-line">{toastMessage.text}</p>
+              <p className="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{toastMessage.text}</p>
             </div>
             {onDismissToast && (
               <Button
@@ -398,7 +398,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 variant="light"
                 onPress={onDismissToast}
                 aria-label="Tutup notifikasi"
-                className="text-zinc-400 hover:text-white p-2 rounded-lg hover:bg-zinc-800/40 min-w-[38px] min-h-[38px] flex items-center justify-center bg-transparent"
+                className="text-slate-400 hover:text-slate-900 dark:hover:text-white p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center bg-transparent"
               >
                 <X className="w-4 h-4" />
               </Button>

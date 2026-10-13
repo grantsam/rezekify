@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthPage } from '../pages/AuthPage';
 import * as AuthContextModule from '../context/AuthContext';
@@ -9,6 +10,13 @@ describe('AuthPage Component', () => {
   const mockLogout = vi.fn();
   const mockForgotPassword = vi.fn();
   const mockResetPassword = vi.fn();
+
+  const renderAuthPage = () =>
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>
+    );
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -32,7 +40,7 @@ describe('AuthPage Component', () => {
   });
 
   it('renders login form by default and does not show full name input', () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     expect(screen.getByRole('heading', { name: /Rezekify/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Masuk \(Login\)/i })).toBeInTheDocument();
@@ -44,7 +52,7 @@ describe('AuthPage Component', () => {
   });
 
   it('switches between login and register tabs', () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     // Switch to register tab
     const registerTab = screen.getByRole('button', { name: /Daftar Akun/i });
@@ -62,7 +70,7 @@ describe('AuthPage Component', () => {
   });
 
   it('submits login form calling login(email, password)', async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
       target: { value: 'user@rezekify.id' },
@@ -79,7 +87,7 @@ describe('AuthPage Component', () => {
   });
 
   it('submits register form calling register(email, password, fullName)', async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     // Switch to register tab
     fireEvent.click(screen.getByRole('button', { name: /Daftar Akun/i }));
@@ -104,7 +112,7 @@ describe('AuthPage Component', () => {
   it('displays error banner when login fails', async () => {
     mockLogin.mockRejectedValueOnce(new Error('Kombinasi email atau password salah.'));
 
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
       target: { value: 'wrong@rezekify.id' },
@@ -123,7 +131,7 @@ describe('AuthPage Component', () => {
   it('displays error banner when register fails', async () => {
     mockRegister.mockRejectedValueOnce(new Error('Email sudah terdaftar.'));
 
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Daftar Akun/i }));
 
@@ -147,7 +155,7 @@ describe('AuthPage Component', () => {
   it('clears error banner when switching tabs', async () => {
     mockLogin.mockRejectedValueOnce(new Error('Kredensial salah'));
 
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
       target: { value: 'test@example.com' },
@@ -168,7 +176,7 @@ describe('AuthPage Component', () => {
   });
 
   it('switches to forgot password form when clicking "Lupa kata sandi?"', () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     const forgotPasswordLink = screen.getByRole('button', { name: /Lupa kata sandi\?/i });
     fireEvent.click(forgotPasswordLink);
@@ -180,7 +188,7 @@ describe('AuthPage Component', () => {
   });
 
   it('submits email in forgot password form, calls forgotPassword(email), and advances to OTP entry', async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
@@ -200,7 +208,7 @@ describe('AuthPage Component', () => {
   });
 
   it('submits OTP and new password, calls resetPassword(email, otp, newPassword), and transitions back to login with success message', async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
@@ -233,7 +241,7 @@ describe('AuthPage Component', () => {
   it('displays error banner when forgotPassword fails', async () => {
     mockForgotPassword.mockRejectedValueOnce(new Error('Email tidak ditemukan.'));
 
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
@@ -250,7 +258,7 @@ describe('AuthPage Component', () => {
   it('displays error banner when resetPassword fails', async () => {
     mockResetPassword.mockRejectedValueOnce(new Error('Kode OTP tidak valid atau sudah kedaluwarsa.'));
 
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
@@ -277,7 +285,7 @@ describe('AuthPage Component', () => {
   });
 
   it('calls forgotPassword again when clicking "Kirim ulang kode"', async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
@@ -297,7 +305,7 @@ describe('AuthPage Component', () => {
   });
 
   it('switches back to login form when clicking "Kembali ke Masuk"', () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
     expect(screen.getByRole('button', { name: /Kembali ke Masuk/i })).toBeInTheDocument();
@@ -308,7 +316,7 @@ describe('AuthPage Component', () => {
   });
 
   it('validates new password length >= 8 characters on reset password submit', async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {
@@ -335,7 +343,7 @@ describe('AuthPage Component', () => {
   });
 
   it('verifies accessibility and input constraints on OTP and reset password inputs', async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     const forgotBtn = screen.getByRole('button', { name: /Lupa kata sandi\?/i });
     expect(forgotBtn.className).toContain('min-h-[38px]');
@@ -359,7 +367,7 @@ describe('AuthPage Component', () => {
   });
 
   it('activates 60-second cooldown timer on Kirim ulang kode button when clicked', async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
     fireEvent.change(screen.getByPlaceholderText(/nama@email.com/i), {

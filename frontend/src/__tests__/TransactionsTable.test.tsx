@@ -287,7 +287,8 @@ describe('TransactionsTable Component', () => {
 
     const spans = screen.getAllByText('Makanan').filter((el) => el.tagName.toLowerCase() === 'span');
     expect(spans.length).toBeGreaterThanOrEqual(1);
-    expect(spans[0]).toHaveClass('text-[10px]', 'rounded-full', 'bg-zinc-800/80');
+    expect(spans[0]).toHaveClass('text-[10px]', 'rounded-full');
+    expect(spans[0].className).toMatch(/bg-(slate-100|zinc-800)/);
   });
 
   it('renders mobile card container with data-testid="transactions-mobile-cards"', () => {

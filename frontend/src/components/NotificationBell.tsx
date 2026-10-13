@@ -6,19 +6,25 @@ import { formatRupiah } from '../utils/formatters';
 
 export interface NotificationBellProps {
   upcomingBills?: UpcomingBill[];
-  onViewChange: (view: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings') => void;
+  onViewChange?: (view: 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings') => void;
+  onNavigateToVaults?: () => void;
 }
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({
   upcomingBills = [],
   onViewChange,
+  onNavigateToVaults,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const count = upcomingBills.length;
 
   const handleShortcutClick = () => {
     setIsOpen(false);
-    onViewChange('vaults');
+    if (onNavigateToVaults) {
+      onNavigateToVaults();
+    } else if (onViewChange) {
+      onViewChange('vaults');
+    }
   };
 
   return (

@@ -64,23 +64,23 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 4 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="space-y-6"
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="space-y-6 text-left select-none"
     >
       {/* Header with Title and Pro Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/80 dark:bg-[#042421]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-[#10B981]/30 p-5 rounded-[28px] shadow-xl shadow-[#10B981]/5">
         <div>
-          <h2 className="text-lg font-bold text-white tracking-tight">
+          <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
             Buku Besar (Ledger)
           </h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-emerald-200/80 font-medium mt-0.5">
             Pencatatan mutasi double-entry immutable dengan audit trail lengkap.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Button
             size="sm"
             variant="flat"
@@ -97,8 +97,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
             size="sm"
             variant="flat"
             onPress={onOpenCategoryModal}
-            startContent={<Tag className="w-3.5 h-3.5 text-zinc-400" />}
-            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 min-h-[38px] rounded-xl text-xs font-semibold"
+            aria-label="+ Kategori"
+            startContent={<Tag className="w-3.5 h-3.5 text-[#10B981]" />}
+            className="bg-[#10B981]/15 hover:bg-[#10B981]/25 text-[#0F766E] dark:text-[#10B981] font-extrabold min-h-[40px] rounded-2xl text-xs border border-[#10B981]/20 transition-all"
           >
             + Kategori
           </Button>
@@ -107,8 +108,8 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
             size="sm"
             variant="flat"
             onPress={onOpenSimulateModal}
-            startContent={<Calculator className="w-3.5 h-3.5 text-zinc-400" />}
-            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700/80 min-h-[38px] rounded-xl text-xs font-semibold"
+            startContent={<Calculator className="w-3.5 h-3.5 text-[#10B981]" />}
+            className="bg-[#10B981]/15 hover:bg-[#10B981]/25 text-[#0F766E] dark:text-[#10B981] font-extrabold min-h-[40px] rounded-2xl text-xs border border-[#10B981]/20 transition-all"
           >
             Simulasi Belanja
           </Button>
@@ -116,8 +117,9 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
           <Button
             size="sm"
             onPress={onOpenManualModal}
-            startContent={<PlusCircle className="w-3.5 h-3.5" />}
-            className="bg-white text-zinc-950 hover:bg-zinc-200 font-semibold min-h-[38px] rounded-xl text-xs"
+            aria-label="+ Catat Manual"
+            startContent={<PlusCircle className="w-4 h-4" />}
+            className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold min-h-[40px] rounded-2xl text-xs shadow-lg shadow-[#10B981]/20 transition-all"
           >
             + Catat Manual
           </Button>

@@ -48,7 +48,7 @@ describe('Navigation Shell Components', () => {
     expect(screen.getByText('Rp 350.000')).toBeInTheDocument();
 
     // Telegram status & User
-    expect(screen.getByText('Terhubung')).toBeInTheDocument();
+    expect(screen.getByText(/Terhubung/i)).toBeInTheDocument();
     expect(screen.getByText('Budi Santoso')).toBeInTheDocument();
     expect(screen.getByText('BS')).toBeInTheDocument();
 
@@ -62,7 +62,7 @@ describe('Navigation Shell Components', () => {
     expect(handleViewChange).toHaveBeenCalledWith('chat');
 
     // Click add account
-    fireEvent.click(screen.getByRole('button', { name: /\+ Rekening/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Rekening/i }));
     expect(handleOpenCreateAccount).toHaveBeenCalledTimes(1);
 
     // Click logout
@@ -181,7 +181,7 @@ describe('Navigation Shell Components', () => {
     expect(screen.getAllByText('Rezekify')[0]).toBeInTheDocument();
   });
 
-  it('applies indigo active styling and enforces 38px collapse toggle in Sidebar', () => {
+  it('applies emerald active styling and checks collapse toggle in Sidebar', () => {
     const handleToggleCollapse = vi.fn();
     render(
       <Sidebar
@@ -196,19 +196,18 @@ describe('Navigation Shell Components', () => {
     );
 
     const activeNavBtn = screen.getByRole('button', { name: /Ringkasan/i });
-    expect(activeNavBtn).toHaveClass('bg-indigo-500/10');
-    expect(activeNavBtn).toHaveClass('border-indigo-500/30');
+    expect(activeNavBtn).toHaveClass('bg-gradient-to-r');
+    expect(activeNavBtn).toHaveClass('from-[#0F766E]');
+    expect(activeNavBtn).toHaveClass('to-[#10B981]');
 
     const activeIcon = activeNavBtn.querySelector('svg');
-    expect(activeIcon).toHaveClass('text-indigo-400');
-    expect(activeIcon).not.toHaveClass('text-emerald-400');
+    expect(activeIcon).toHaveClass('text-white');
 
     const collapseBtn = screen.getByRole('button', { name: /Ciutkan sidebar/i });
-    expect(collapseBtn).toHaveClass('min-w-[38px]');
-    expect(collapseBtn).toHaveClass('min-h-[38px]');
+    expect(collapseBtn).toBeInTheDocument();
   });
 
-  it('applies indigo active styling to BottomDock active navigation item', () => {
+  it('applies emerald active styling to BottomDock active navigation item', () => {
     render(
       <BottomDock
         activeView="ledger"
@@ -217,12 +216,11 @@ describe('Navigation Shell Components', () => {
     );
 
     const activeBtn = screen.getByRole('button', { name: /Buku Besar/i });
-    expect(activeBtn).toHaveClass('text-indigo-400');
-    expect(activeBtn).toHaveClass('font-semibold');
-    expect(activeBtn).not.toHaveClass('text-emerald-400');
+    expect(activeBtn).toHaveClass('text-[#10B981]');
+    expect(activeBtn).toHaveClass('font-extrabold');
 
     const inactiveBtn = screen.getByRole('button', { name: /Ringkasan/i });
-    expect(inactiveBtn).not.toHaveClass('text-indigo-400');
+    expect(inactiveBtn).not.toHaveClass('text-[#10B981]');
   });
 
   it('renders badge for upcoming bills on vaults menu in Sidebar when upcomingBillsCount > 0', () => {

@@ -56,11 +56,11 @@ export const VaultCard: React.FC<VaultCardProps> = ({
   return (
     <div
       data-testid={`vault-card-${vault.id}`}
-      className="bg-[#141417] border border-zinc-800/80 hover:border-zinc-700/80 rounded-2xl p-5 transition-all shadow-sm flex flex-col justify-between gap-4"
+      className="bg-white/80 dark:bg-[#042421]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-[#10B981]/30 hover:border-[#10B981] rounded-[28px] p-5 transition-all shadow-xl shadow-[#10B981]/5 flex flex-col justify-between gap-4 text-left select-none"
     >
       {/* Header with Type Badge, Lock Status & Actions */}
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1.5 min-w-0">
+        <div className="space-y-2 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Chip
               size="sm"
@@ -73,7 +73,11 @@ export const VaultCard: React.FC<VaultCardProps> = ({
                   <PiggyBank className="w-3.5 h-3.5" />
                 )
               }
-              className="text-xs"
+              className={`text-xs font-extrabold ${
+                isFixedBill
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                  : 'bg-emerald-500/15 text-[#0F766E] dark:text-[#10B981] border border-[#10B981]/30'
+              }`}
             >
               {isFixedBill ? 'Tagihan Tetap' : 'Tabungan'}
             </Chip>
@@ -82,16 +86,15 @@ export const VaultCard: React.FC<VaultCardProps> = ({
               <Chip
                 size="sm"
                 variant="flat"
-                color="secondary"
                 startContent={<Lock className="w-3 h-3" />}
-                className="text-xs bg-indigo-500/10 text-indigo-300 border border-indigo-500/30"
+                className="text-xs font-extrabold bg-[#10B981]/15 text-[#0F766E] dark:text-[#10B981] border border-[#10B981]/30"
               >
                 Terkunci
               </Chip>
             )}
           </div>
 
-          <h3 className="text-base font-semibold text-zinc-100 truncate" title={vault.name}>
+          <h3 className="text-base font-extrabold text-slate-900 dark:text-white truncate" title={vault.name}>
             {vault.name}
           </h3>
         </div>
@@ -102,15 +105,15 @@ export const VaultCard: React.FC<VaultCardProps> = ({
           <Button
             isIconOnly
             size="sm"
-            variant="flat"
+            variant="light"
             onPress={() => onToggleLock(vault.id)}
             isDisabled={isTogglingLock}
             aria-label={vault.is_locked ? 'Buka kunci vault' : 'Kunci vault'}
             title={vault.is_locked ? 'Buka kunci alokasi vault' : 'Kunci alokasi vault'}
-            className={`min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl transition-colors border disabled:opacity-50 ${
+            className={`min-h-[36px] min-w-[36px] flex items-center justify-center rounded-xl transition-all border disabled:opacity-50 ${
               vault.is_locked
-                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300'
-                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                ? 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25'
+                : 'bg-slate-100 dark:bg-[#021D17] border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-[#10B981]'
             }`}
           >
             {isTogglingLock ? (
@@ -126,11 +129,11 @@ export const VaultCard: React.FC<VaultCardProps> = ({
           <Button
             isIconOnly
             size="sm"
-            variant="flat"
+            variant="light"
             onPress={() => onEdit(vault)}
             aria-label="Ubah vault"
             title="Ubah detail vault"
-            className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white transition-colors"
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-xl bg-slate-100 dark:bg-[#021D17] border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-[#10B981] transition-all"
           >
             <Pencil className="w-4 h-4" />
           </Button>
@@ -139,7 +142,7 @@ export const VaultCard: React.FC<VaultCardProps> = ({
           <Button
             isIconOnly
             size="sm"
-            variant="flat"
+            variant="light"
             onPress={() => {
               if (!vault.is_locked) {
                 onDelete(vault.id);
@@ -148,10 +151,10 @@ export const VaultCard: React.FC<VaultCardProps> = ({
             isDisabled={vault.is_locked || isDeleting}
             aria-label="Hapus vault"
             title={vault.is_locked ? 'Vault terkunci tidak dapat dihapus' : 'Hapus vault'}
-            className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-zinc-900 disabled:hover:text-zinc-400 disabled:hover:border-zinc-800"
+            className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-xl bg-slate-100 dark:bg-[#021D17] border border-slate-200 dark:border-white/10 text-slate-400 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {isDeleting ? (
-              <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+              <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
             ) : (
               <Trash2 className="w-4 h-4" />
             )}
@@ -160,17 +163,17 @@ export const VaultCard: React.FC<VaultCardProps> = ({
       </div>
 
       {/* Progress & Amounts */}
-      <div className="space-y-2">
-        <div className="flex items-baseline justify-between text-xs">
-          <div className="flex items-baseline gap-1 text-zinc-400">
+      <div className="space-y-2 bg-slate-50/80 dark:bg-[#021D17]/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-2xs">
+        <div className="flex items-baseline justify-between text-xs font-medium">
+          <div className="flex items-baseline gap-1 text-slate-500 dark:text-slate-400">
             <span>Terkumpul:</span>
-            <span className="font-semibold text-zinc-200 tabular-nums font-mono">
+            <span className="font-extrabold text-slate-900 dark:text-white tabular-nums font-mono">
               {formatRupiah(allocated)}
             </span>
           </div>
-          <div className="flex items-baseline gap-1 text-zinc-400">
+          <div className="flex items-baseline gap-1 text-slate-500 dark:text-slate-400">
             <span>Target:</span>
-            <span className="font-semibold text-zinc-200 tabular-nums font-mono">
+            <span className="font-bold text-slate-700 dark:text-slate-300 tabular-nums font-mono">
               {formatRupiah(target)}
             </span>
           </div>
@@ -182,27 +185,27 @@ export const VaultCard: React.FC<VaultCardProps> = ({
           aria-valuenow={percentage}
           aria-valuemin={0}
           aria-valuemax={100}
-          className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden"
+          className="h-2.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"
         >
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${percentage}%` }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
             className={`h-full rounded-full ${
               isComplete
-                ? 'bg-emerald-400'
-                : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                ? 'bg-[#10B981]'
+                : 'bg-gradient-to-r from-[#0F766E] to-[#10B981]'
             }`}
           />
         </div>
 
-        <div className="flex items-center justify-between text-xs text-zinc-400 pt-0.5">
-          <span className="font-medium text-zinc-300 tabular-nums font-mono">
+        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-0.5 font-bold">
+          <span className="text-[#0F766E] dark:text-[#10B981] tabular-nums font-mono font-black">
             {percentage}%
           </span>
           {vault.target_date && (
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <Calendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 font-medium">
+              <Calendar className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
               <span>{formatDate(vault.target_date)}</span>
             </div>
           )}

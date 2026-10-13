@@ -30,7 +30,6 @@ const formatTime = (isoString?: string): string => {
   }
 };
 
-// ponytail: chat message feed with transaction cards and suggested prompt chips; upgrade with message pinning / branching if thread management is added.
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   messages,
   isAiLoading = false,
@@ -44,23 +43,23 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       <div
         role="status"
         aria-label="Memuat riwayat percakapan..."
-        className="space-y-4 py-4 animate-pulse"
+        className="space-y-4 py-4 animate-pulse select-none"
       >
         <div className="flex items-start gap-3 max-w-[80%]">
-          <div className="w-7 h-7 rounded-lg bg-zinc-800 shrink-0" />
+          <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-[#042421] shrink-0" />
           <div className="space-y-2 flex-1">
-            <div className="h-4 bg-zinc-800 rounded w-3/4" />
-            <div className="h-3 bg-zinc-800/60 rounded w-1/2" />
+            <div className="h-4 bg-slate-200 dark:bg-[#042421] rounded-xl w-3/4" />
+            <div className="h-3 bg-slate-100 dark:bg-[#042421]/60 rounded-xl w-1/2" />
           </div>
         </div>
         <div className="flex flex-col items-end">
-          <div className="h-10 bg-zinc-800/80 rounded-2xl w-48" />
+          <div className="h-10 bg-slate-200 dark:bg-[#042421] rounded-2xl w-48" />
         </div>
         <div className="flex items-start gap-3 max-w-[80%]">
-          <div className="w-7 h-7 rounded-lg bg-zinc-800 shrink-0" />
+          <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-[#042421] shrink-0" />
           <div className="space-y-2 flex-1">
-            <div className="h-4 bg-zinc-800 rounded w-2/3" />
-            <div className="h-3 bg-zinc-800/60 rounded w-1/3" />
+            <div className="h-4 bg-slate-200 dark:bg-[#042421] rounded-xl w-2/3" />
+            <div className="h-3 bg-slate-100 dark:bg-[#042421]/60 rounded-xl w-1/3" />
           </div>
         </div>
       </div>
@@ -69,18 +68,18 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
 
   if (messages.length === 0 && !isAiLoading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center">
-        <div className="w-12 h-12 rounded-2xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-emerald-400 mb-3 shadow-inner">
-          <Sparkles className="w-6 h-6 text-emerald-400" />
+      <div className="flex-1 flex flex-col items-center justify-center py-10 px-4 text-center select-none">
+        <div className="w-14 h-14 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] mb-3 shadow-lg shadow-[#10B981]/10">
+          <Sparkles className="w-7 h-7 text-[#10B981]" />
         </div>
-        <h3 className="text-base font-semibold text-zinc-100">Asisten Finansial AI</h3>
-        <p className="text-xs sm:text-sm text-zinc-400 max-w-sm mt-1 mb-6 leading-relaxed">
+        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">Asisten Finansial AI</h3>
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-emerald-200/80 font-medium max-w-sm mt-1 mb-6 leading-relaxed">
           Catat transaksi cepat, foto struk, kirim voice note, atau konsultasikan kondisi arus kas harian Anda.
         </p>
 
         {onSelectPrompt && (
           <div className="w-full max-w-md space-y-2 text-left">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 block px-1">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-emerald-300/60 block px-1">
               Contoh Pertanyaan Cepat
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -89,12 +88,12 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   key={prompt}
                   type="button"
                   onClick={() => onSelectPrompt(prompt)}
-                  className="group flex items-center justify-between p-2.5 rounded-xl bg-[#141417] hover:bg-[#1c1c21] border border-zinc-800 hover:border-zinc-700 text-left transition-all active:scale-[0.98] min-h-[42px]"
+                  className="group flex items-center justify-between p-3 rounded-2xl bg-white/80 dark:bg-[#042421]/80 hover:bg-[#10B981]/10 border border-slate-200/80 dark:border-[#10B981]/30 text-left transition-all active:scale-[0.98] min-h-[44px] shadow-xs"
                 >
-                  <span className="text-xs text-zinc-300 group-hover:text-zinc-100 line-clamp-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-[#0F766E] dark:group-hover:text-[#10B981] line-clamp-2">
                     {prompt}
                   </span>
-                  <ArrowRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-emerald-400 shrink-0 ml-2 transition-colors" />
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#10B981] shrink-0 ml-2 transition-colors" />
                 </button>
               ))}
             </div>
@@ -105,7 +104,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   }
 
   return (
-    <div role="log" aria-live="polite" className="space-y-4">
+    <div role="log" aria-live="polite" className="space-y-4 select-none">
       {messages.map((msg) => {
         const isUser = msg.role === 'user';
         const formattedTime = formatTime(msg.created_at);
@@ -113,11 +112,11 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         if (isUser) {
           return (
             <div key={msg.id} className="flex flex-col items-end">
-              <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-sm bg-[#1c1c21] border border-zinc-800 px-4 py-2.5 text-sm text-zinc-100 shadow-sm leading-relaxed whitespace-pre-wrap break-words">
+              <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-gradient-to-r from-[#0F766E] to-[#10B981] px-4 py-3 text-xs sm:text-sm text-white font-medium shadow-md shadow-[#10B981]/15 leading-relaxed whitespace-pre-wrap break-words">
                 {msg.content}
               </div>
               {formattedTime && (
-                <span className="text-[10px] text-zinc-500 mt-1 mr-1">{formattedTime}</span>
+                <span className="text-[10px] text-slate-400 dark:text-emerald-300/60 font-semibold mt-1 mr-1">{formattedTime}</span>
               )}
             </div>
           );
@@ -126,14 +125,14 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         return (
           <div key={msg.id} className="flex items-start gap-2.5 sm:gap-3 max-w-[92%] sm:max-w-[85%]">
             <div
-              className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5"
+              className="w-8 h-8 rounded-xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] shrink-0 mt-0.5 shadow-xs"
               aria-label="AI Assistant"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <Sparkles className="w-4 h-4 text-[#10B981]" />
             </div>
 
             <div className="flex flex-col gap-2 min-w-0">
-              <div className="rounded-2xl rounded-tl-sm bg-[#141417] border border-zinc-800 px-4 py-2.5 text-sm text-zinc-100 shadow-sm leading-relaxed whitespace-pre-wrap break-words">
+              <div className="rounded-2xl rounded-tl-xs bg-white dark:bg-[#042421] border border-slate-200/80 dark:border-[#10B981]/30 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white font-medium shadow-md shadow-[#10B981]/5 leading-relaxed whitespace-pre-wrap break-words">
                 {msg.content}
               </div>
 
@@ -146,7 +145,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
               )}
 
               {formattedTime && (
-                <span className="text-[10px] text-zinc-500 ml-1">{formattedTime}</span>
+                <span className="text-[10px] text-slate-400 dark:text-emerald-300/60 font-semibold ml-1">{formattedTime}</span>
               )}
             </div>
           </div>
@@ -156,18 +155,18 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       {/* AI Thinking/Typing Indicator */}
       {isAiLoading && (
         <div className="flex items-start gap-2.5 sm:gap-3 max-w-[92%] sm:max-w-[85%]">
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="w-8 h-8 rounded-xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] shrink-0 mt-0.5">
+            <Sparkles className="w-4 h-4 text-[#10B981]" />
           </div>
           <div
             role="status"
             aria-label="Sedang mengetik..."
-            className="rounded-2xl rounded-tl-sm bg-[#141417] border border-zinc-800 px-4 py-3 flex items-center gap-1.5 shadow-sm"
+            className="rounded-2xl rounded-tl-xs bg-white dark:bg-[#042421] border border-slate-200/80 dark:border-[#10B981]/30 px-4 py-3 flex items-center gap-1.5 shadow-md shadow-[#10B981]/5"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ animationDelay: '300ms' }} />
-            <span className="text-xs text-zinc-400 ml-2 font-medium">Sedang menganalisis...</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" style={{ animationDelay: '300ms' }} />
+            <span className="text-xs text-slate-500 dark:text-emerald-200/80 ml-2 font-bold">Sedang menganalisis...</span>
           </div>
         </div>
       )}

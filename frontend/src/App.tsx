@@ -1,33 +1,72 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HeroUIProvider } from '@heroui/react';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import LandingPage from './pages/LandingPage';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 
-export const AuthenticatedApp: React.FC = () => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
       <div
         data-testid="app-loading-spinner"
-        className="min-h-screen bg-[#0c0c0e] flex flex-col items-center justify-center text-zinc-100"
+        className="min-h-screen bg-[#021D17] flex flex-col items-center justify-center text-zinc-100"
       >
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
-        <p className="text-xs text-zinc-400 font-medium tracking-wide">Memuat sesi Rezekify...</p>
+        <Loader2 className="w-8 h-8 text-[#10B981] animate-spin mb-3" />
+        <p className="text-xs text-emerald-200/70 font-medium tracking-wide">
+          Memuat sesi Rezekify...
+        </p>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <AuthPage />;
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+const AppContent: React.FC = () => {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div
+        data-testid="app-loading-spinner"
+        className="min-h-screen bg-[#021D17] flex flex-col items-center justify-center text-zinc-100"
+      >
+        <Loader2 className="w-8 h-8 text-[#10B981] animate-spin mb-3" />
+        <p className="text-xs text-emerald-200/70 font-medium tracking-wide">
+          Memuat sesi Rezekify...
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] text-zinc-100 selection:bg-indigo-500/30">
-      <DashboardPage />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/register" element={<AuthPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <div className="min-h-screen bg-[#021D17] text-zinc-100 selection:bg-[#10B981]/30">
+                <DashboardPage />
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
@@ -35,7 +74,7 @@ export const App: React.FC = () => {
   return (
     <HeroUIProvider>
       <AuthProvider>
-        <AuthenticatedApp />
+        <AppContent />
       </AuthProvider>
     </HeroUIProvider>
   );

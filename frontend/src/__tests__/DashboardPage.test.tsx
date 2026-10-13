@@ -277,7 +277,7 @@ describe('App Component Auth Gating', () => {
     expect(screen.getByText(/Memuat sesi Rezekify\.\.\./i)).toBeInTheDocument();
   });
 
-  it('renders AuthPage when user is not authenticated', () => {
+  it('renders landing page with entry buttons when user visits root route', () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       user: null,
       token: null,
@@ -289,11 +289,11 @@ describe('App Component Auth Gating', () => {
     });
 
     render(<App />);
-    expect(screen.getByRole('button', { name: /Masuk \(Login\)/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Daftar Akun/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Masuk/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Daftar/i })).toBeInTheDocument();
   });
 
-  it('renders DashboardPage when user is authenticated', async () => {
+  it('renders brand and app when user visits application', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(null);
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       user: { id: '1', email: 'a@b.com', full_name: 'Alex' },
