@@ -249,7 +249,7 @@ def test_headless_browser_dom_mounting():
         "--dump-dom",
         f"{BASE_URL}/",
     ]
-    res = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
 
     assert res.returncode == 0
     assert '<div id="root">' in res.stdout

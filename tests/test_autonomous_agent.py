@@ -281,3 +281,118 @@ def test_autonomous_react_loop_preserves_action_and_thought_traces_in_history(
     assert "[OBSERVASI DARI query_financial_ledger]:" in second_call_text
 
 
+def test_e2e_retrospective_trend_comparison(db_session: Session, autonomous_env: User):
+    """Scenario A: Retrospective trend comparison (Food October vs September)."""
+    mock_agent = MagicMock(spec=ReActAgent)
+    mock_agent.process_input.side_effect = [
+        {
+            "raw": """{
+              "thought": "Pengguna menanyakan tren makanan Oktober vs September. Saya panggil faceted query.",
+              "tool_call": {
+                "name": "query_financial_ledger",
+                "arguments": {
+                  "flow_type": "EXPENSE",
+                  "categories": ["Makanan"],
+                  "start_date": "2026-10-01",
+                  "end_date": "2026-10-31",
+                  "compare_with_previous_period": true
+                }
+              }
+            }"""
+        },
+        {
+            "raw": """{
+              "thought": "Data observasi perbandingan Oktober vs September telah diperoleh.",
+              "final_response": "Pengeluaran makan Oktober adalah Rp 450.000, turun 10% dibanding September."
+            }"""
+        },
+    ]
+
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    res = orchestrator.run_autonomous_loop(
+        user_id=autonomous_env.id,
+        prompt="Bandingkan pengeluaran makan Oktober vs September",
+    )
+
+    assert "turun 10% dibanding September" in res["reply"]
+    assert res["hops"] == 2
+
+
+def test_e2e_what_if_simulation_with_thaler_nudge(db_session: Session, autonomous_env: User):
+    """Scenario B: What-If simulation with Thaler nudge (behavioral mental accounting)."""
+    mock_agent = MagicMock(spec=ReActAgent)
+    mock_agent.process_input.side_effect = [
+        {
+            "raw": """{
+              "thought": "Pengguna berencana membeli smartwatch 1.2jt, simulasikan dampaknya terhadap runway.",
+              "tool_call": {
+                "name": "simulate_purchase",
+                "arguments": {
+                  "planned_amount": 1200000,
+                  "category_name": "Elektronik"
+                }
+              }
+            }"""
+        },
+        {
+            "raw": """{
+              "thought": "Simulasi menunjukkan jatah harian turun drastis. Berikan Thaler nudge (friksi kognitif).",
+              "final_response": "⚠️ Peringatan Mental Accounting: Membeli smartwatch Rp 1.200.000 akan memangkas jatah harian Anda dari Rp 100.000 menjadi Rp 40.000 selama 20 hari ke depan. Pertimbangkan menunda pembelian selama 7 hari atau alokasikan ke celengan khusus."
+            }"""
+        },
+    ]
+
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    res = orchestrator.run_autonomous_loop(
+        user_id=autonomous_env.id,
+        prompt="Boleh nggak saya beli smartwatch 1.2jt sekarang?",
+    )
+
+    assert "Mental Accounting" in res["reply"]
+    assert res["hops"] == 2
+    assert res["telemetry"] is not None
+
+
+def test_e2e_operator_mutation_with_telemetry_reflection(db_session: Session, autonomous_env: User):
+    """Scenario C: Operator mutation with immediate runway telemetry reflection."""
+    mock_agent = MagicMock(spec=ReActAgent)
+    mock_agent.process_input.side_effect = [
+        {
+            "raw": """{
+              "thought": "Pengguna meminta mencatat belanja warteg 30rb dengan BCA.",
+              "tool_call": {
+                "name": "record_transaction",
+                "arguments": {
+                  "action": "expense",
+                  "amount": 30000,
+                  "account_name": "BCA",
+                  "category_name": "Makanan",
+                  "description": "Makan Warteg"
+                }
+              }
+            }"""
+        },
+        {
+            "raw": """{
+              "thought": "Transaksi berhasil dicatat.",
+              "final_response": "✅ Berhasil mencatat pengeluaran Makan Warteg sebesar Rp 30.000 via BCA."
+            }"""
+        },
+    ]
+
+    orchestrator = AgentOrchestrator(db=db_session, agent=mock_agent)
+    res = orchestrator.run_autonomous_loop(
+        user_id=autonomous_env.id,
+        prompt="Catat makan warteg 30rb pakai BCA",
+    )
+
+    assert "Berhasil mencatat" in res["reply"]
+    assert res["transaction"] is not None
+    assert res["transaction"]["amount"] == Decimal("30000.00")
+
+    # Verify balance was updated
+    acc = db_session.query(Account).filter_by(user_id=autonomous_env.id, name="BCA").one()
+    assert acc.current_balance == Decimal("2970000.00")
+
+
+
