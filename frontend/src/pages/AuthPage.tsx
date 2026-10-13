@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
-import { Lock, Mail, User, ArrowRight, Loader2, AlertCircle, ArrowLeft, Bot, CheckCircle2, Sparkles, Send } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Loader2, AlertCircle, ArrowLeft, Bot, CheckCircle2, Sparkles, Send, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 // @ts-ignore
@@ -14,6 +14,7 @@ export const AuthPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -268,14 +269,22 @@ export const AuthPage: React.FC = () => {
                   <Lock className="w-4 h-4 text-[#10B981] absolute left-3.5 top-3.5 pointer-events-none" />
                   <input
                     id="auth-password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-white dark:bg-[#021D17]/90 border-2 border-slate-200 dark:border-[#10B981]/30 rounded-2xl pl-10 pr-4 py-3 text-sm placeholder-slate-400 dark:placeholder-slate-500 text-slate-900 dark:text-white focus:outline-none focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/20 transition-all shadow-sm"
+                    className="w-full bg-white dark:bg-[#021D17]/90 border-2 border-slate-200 dark:border-[#10B981]/30 rounded-2xl pl-10 pr-10 py-3 text-sm placeholder-slate-400 dark:placeholder-slate-500 text-slate-900 dark:text-white focus:outline-none focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/20 transition-all shadow-sm"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                    className="absolute right-3.5 top-3.5 text-slate-400 hover:text-[#10B981] dark:hover:text-emerald-300 transition-colors focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
