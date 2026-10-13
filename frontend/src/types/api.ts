@@ -291,6 +291,7 @@ export interface EnrichedChatResponse {
   transaction?: TransactionSummary | null;
   telemetry?: TelemetrySnapshot | null;
   transcription?: string | null;
+  traces?: Array<{ hop?: number; thought?: string; tool_name?: string; tool_args?: any; observation?: any }>;
 }
 
 export interface ChatMessageItem {

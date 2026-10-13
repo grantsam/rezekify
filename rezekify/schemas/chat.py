@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_serializer, model_validator
@@ -48,6 +48,7 @@ class EnrichedChatResponse(BaseModel):
     transaction: Optional[TransactionSummary] = None
     telemetry: Optional[TelemetrySnapshot] = None
     transcription: Optional[str] = None
+    traces: Optional[List[Dict[str, Any]]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -442,6 +442,7 @@ class AgentOrchestrator:
 
         ponytail: max_turns hardcoded to 3 ceiling; increase if multi-goal agent workflows require 5 hops.
         """
+        traces = []
         agent_to_use, _ = self._resolve_agent_for_user(user_id)
         if not agent_to_use:
             agent_to_use = self.agent
@@ -453,6 +454,8 @@ class AgentOrchestrator:
                 "transaction": None,
                 "telemetry": self._safe_get_telemetry(user_id),
                 "hops": 0,
+                "traces": traces,
+                "thought": None,
             }
 
         # Build short-term telemetry memory
@@ -470,6 +473,7 @@ class AgentOrchestrator:
         last_observation_summary = ""
 
         hops = 0
+        turn = None
         for hop in range(max_turns):
             hops += 1
             if hasattr(agent_to_use, "process_input"):
@@ -488,6 +492,8 @@ class AgentOrchestrator:
             if isinstance(llm_res, dict) and llm_res.get("action") == "byok_error":
                 byok_res = self._execute_action(user_id, llm_res, prompt)
                 byok_res["hops"] = hops
+                byok_res["traces"] = traces
+                byok_res["thought"] = None
                 return byok_res
 
             raw_text = (
@@ -500,6 +506,14 @@ class AgentOrchestrator:
 
             if not turn.is_tool_call or not turn.tool_name:
                 # LLM provided final answer or plain text
+                if turn.thought:
+                    traces.append({
+                        "hop": hop + 1,
+                        "thought": turn.thought,
+                        "tool_name": None,
+                        "tool_args": None,
+                        "observation": None,
+                    })
                 final_text = turn.final_response or raw_text
                 return {
                     "reply": final_text,
@@ -507,6 +521,8 @@ class AgentOrchestrator:
                     "transaction": executed_tx_meta,
                     "telemetry": self._safe_get_telemetry(user_id),
                     "hops": hops,
+                    "traces": traces,
+                    "thought": turn.thought,
                 }
 
             # Dispatch tool
@@ -515,6 +531,14 @@ class AgentOrchestrator:
                 tool_name=turn.tool_name,
                 arguments=turn.tool_args or {},
             )
+
+            traces.append({
+                "hop": hop + 1,
+                "thought": turn.thought,
+                "tool_name": turn.tool_name,
+                "tool_args": turn.tool_args,
+                "observation": observation,
+            })
 
             if turn.tool_name == "record_transaction" and observation.get("status") == "success":
                 tx_info = observation.get("transaction")
@@ -549,6 +573,8 @@ class AgentOrchestrator:
             "transaction": executed_tx_meta,
             "telemetry": self._safe_get_telemetry(user_id),
             "hops": hops,
+            "traces": traces,
+            "thought": turn.thought if turn else None,
         }
 
     async def arun_autonomous_loop(
@@ -558,6 +584,7 @@ class AgentOrchestrator:
         max_turns: int = 3,
     ) -> Dict[str, Any]:
         """Closed-loop ReAct execution asynchronously: Prompt -> LLM -> Tool -> Observation -> LLM -> Final Answer."""
+        traces = []
         agent_to_use, _ = self._resolve_agent_for_user(user_id)
         if not agent_to_use:
             agent_to_use = self.agent
@@ -569,6 +596,8 @@ class AgentOrchestrator:
                 "transaction": None,
                 "telemetry": self._safe_get_telemetry(user_id),
                 "hops": 0,
+                "traces": traces,
+                "thought": None,
             }
 
         runway_report = None
@@ -585,6 +614,7 @@ class AgentOrchestrator:
         last_observation_summary = ""
 
         hops = 0
+        turn = None
         for hop in range(max_turns):
             hops += 1
             if hasattr(agent_to_use, "aprocess_input"):
@@ -603,6 +633,8 @@ class AgentOrchestrator:
             if isinstance(llm_res, dict) and llm_res.get("action") == "byok_error":
                 byok_res = self._execute_action(user_id, llm_res, prompt)
                 byok_res["hops"] = hops
+                byok_res["traces"] = traces
+                byok_res["thought"] = None
                 return byok_res
 
             raw_text = (
@@ -614,6 +646,14 @@ class AgentOrchestrator:
             turn = parse_agent_turn(llm_res.get("raw") or llm_res.get("message") or llm_res)
 
             if not turn.is_tool_call or not turn.tool_name:
+                if turn.thought:
+                    traces.append({
+                        "hop": hop + 1,
+                        "thought": turn.thought,
+                        "tool_name": None,
+                        "tool_args": None,
+                        "observation": None,
+                    })
                 final_text = turn.final_response or raw_text
                 return {
                     "reply": final_text,
@@ -621,6 +661,8 @@ class AgentOrchestrator:
                     "transaction": executed_tx_meta,
                     "telemetry": self._safe_get_telemetry(user_id),
                     "hops": hops,
+                    "traces": traces,
+                    "thought": turn.thought,
                 }
 
             observation = self.dispatcher.dispatch(
@@ -628,6 +670,14 @@ class AgentOrchestrator:
                 tool_name=turn.tool_name,
                 arguments=turn.tool_args or {},
             )
+
+            traces.append({
+                "hop": hop + 1,
+                "thought": turn.thought,
+                "tool_name": turn.tool_name,
+                "tool_args": turn.tool_args,
+                "observation": observation,
+            })
 
             if turn.tool_name == "record_transaction" and observation.get("status") == "success":
                 tx_info = observation.get("transaction")
@@ -661,6 +711,8 @@ class AgentOrchestrator:
             "transaction": executed_tx_meta,
             "telemetry": self._safe_get_telemetry(user_id),
             "hops": hops,
+            "traces": traces,
+            "thought": turn.thought if turn else None,
         }
 
     def handle_message(

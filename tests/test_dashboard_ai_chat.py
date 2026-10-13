@@ -252,3 +252,60 @@ def test_chat_messages_pagination_and_eager_loaded_transaction(sample_user, db_s
     assert found["transaction"]["account_name"] == "Mandiri"
     assert found["transaction"]["category_name"] == "Transport"
     assert found["transaction"]["account_balance_after"] == 750000
+
+
+def test_ai_chat_traces_and_thought_persistence(sample_user, db_session):
+    client = TestClient(app)
+    token = create_access_token({"sub": str(sample_user.id)})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    sample_traces = [
+        {
+            "hop": 1,
+            "thought": "Mengecek status runway",
+            "tool_name": "get_runway_telemetry",
+            "tool_args": {},
+            "observation": {"operational_free_cash": 1000000},
+        },
+        {
+            "hop": 2,
+            "thought": "Menyusun jawaban akhir",
+            "tool_name": None,
+            "tool_args": None,
+            "observation": None,
+        },
+    ]
+
+    with patch(
+        "rezekify.agent.orchestrator.AgentOrchestrator.handle_message_async",
+        new_callable=AsyncMock,
+        return_value={
+            "reply": "Saldo bebas Anda Rp 1.000.000",
+            "transaction_id": None,
+            "transaction": None,
+            "telemetry": {
+                "operational_free_cash": Decimal("1000000"),
+                "daily_safe_runway": Decimal("50000"),
+                "days_remaining": 20,
+                "health_status": "HEALTHY",
+            },
+            "traces": sample_traces,
+            "thought": "Menyusun jawaban akhir",
+        },
+    ):
+        res = client.post("/api/v1/dashboard/ai-chat", json={"message": "Cek saldo bebas"}, headers=headers)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["traces"] is not None
+        assert len(data["traces"]) == 2
+        assert data["traces"][0]["tool_name"] == "get_runway_telemetry"
+
+    # Verify persisted in message history metadata
+    get_res = client.get("/api/v1/dashboard/ai-chat/messages", headers=headers)
+    assert get_res.status_code == 200
+    msgs = get_res.json()
+    asst_msg = msgs[-1]
+    assert asst_msg["role"] == "assistant"
+    assert asst_msg["metadata"]["traces"] == sample_traces
+    assert asst_msg["metadata"]["thought"] == "Menyusun jawaban akhir"
+

@@ -60,6 +60,13 @@ def test_autonomous_react_loop_retrospective_inquiry(db_session: Session, autono
     assert "Total pengeluaran kategori Makanan" in res["reply"]
     assert res["hops"] == 2
     assert mock_agent.process_input.call_count == 2
+    assert "traces" in res
+    assert len(res["traces"]) == 2
+    assert res["traces"][0]["tool_name"] == "query_financial_ledger"
+    assert res["traces"][0]["thought"] == "Pengguna menanyakan total makan bulan ini."
+    assert res["traces"][1]["tool_name"] is None
+    assert res["traces"][1]["thought"] == "Observasi menunjukkan total 0."
+    assert res["thought"] == "Observasi menunjukkan total 0."
 
 
 def test_autonomous_react_loop_what_if_simulation(db_session: Session, autonomous_env: User):

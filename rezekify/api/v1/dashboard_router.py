@@ -301,6 +301,10 @@ async def ai_chat_omni_input(
         meta_to_store["transaction"] = json.loads(json.dumps(tx_dict, default=str))
     if telemetry_dict:
         meta_to_store["telemetry"] = json.loads(json.dumps(telemetry_dict, default=str))
+    if isinstance(res, dict) and res.get("traces"):
+        meta_to_store["traces"] = json.loads(json.dumps(res.get("traces"), default=str))
+    if isinstance(res, dict) and res.get("thought"):
+        meta_to_store["thought"] = res.get("thought")
 
     assistant_msg = ChatMessage(
         user_id=current_user.id,
@@ -321,6 +325,7 @@ async def ai_chat_omni_input(
         message_id=assistant_msg.id,
         transaction=tx_summary,
         telemetry=telemetry_snap,
+        traces=res.get("traces") if isinstance(res, dict) else None,
     )
 
 
@@ -390,6 +395,10 @@ async def ai_receipt_upload(
         meta_to_store["transaction"] = json.loads(json.dumps(tx_dict, default=str))
     if telemetry_dict:
         meta_to_store["telemetry"] = json.loads(json.dumps(telemetry_dict, default=str))
+    if isinstance(res, dict) and res.get("traces"):
+        meta_to_store["traces"] = json.loads(json.dumps(res.get("traces"), default=str))
+    if isinstance(res, dict) and res.get("thought"):
+        meta_to_store["thought"] = res.get("thought")
 
     assistant_msg = ChatMessage(
         user_id=current_user.id,
@@ -410,6 +419,7 @@ async def ai_receipt_upload(
         message_id=assistant_msg.id,
         transaction=tx_summary,
         telemetry=telemetry_snap,
+        traces=res.get("traces") if isinstance(res, dict) else None,
     )
 
 
@@ -474,6 +484,10 @@ async def ai_voice_endpoint(
         meta_to_store["transaction"] = json.loads(json.dumps(tx_dict, default=str))
     if telemetry_dict:
         meta_to_store["telemetry"] = json.loads(json.dumps(telemetry_dict, default=str))
+    if isinstance(result, dict) and result.get("traces"):
+        meta_to_store["traces"] = json.loads(json.dumps(result.get("traces"), default=str))
+    if isinstance(result, dict) and result.get("thought"):
+        meta_to_store["thought"] = result.get("thought")
 
     assistant_msg = ChatMessage(
         user_id=current_user.id,
@@ -495,6 +509,7 @@ async def ai_voice_endpoint(
         transaction=tx_summary,
         telemetry=telemetry_snap,
         transcription=transcription,
+        traces=result.get("traces") if isinstance(result, dict) else None,
     )
 
 

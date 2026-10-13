@@ -105,6 +105,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         role: 'assistant',
         content: res.reply,
         transaction: res.transaction,
+        metadata: { traces: res.traces, thought: (res as any).thought },
         created_at: new Date().toISOString(),
       };
 
@@ -155,6 +156,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         role: 'assistant',
         content: res.reply,
         transaction: res.transaction,
+        metadata: { traces: res.traces, thought: (res as any).thought },
         created_at: new Date().toISOString(),
       };
 
@@ -202,7 +204,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] md:h-screen flex flex-col min-w-0 bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-white transition-colors duration-300 relative overflow-hidden select-none">
+    <div className="h-[calc(100vh-4rem)] md:h-screen flex flex-col min-w-0 bg-[#E6F7EF] dark:bg-[#021D17] text-slate-900 dark:text-white transition-colors duration-300 relative overflow-hidden">
       
       {/* AMBIENT RADIAL LIGHT DEKORATIF */}
       <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-radial from-[#10B981]/15 via-[#0F766E]/10 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />

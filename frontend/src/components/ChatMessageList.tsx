@@ -1,5 +1,5 @@
-import React from 'react';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, ArrowRight, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { ChatMessageItem } from '../types/api';
 import { ChatTransactionCard } from './ChatTransactionCard';
 
@@ -38,6 +38,30 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   onViewLedger,
   onSelectPrompt,
 }) => {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedTraces, setExpandedTraces] = useState<Record<string, boolean>>({});
+
+  const handleCopy = (id: string, text: string) => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+    } catch {
+      // safe fallback
+    }
+    setCopiedId(id);
+    setTimeout(() => {
+      setCopiedId((prev) => (prev === id ? null : prev));
+    }, 2000);
+  };
+
+  const toggleTrace = (id: string) => {
+    setExpandedTraces((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   if (isHistoryLoading) {
     return (
       <div
@@ -104,7 +128,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   }
 
   return (
-    <div role="log" aria-live="polite" className="space-y-4 select-none">
+    <div role="log" aria-live="polite" className="space-y-4">
       {messages.map((msg) => {
         const isUser = msg.role === 'user';
         const formattedTime = formatTime(msg.created_at);
@@ -112,7 +136,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         if (isUser) {
           return (
             <div key={msg.id} className="flex flex-col items-end">
-              <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-gradient-to-r from-[#0F766E] to-[#10B981] px-4 py-3 text-xs sm:text-sm text-white font-medium shadow-md shadow-[#10B981]/15 leading-relaxed whitespace-pre-wrap break-words">
+              <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-gradient-to-r from-[#0F766E] to-[#10B981] px-4 py-3 text-xs sm:text-sm text-white font-medium shadow-md shadow-[#10B981]/15 leading-relaxed whitespace-pre-wrap break-words select-text">
                 {msg.content}
               </div>
               {formattedTime && (
@@ -121,6 +145,12 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
             </div>
           );
         }
+
+        const rawTraces = msg.metadata?.traces ?? (msg as any).traces;
+        const traces: Array<any> = Array.isArray(rawTraces) ? rawTraces : [];
+        const thought = msg.metadata?.thought ?? (msg as any).thought;
+        const hasTracesOrThought = traces.length > 0 || Boolean(thought);
+        const isTraceOpen = Boolean(expandedTraces[msg.id]);
 
         return (
           <div key={msg.id} className="flex items-start gap-2.5 sm:gap-3 max-w-[92%] sm:max-w-[85%]">
@@ -132,7 +162,112 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
             </div>
 
             <div className="flex flex-col gap-2 min-w-0">
-              <div className="rounded-2xl rounded-tl-xs bg-white dark:bg-[#042421] border border-slate-200/80 dark:border-[#10B981]/30 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white font-medium shadow-md shadow-[#10B981]/5 leading-relaxed whitespace-pre-wrap break-words">
+              {/* ponytail: traces accordion supports single-turn or multi-turn hops; upgrade to full streaming trace steps if backend enables SSE token streaming. */}
+              {hasTracesOrThought && (
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleTrace(msg.id)}
+                    aria-expanded={isTraceOpen}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/15 dark:bg-[#10B981]/10 dark:hover:bg-[#10B981]/20 border border-emerald-500/20 dark:border-[#10B981]/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold transition-all active:scale-[0.99] w-fit shadow-xs"
+                  >
+                    <span>💭</span>
+                    <span>
+                      {traces.length > 0
+                        ? `Proses Berpikir & Aktivitas (${traces.length} langkah)`
+                        : 'Proses Berpikir & Aktivitas'}
+                    </span>
+                    {isTraceOpen ? (
+                      <ChevronUp className="w-3.5 h-3.5 ml-0.5 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-emerald-600 dark:text-emerald-400" />
+                    )}
+                  </button>
+
+                  {isTraceOpen && (
+                    <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-slate-50/80 dark:bg-[#03201B]/80 border border-slate-200/80 dark:border-[#10B981]/25 text-xs animate-in fade-in duration-150">
+                      {thought && (
+                        <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200 text-xs leading-relaxed">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block mb-0.5">
+                            Penalaran Asisten
+                          </span>
+                          <p className="italic font-serif">"{thought}"</p>
+                        </div>
+                      )}
+
+                      {traces.map((trace, idx) => {
+                        const stepNum = trace.hop || idx + 1;
+                        const toolName = trace.tool_name;
+                        const traceThought = trace.thought;
+                        const hasArgs =
+                          trace.tool_args &&
+                          (typeof trace.tool_args === 'object'
+                            ? Object.keys(trace.tool_args).length > 0
+                            : true);
+                        const hasObservation =
+                          trace.observation !== undefined && trace.observation !== null;
+
+                        return (
+                          <div
+                            key={idx}
+                            className="p-2.5 rounded-lg bg-white/90 dark:bg-[#021A15]/80 border border-slate-200/80 dark:border-[#10B981]/20 space-y-1.5"
+                          >
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
+                                Langkah {stepNum}
+                              </span>
+                              {toolName ? (
+                                <span className="text-xs font-bold text-slate-800 dark:text-emerald-100">
+                                  Memanggil{' '}
+                                  <code className="font-mono text-emerald-700 dark:text-emerald-300 px-1 py-0.5 rounded bg-slate-100 dark:bg-[#042421] text-[11px]">
+                                    {toolName}
+                                  </code>
+                                </span>
+                              ) : (
+                                <span className="text-xs font-medium text-slate-600 dark:text-emerald-300/80">
+                                  Sintesis Jawaban
+                                </span>
+                              )}
+                            </div>
+
+                            {traceThought && traceThought !== thought && (
+                              <p className="text-[11px] italic text-slate-600 dark:text-emerald-200/80 font-serif pl-1">
+                                "{traceThought}"
+                              </p>
+                            )}
+
+                            {hasArgs && (
+                              <div className="text-[11px] font-mono bg-slate-100/90 dark:bg-[#042421]/90 rounded p-2 text-slate-700 dark:text-emerald-200/90 overflow-x-auto border border-slate-200/50 dark:border-emerald-900/30">
+                                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-400 dark:text-emerald-400/60 block mb-0.5">
+                                  Parameter
+                                </span>
+                                <pre className="whitespace-pre-wrap break-words">
+                                  {JSON.stringify(trace.tool_args, null, 2)}
+                                </pre>
+                              </div>
+                            )}
+
+                            {hasObservation && (
+                              <div className="text-[11px] font-mono bg-slate-100/90 dark:bg-[#042421]/90 rounded p-2 text-slate-700 dark:text-emerald-200/90 overflow-x-auto border border-slate-200/50 dark:border-emerald-900/30">
+                                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-400 dark:text-emerald-400/60 block mb-0.5">
+                                  Observasi
+                                </span>
+                                <pre className="whitespace-pre-wrap break-words">
+                                  {typeof trace.observation === 'object'
+                                    ? JSON.stringify(trace.observation, null, 2)
+                                    : String(trace.observation)}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-2xl rounded-tl-xs bg-white dark:bg-[#042421] border border-slate-200/80 dark:border-[#10B981]/30 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white font-medium shadow-md shadow-[#10B981]/5 leading-relaxed whitespace-pre-wrap break-words select-text">
                 {msg.content}
               </div>
 
@@ -144,9 +279,29 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 />
               )}
 
-              {formattedTime && (
-                <span className="text-[10px] text-slate-400 dark:text-emerald-300/60 font-semibold ml-1">{formattedTime}</span>
-              )}
+              <div className="flex items-center gap-2 ml-1">
+                {formattedTime && (
+                  <span className="text-[10px] text-slate-400 dark:text-emerald-300/60 font-semibold">{formattedTime}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleCopy(msg.id, msg.content)}
+                  aria-label="Salin teks tanggapan"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-emerald-300/70 hover:text-slate-700 dark:hover:text-emerald-200 transition-colors py-0.5 px-1.5 rounded hover:bg-slate-100 dark:hover:bg-[#021A15]"
+                >
+                  {copiedId === msg.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Tersalin</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Salin</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         );
