@@ -1,11 +1,11 @@
 """Tool schemas and deterministic dispatcher for Autonomous Financial Copilot."""
 
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 from sqlalchemy.orm import Session
 
 from rezekify.db.models import Account, Category, CategoryType
@@ -117,6 +117,10 @@ AGENT_TOOL_DEFINITIONS: List[Dict[str, Any]] = [
                     "type": "string",
                     "description": "Payment/storage account name (e.g. BCA, GoPay, Cash).",
                 },
+                "from_account": {
+                    "type": "string",
+                    "description": "Source account name (alias for account_name).",
+                },
                 "category_name": {
                     "type": "string",
                     "description": "Category name (required for expense/income).",
@@ -128,6 +132,10 @@ AGENT_TOOL_DEFINITIONS: List[Dict[str, Any]] = [
                 "to_account_name": {
                     "type": "string",
                     "description": "Destination account name (for transfers only).",
+                },
+                "to_account": {
+                    "type": "string",
+                    "description": "Destination account name (alias for to_account_name).",
                 },
             },
             "required": ["action", "amount", "account_name", "description"],
@@ -161,10 +169,26 @@ class SimulatePurchaseArgs(BaseModel):
 class RecordTransactionArgs(BaseModel):
     action: str
     amount: Decimal = Field(gt=0)
-    account_name: str
+    account_name: Optional[str] = None
+    from_account: Optional[str] = None
     description: str
     category_name: Optional[str] = None
     to_account_name: Optional[str] = None
+    to_account: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_accounts(self) -> "RecordTransactionArgs":
+        if not self.account_name and not self.from_account:
+            raise ValueError("account_name or from_account is required.")
+        if not self.account_name:
+            self.account_name = self.from_account
+        if not self.from_account:
+            self.from_account = self.account_name
+        if not self.to_account_name and self.to_account:
+            self.to_account_name = self.to_account
+        if not self.to_account and self.to_account_name:
+            self.to_account = self.to_account_name
+        return self
 
 
 class AgentToolDispatcher:
@@ -191,19 +215,18 @@ class AgentToolDispatcher:
             elif tool_name == "record_transaction":
                 return self._dispatch_record_transaction(user_id, arguments)
             else:
+                msg = f"Alat '{tool_name}' tidak dikenal atau tidak tersedia."
                 return {
                     "status": "error",
-                    "message": f"Alat '{tool_name}' tidak dikenal atau tidak tersedia.",
+                    "message": msg,
+                    "error": msg,
                 }
-        except (ValidationError, InvalidOperation, ValueError) as e:
+        except (ValidationError, ValueError, Exception) as exc:
+            self.db.rollback()
             return {
                 "status": "error",
-                "message": f"Validation error: Validasi parameter gagal untuk '{tool_name}': {str(e)}",
-            }
-        except Exception as e:
-            return {
-                "status": "error",
-                "message": f"Terjadi kesalahan saat mengeksekusi '{tool_name}': {str(e)}",
+                "message": str(exc),
+                "error": str(exc),
             }
 
     def _dispatch_query_ledger(self, user_id: UUID, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -295,15 +318,32 @@ class AgentToolDispatcher:
 
     def _dispatch_record_transaction(self, user_id: UUID, arguments: Dict[str, Any]) -> Dict[str, Any]:
         validated = RecordTransactionArgs(**arguments)
-        account = (
-            self.db.query(Account)
-            .filter(Account.user_id == user_id, Account.name.ilike(f"%{validated.account_name.strip()}%"))
-            .first()
-        )
+
+        if validated.account_name:
+            validated.account_name = validated.account_name.replace("%", "").replace("_", "").strip()
+        if validated.from_account:
+            validated.from_account = validated.from_account.replace("%", "").replace("_", "").strip()
+        if validated.category_name:
+            validated.category_name = validated.category_name.replace("%", "").replace("_", "").strip()
+        if validated.to_account:
+            validated.to_account = validated.to_account.replace("%", "").replace("_", "").strip()
+        if validated.to_account_name:
+            validated.to_account_name = validated.to_account_name.replace("%", "").replace("_", "").strip()
+
+        acc_lookup = validated.account_name or validated.from_account
+        account = None
+        if acc_lookup:
+            account = (
+                self.db.query(Account)
+                .filter(Account.user_id == user_id, Account.name.ilike(f"%{acc_lookup}%"))
+                .first()
+            )
         if not account:
+            err_msg = f"Akun '{acc_lookup or ''}' tidak ditemukan."
             return {
                 "status": "error",
-                "message": f"Akun '{validated.account_name}' tidak ditemukan.",
+                "message": err_msg,
+                "error": err_msg,
             }
 
         action = validated.action.lower()
@@ -311,7 +351,11 @@ class AgentToolDispatcher:
             cat_name = validated.category_name or "Umum"
             category = (
                 self.db.query(Category)
-                .filter(Category.user_id == user_id, Category.name.ilike(f"%{cat_name.strip()}%"))
+                .filter(
+                    Category.user_id == user_id,
+                    Category.category_type == CategoryType.EXPENSE,
+                    Category.name.ilike(f"%{cat_name}%"),
+                )
                 .first()
             )
             if not category:
@@ -330,7 +374,11 @@ class AgentToolDispatcher:
             cat_name = validated.category_name or "Pemasukan Lain"
             category = (
                 self.db.query(Category)
-                .filter(Category.user_id == user_id, Category.name.ilike(f"%{cat_name.strip()}%"))
+                .filter(
+                    Category.user_id == user_id,
+                    Category.category_type == CategoryType.INCOME,
+                    Category.name.ilike(f"%{cat_name}%"),
+                )
                 .first()
             )
             if not category:
@@ -346,15 +394,18 @@ class AgentToolDispatcher:
                 description=validated.description,
             )
         elif action == "transfer":
-            if not validated.to_account_name:
-                return {"status": "error", "message": "to_account_name wajib untuk transfer."}
+            to_lookup = validated.to_account_name or validated.to_account
+            if not to_lookup:
+                err_msg = "to_account_name wajib untuk transfer."
+                return {"status": "error", "message": err_msg, "error": err_msg}
             to_acc = (
                 self.db.query(Account)
-                .filter(Account.user_id == user_id, Account.name.ilike(f"%{validated.to_account_name.strip()}%"))
+                .filter(Account.user_id == user_id, Account.name.ilike(f"%{to_lookup}%"))
                 .first()
             )
             if not to_acc or to_acc.id == account.id:
-                return {"status": "error", "message": "Akun tujuan transfer tidak valid atau sama dengan sumber."}
+                err_msg = "Akun tujuan transfer tidak valid atau sama dengan sumber."
+                return {"status": "error", "message": err_msg, "error": err_msg}
 
             tx = self.ledger_service.record_transfer(
                 user_id=user_id,
@@ -364,7 +415,8 @@ class AgentToolDispatcher:
                 description=validated.description,
             )
         else:
-            return {"status": "error", "message": f"Action '{action}' tidak didukung."}
+            err_msg = f"Action '{action}' tidak didukung."
+            return {"status": "error", "message": err_msg, "error": err_msg}
 
         self.db.refresh(account)
         return {

@@ -202,3 +202,91 @@ def test_execute_financial_tool_wrapper(db_session: Session, seeded_tools_db: Us
     )
     assert result["status"] == "success"
     assert "simulation" in result
+
+
+def test_dispatcher_error_rollback_and_uniform_keys(db_session: Session, seeded_tools_db: User, monkeypatch):
+    """Verifies that dispatch rollback occurs and returns both 'message' and 'error'."""
+    dispatcher = AgentToolDispatcher(db_session)
+    rollback_called = False
+
+    def mock_rollback():
+        nonlocal rollback_called
+        rollback_called = True
+
+    monkeypatch.setattr(db_session, "rollback", mock_rollback)
+
+    # Trigger a dispatch exception
+    bad_args = {"planned_amount": "invalid"}
+    res = dispatcher.dispatch(seeded_tools_db.id, "simulate_purchase", bad_args)
+
+    assert res["status"] == "error"
+    assert rollback_called is True
+    assert "error" in res
+    assert "message" in res
+    assert res["error"] == res["message"]
+
+
+def test_dispatcher_wildcard_stripping(db_session: Session, seeded_tools_db: User):
+    """Verifies % and _ wildcards are stripped from account, category, from_account, and to_account."""
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "expense",
+        "amount": 25000,
+        "account_name": "%_BCA_%",
+        "category_name": "%_Makanan_%",
+        "description": "Wildcard test",
+    }
+    result = dispatcher.dispatch(seeded_tools_db.id, "record_transaction", args)
+    assert result["status"] == "success"
+    assert result["transaction"]["account_name"] == "BCA"
+
+    # Also test transfer with from_account and to_account with wildcards
+    acc_dest = Account(
+        user_id=seeded_tools_db.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("50000.00"),
+    )
+    db_session.add(acc_dest)
+    db_session.commit()
+
+    transfer_args = {
+        "action": "transfer",
+        "amount": 10000,
+        "from_account": "%_BCA_%",
+        "to_account": "%_GoPay_%",
+        "description": "Transfer wildcard test",
+    }
+    res_transfer = dispatcher.dispatch(seeded_tools_db.id, "record_transaction", transfer_args)
+    assert res_transfer["status"] == "success"
+
+
+def test_dispatcher_category_type_constraint(db_session: Session, seeded_tools_db: User):
+    """Verifies expense/income lookups constrain category_type matching."""
+    # Seed an income category with name "Bonus"
+    income_cat = Category(
+        user_id=seeded_tools_db.id,
+        name="Bonus",
+        category_type=CategoryType.INCOME,
+    )
+    db_session.add(income_cat)
+    db_session.commit()
+
+    dispatcher = AgentToolDispatcher(db_session)
+    # Record expense under "Bonus" - must not bind to income_cat
+    args = {
+        "action": "expense",
+        "amount": 10000,
+        "account_name": "BCA",
+        "category_name": "Bonus",
+        "description": "Expense Bonus test",
+    }
+    result = dispatcher.dispatch(seeded_tools_db.id, "record_transaction", args)
+    assert result["status"] == "success"
+
+    # Query all categories named Bonus for this user
+    cats = db_session.query(Category).filter_by(user_id=seeded_tools_db.id, name="Bonus").all()
+    types = {c.category_type for c in cats}
+    assert CategoryType.EXPENSE in types
+    assert CategoryType.INCOME in types
+
