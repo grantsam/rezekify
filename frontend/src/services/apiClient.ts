@@ -11,6 +11,9 @@ import {
   TransactionFilterParams,
   Vault,
   VaultUpdateRequest,
+  VaultDepositRequest,
+  VaultPayBillRequest,
+  VaultPayBillResponse,
   Category,
   CategoryCreateRequest,
   CategoryUpdateRequest,
@@ -294,6 +297,27 @@ export async function deleteVault(id: string): Promise<{ detail: string }> {
   });
 }
 
+// ponytail: direct payload pass-through without zod validation; add schema parser when client-side form validation layer is centralized.
+export async function depositVault(
+  id: string,
+  data: VaultDepositRequest
+): Promise<Vault> {
+  return apiFetch<Vault>(`/vaults/${id}/deposit`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function payBillVault(
+  id: string,
+  data: VaultPayBillRequest
+): Promise<VaultPayBillResponse> {
+  return apiFetch<VaultPayBillResponse>(`/vaults/${id}/pay-bill`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 export async function getCategories(): Promise<Category[]> {
   return apiFetch<Category[]>('/categories');
 }
@@ -437,6 +461,8 @@ export const apiClient = {
   toggleVaultLock,
   updateVault,
   deleteVault,
+  depositVault,
+  payBillVault,
   getCategories,
   createCategory,
   updateCategory,

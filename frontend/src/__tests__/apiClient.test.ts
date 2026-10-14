@@ -14,6 +14,8 @@ import {
   toggleVaultLock,
   updateVault,
   deleteVault,
+  depositVault,
+  payBillVault,
   getCategories,
   createCategory,
   updateCategory,
@@ -40,6 +42,9 @@ import {
   TransactionUpdateRequest,
   Vault,
   VaultUpdateRequest,
+  VaultDepositRequest,
+  VaultPayBillRequest,
+  VaultPayBillResponse,
   Category,
   CategoryCreateRequest,
   CategoryUpdateRequest,
@@ -757,6 +762,71 @@ describe('apiClient authentication headers and utilities', () => {
         headers: expect.objectContaining({
           Authorization: 'Bearer auth-token-123',
         }),
+      })
+    );
+  });
+
+  it('depositVault sends POST /vaults/:id/deposit with body', async () => {
+    setAuthToken('sample-token');
+    const mockVault: Vault = {
+      id: 'v-123',
+      name: 'Dana Darurat',
+      vault_type: 'SAVINGS',
+      target_amount: 5000000,
+      allocated_amount: 1500000,
+      is_locked: true,
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockVault,
+    });
+
+    const payload: VaultDepositRequest = { amount: 500000, source_account_id: 'acc-1' };
+    const res = await depositVault('v-123', payload);
+    expect(res).toEqual(mockVault);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/vaults/v-123/deposit',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
+  });
+
+  it('payBillVault sends POST /vaults/:id/pay-bill with body', async () => {
+    setAuthToken('sample-token');
+    const mockResponse: VaultPayBillResponse = {
+      vault: {
+        id: 'v-456',
+        name: 'Listrik PLN',
+        vault_type: 'FIXED_BILL',
+        target_amount: 500000,
+        allocated_amount: 0,
+        target_date: '2026-11-20',
+        is_locked: true,
+      },
+      transaction: {
+        id: 'tx-999',
+        description: 'Pembayaran tagihan: Listrik PLN',
+        source_channel: 'WEB_UI',
+        transaction_date: '2026-10-20T10:00:00Z',
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const payload: VaultPayBillRequest = { account_id: 'acc-1', amount: 500000 };
+    const res = await payBillVault('v-456', payload);
+    expect(res).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/vaults/v-456/pay-bill',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(payload),
       })
     );
   });

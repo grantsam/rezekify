@@ -78,6 +78,23 @@ export interface VaultUpdateRequest {
   target_date?: string | null;
 }
 
+export interface VaultDepositRequest {
+  amount: number;
+  source_account_id?: string | null;
+}
+
+export interface VaultPayBillRequest {
+  account_id: string;
+  category_id?: string | null;
+  amount?: number | null;
+  notes?: string | null;
+}
+
+export interface VaultPayBillResponse {
+  vault: Vault;
+  transaction: Transaction;
+}
+
 export interface UpcomingBill {
   name: string;
   target_amount: number;
