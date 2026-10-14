@@ -307,7 +307,22 @@ class ManageVaultArgs(BaseModel):
                 d["action"] = d["action"].strip().lower()
             amt = d.get("amount")
             if isinstance(amt, str):
-                cleaned = amt.strip().replace("Rp", "").replace("rp", "").replace(" ", "").replace(",", "")
+                cleaned = amt.strip().replace("Rp", "").replace("rp", "").replace(" ", "")
+                if "." in cleaned and "," in cleaned:
+                    if cleaned.rfind(",") > cleaned.rfind("."):
+                        cleaned = cleaned.replace(".", "").replace(",", ".")
+                    else:
+                        cleaned = cleaned.replace(",", "")
+                elif "." in cleaned:
+                    parts = cleaned.split(".")
+                    if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
+                        cleaned = cleaned.replace(".", "")
+                elif "," in cleaned:
+                    parts = cleaned.split(",")
+                    if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
+                        cleaned = cleaned.replace(",", "")
+                    else:
+                        cleaned = cleaned.replace(",", ".")
                 try:
                     d["amount"] = Decimal(cleaned)
                 except Exception:
@@ -642,7 +657,12 @@ class AgentToolDispatcher:
                     .filter(Account.user_id == user_id, Account.name.ilike(f"%{validated.account_name.strip()}%"))
                     .first()
                 )
-                if acc and acc.current_balance < validated.amount:
+                if not acc:
+                    return {
+                        "status": "error",
+                        "message": f"Akun rekening '{validated.account_name}' tidak ditemukan.",
+                    }
+                if acc.current_balance < validated.amount:
                     return {
                         "status": "error",
                         "message": f"Saldo akun '{acc.name}' (Rp {acc.current_balance:,.0f}) tidak mencukupi untuk deposit Rp {validated.amount:,.0f}.",
@@ -668,14 +688,18 @@ class AgentToolDispatcher:
             }
 
         elif action == "pay_bill":
-            acc = None
             if validated.account_name:
                 acc = (
                     self.db.query(Account)
                     .filter(Account.user_id == user_id, Account.name.ilike(f"%{validated.account_name.strip()}%"))
                     .first()
                 )
-            if not acc:
+                if not acc:
+                    return {
+                        "status": "error",
+                        "message": f"Akun rekening '{validated.account_name}' tidak ditemukan.",
+                    }
+            else:
                 acc = (
                     self.db.query(Account)
                     .filter(Account.user_id == user_id, Account.is_active.is_(True))

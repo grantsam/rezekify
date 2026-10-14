@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from rezekify.agent.runtime import build_cognitive_system_prompt, parse_agent_turn
-from rezekify.agent.tools import AGENT_TOOL_DEFINITIONS, AgentToolDispatcher
+from rezekify.agent.tools import AGENT_TOOL_DEFINITIONS, AgentToolDispatcher, ManageVaultArgs
 from rezekify.db.models import Account, AccountType, Category, CategoryType, User, Vault, VaultType
 
 
@@ -139,3 +139,57 @@ def test_manage_vault_runtime_system_prompt_and_fallback():
     turn = parse_agent_turn("Tolong jalankan manage_vault untuk nabung 100rb")
     assert turn.thought is not None
     assert "vault" in turn.thought.lower() or "komitmen" in turn.thought.lower()
+
+
+@pytest.mark.parametrize(
+    "raw_amount, expected_decimal",
+    [
+        ("100.000", Decimal("100000")),
+        ("1.500.000", Decimal("1500000")),
+        ("Rp 250.000,00", Decimal("250000.00")),
+    ],
+)
+def test_manage_vault_amount_sanitization_indonesian_format(raw_amount, expected_decimal):
+    args = ManageVaultArgs(action="deposit", vault_name="Dana Darurat", amount=raw_amount)
+    assert args.amount == expected_decimal
+
+
+def test_manage_vault_pay_bill_unknown_account_error(db_session: Session, seeded_agent_vault_db: User):
+    dispatcher = AgentToolDispatcher(db_session)
+    bca_before = db_session.query(Account).filter_by(user_id=seeded_agent_vault_db.id, name="BCA").one()
+    initial_balance = bca_before.current_balance
+
+    result = dispatcher.dispatch(
+        seeded_agent_vault_db.id,
+        "manage_vault",
+        {
+            "action": "pay_bill",
+            "vault_name": "Listrik PLN",
+            "account_name": "Rekening Gaib",
+        },
+    )
+    assert result["status"] == "error"
+    assert "Rekening Gaib" in result["message"]
+    assert "tidak ditemukan" in result["message"].lower()
+
+    # Verify highest-balance account was NOT silently charged
+    db_session.refresh(bca_before)
+    assert bca_before.current_balance == initial_balance
+
+
+def test_manage_vault_deposit_unknown_account_error(db_session: Session, seeded_agent_vault_db: User):
+    dispatcher = AgentToolDispatcher(db_session)
+    result = dispatcher.dispatch(
+        seeded_agent_vault_db.id,
+        "manage_vault",
+        {
+            "action": "deposit",
+            "vault_name": "Dana Darurat",
+            "amount": "100.000",
+            "account_name": "Bank Tidak Ada",
+        },
+    )
+    assert result["status"] == "error"
+    assert "Bank Tidak Ada" in result["message"]
+    assert "tidak ditemukan" in result["message"].lower()
+
