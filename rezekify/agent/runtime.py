@@ -105,6 +105,7 @@ Anda memiliki akses mandiri ke subsistem simbolik deterministik buku besar pengg
 2. get_runway_telemetry()
 3. simulate_purchase(planned_amount, category_name)
 4. record_transaction(action, amount, account_name, category_name, description)
+5. manage_vault(action, vault_name, amount, account_name, lock_state)
 
 [CONTOH EKSEKUSI OTONOM]
 Contoh 1: Pengguna bertanya: "cek riwayat saya" atau "pengeluaran saya bulan ini apa saja"
@@ -126,6 +127,22 @@ Keluaran:
   "tool_call": {{
     "name": "get_runway_telemetry",
     "arguments": {{}}
+  }}
+}}
+```
+Contoh 3: Pengguna berkata: "Nabung 500rb ke Dana Darurat dari BCA"
+Keluaran:
+```json
+{{
+  "thought": "Pengguna ingin mengalokasikan tabungan ke Dana Darurat, saya panggil tool manage_vault dengan aksi deposit.",
+  "tool_call": {{
+    "name": "manage_vault",
+    "arguments": {{
+      "action": "deposit",
+      "vault_name": "Dana Darurat",
+      "amount": 500000,
+      "account_name": "BCA"
+    }}
   }}
 }}
 ```
@@ -185,6 +202,8 @@ def parse_agent_turn(response_text: Union[str, Dict[str, Any]]) -> AgentTurnResu
                     thought = "Mensimulasikan dampak pengeluaran terhadap kondisi runway pengguna."
                 elif "record_transaction" in cleaned_text:
                     thought = "Menyiapkan pencatatan transaksi keuangan ke dalam buku besar."
+                elif "manage_vault" in cleaned_text:
+                    thought = "Mengelola alokasi pos komitmen dan tabungan (vault) pengguna."
                 else:
                     thought = "Menganalisis pesan dan status keuangan pengguna untuk memberikan rekomendasi."
             return AgentTurnResult(is_tool_call=False, thought=thought, final_response=cleaned_text)
@@ -202,6 +221,8 @@ def parse_agent_turn(response_text: Union[str, Dict[str, Any]]) -> AgentTurnResu
                     thought = "Mensimulasikan dampak pengeluaran terhadap kondisi runway pengguna."
                 elif "record_transaction" in cleaned_text:
                     thought = "Menyiapkan pencatatan transaksi keuangan ke dalam buku besar."
+                elif "manage_vault" in cleaned_text:
+                    thought = "Mengelola alokasi pos komitmen dan tabungan (vault) pengguna."
                 else:
                     thought = "Menganalisis pesan dan status keuangan pengguna untuk memberikan rekomendasi."
             return AgentTurnResult(is_tool_call=False, thought=thought, final_response=cleaned_text)

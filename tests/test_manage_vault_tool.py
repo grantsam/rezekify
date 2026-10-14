@@ -1,0 +1,141 @@
+"""Tests for AI Agent ReAct manage_vault tool."""
+
+from datetime import date
+from decimal import Decimal
+import uuid
+import pytest
+from sqlalchemy.orm import Session
+
+from rezekify.agent.runtime import build_cognitive_system_prompt, parse_agent_turn
+from rezekify.agent.tools import AGENT_TOOL_DEFINITIONS, AgentToolDispatcher
+from rezekify.db.models import Account, AccountType, Category, CategoryType, User, Vault, VaultType
+
+
+@pytest.fixture
+def seeded_agent_vault_db(db_session: Session, sample_user: User):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("5000000.00"),
+    )
+    cat = Category(
+        user_id=sample_user.id,
+        name="Tagihan",
+        category_type=CategoryType.EXPENSE,
+    )
+    v_sav = Vault(
+        user_id=sample_user.id,
+        name="Dana Darurat",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("10000000.00"),
+        allocated_amount=Decimal("2000000.00"),
+        is_locked=False,
+    )
+    v_bill = Vault(
+        user_id=sample_user.id,
+        name="Listrik PLN",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("500000.00"),
+        allocated_amount=Decimal("500000.00"),
+        target_date=date(2026, 1, 31),
+        is_locked=True,
+    )
+    db_session.add_all([acc, cat, v_sav, v_bill])
+    db_session.commit()
+    return sample_user
+
+
+def test_manage_vault_tool_definition_registered():
+    tool_names = [t["name"] for t in AGENT_TOOL_DEFINITIONS]
+    assert "manage_vault" in tool_names
+
+    tool = next(t for t in AGENT_TOOL_DEFINITIONS if t["name"] == "manage_vault")
+    props = tool["parameters"]["properties"]
+    assert "action" in props
+    assert "vault_name" in props
+    assert "amount" in props
+    assert "account_name" in props
+    assert "lock_state" in props
+    assert "action" in tool["parameters"]["required"]
+
+
+def test_manage_vault_deposit_action(db_session: Session, seeded_agent_vault_db: User):
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "deposit",
+        "vault_name": "Dana Darurat",
+        "amount": 500000,
+        "account_name": "BCA",
+    }
+    result = dispatcher.dispatch(seeded_agent_vault_db.id, "manage_vault", args)
+
+    assert result["status"] == "success"
+    assert "Dana Darurat" in result["message"]
+    assert float(result["vault"]["allocated_amount"]) == 2500000.0
+    assert result["vault"]["is_locked"] is True
+
+
+def test_manage_vault_pay_bill_action(db_session: Session, seeded_agent_vault_db: User):
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "pay_bill",
+        "vault_name": "Listrik PLN",
+        "account_name": "BCA",
+    }
+    result = dispatcher.dispatch(seeded_agent_vault_db.id, "manage_vault", args)
+
+    assert result["status"] == "success"
+    assert float(result["vault"]["allocated_amount"]) == 0.0
+    # Clamped to Feb 28
+    assert str(result["vault"]["target_date"]) == "2026-02-28"
+
+    # Verify ledger deduction
+    acc = db_session.query(Account).filter_by(user_id=seeded_agent_vault_db.id, name="BCA").one()
+    assert acc.current_balance == Decimal("4500000.00")
+
+
+def test_manage_vault_toggle_lock_action(db_session: Session, seeded_agent_vault_db: User):
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "toggle_lock",
+        "vault_name": "Dana Darurat",
+        "lock_state": True,
+    }
+    result = dispatcher.dispatch(seeded_agent_vault_db.id, "manage_vault", args)
+    assert result["status"] == "success"
+    assert result["vault"]["is_locked"] is True
+
+
+def test_manage_vault_check_status_action(db_session: Session, seeded_agent_vault_db: User):
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "check_status",
+        "vault_name": "Dana Darurat",
+    }
+    result = dispatcher.dispatch(seeded_agent_vault_db.id, "manage_vault", args)
+    assert result["status"] == "success"
+    assert result["vault"]["name"] == "Dana Darurat"
+    assert "percentage" in result["vault"]
+
+
+def test_manage_vault_missing_vault_name_error(db_session: Session, seeded_agent_vault_db: User):
+    """Review Focus 5: Graceful error response on missing vault name."""
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "deposit",
+        "vault_name": "Tabungan Rumah Impian 99",
+        "amount": 1000000,
+    }
+    result = dispatcher.dispatch(seeded_agent_vault_db.id, "manage_vault", args)
+    assert result["status"] == "error"
+    assert "tidak ditemukan" in result["message"].lower()
+
+
+def test_manage_vault_runtime_system_prompt_and_fallback():
+    prompt = build_cognitive_system_prompt()
+    assert "manage_vault" in prompt
+
+    turn = parse_agent_turn("Tolong jalankan manage_vault untuk nabung 100rb")
+    assert turn.thought is not None
+    assert "vault" in turn.thought.lower() or "komitmen" in turn.thought.lower()
