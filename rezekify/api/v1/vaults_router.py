@@ -1,17 +1,31 @@
 """Vaults (Sinking Funds & Fixed Commitments) Router."""
 
+from calendar import monthrange
 from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from rezekify.api.deps import get_current_user, get_db
-from rezekify.db.models import User, Vault, VaultType
+from rezekify.api.v1.transactions_router import TransactionItemResponse
+from rezekify.db.models import Account, Category, CategoryType, User, Vault, VaultType
+from rezekify.services.ledger import LedgerService
+from rezekify.services.runway import RunwayService
 
 vaults_router = APIRouter()
+
+
+def advance_one_month(d: date) -> date:
+    """Advances date by one calendar month, clamping day to month-end if needed."""
+    # ponytail: month arithmetic clamped with calendar.monthrange; upgrade to dateutil.relativedelta if variable cadences needed
+    year = d.year + (d.month // 12)
+    month = (d.month % 12) + 1
+    max_day = monthrange(year, month)[1]
+    day = min(d.day, max_day)
+    return date(year, month, day)
 
 
 class VaultCreateRequest(BaseModel):
@@ -30,6 +44,18 @@ class VaultUpdateRequest(BaseModel):
     target_date: Optional[date] = None
 
 
+class VaultDepositRequest(BaseModel):
+    amount: Decimal = Field(gt=0)
+    source_account_id: Optional[UUID] = None
+
+
+class VaultPayBillRequest(BaseModel):
+    account_id: UUID
+    category_id: Optional[UUID] = None
+    amount: Optional[Decimal] = None
+    notes: Optional[str] = None
+
+
 class VaultResponse(BaseModel):
     id: UUID
     name: str
@@ -38,6 +64,13 @@ class VaultResponse(BaseModel):
     allocated_amount: Decimal
     target_date: Optional[date]
     is_locked: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VaultPayBillResponse(BaseModel):
+    vault: VaultResponse
+    transaction: TransactionItemResponse
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -76,6 +109,7 @@ def create_vault(
     db.add(vault)
     db.commit()
     db.refresh(vault)
+    RunwayService.clear_cache(user_id=current_user.id)
     return vault
 
 
@@ -91,7 +125,133 @@ def toggle_vault_lock(
     vault.is_locked = not vault.is_locked
     db.commit()
     db.refresh(vault)
+    RunwayService.clear_cache(user_id=current_user.id)
     return vault
+
+
+@vaults_router.post("/{vault_id}/deposit", response_model=VaultResponse)
+def deposit_to_vault(
+    vault_id: UUID,
+    req: VaultDepositRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Deposits funds into a vault, automatically securing it with a lock."""
+    vault = db.query(Vault).filter_by(id=vault_id, user_id=current_user.id).one_or_none()
+    if not vault:
+        raise HTTPException(status_code=404, detail="Vault tidak ditemukan.")
+
+    if req.source_account_id:
+        source_acc = (
+            db.query(Account)
+            .filter_by(id=req.source_account_id, user_id=current_user.id)
+            .one_or_none()
+        )
+        if not source_acc:
+            raise HTTPException(status_code=404, detail="Akun sumber tidak ditemukan.")
+        if source_acc.current_balance < req.amount:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Saldo akun tidak mencukupi untuk dialokasikan ke vault.",
+            )
+
+    vault.allocated_amount += req.amount
+    vault.is_locked = True
+    db.commit()
+    db.refresh(vault)
+    RunwayService.clear_cache(user_id=current_user.id)
+    return vault
+
+
+@vaults_router.post("/{vault_id}/pay-bill", response_model=VaultPayBillResponse)
+def pay_bill_vault(
+    vault_id: UUID,
+    req: VaultPayBillRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Pays a fixed bill, records a double-entry ledger expense, and rolls over cycle."""
+    vault = db.query(Vault).filter_by(id=vault_id, user_id=current_user.id).one_or_none()
+    if not vault:
+        raise HTTPException(status_code=404, detail="Vault tidak ditemukan.")
+
+    pay_amount = req.amount if req.amount is not None else (vault.target_amount or vault.allocated_amount)
+    if not pay_amount or pay_amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nominal pembayaran harus lebih besar dari 0.",
+        )
+
+    account = (
+        db.query(Account)
+        .filter_by(id=req.account_id, user_id=current_user.id)
+        .one_or_none()
+    )
+    if not account:
+        raise HTTPException(status_code=404, detail="Akun sumber pembayaran tidak ditemukan.")
+    if account.current_balance < pay_amount:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Saldo akun tidak mencukupi untuk membayar tagihan.",
+        )
+
+    category = None
+    if req.category_id:
+        category = (
+            db.query(Category)
+            .filter_by(id=req.category_id, user_id=current_user.id)
+            .one_or_none()
+        )
+        if not category:
+            raise HTTPException(status_code=404, detail="Kategori tidak ditemukan.")
+    else:
+        category = (
+            db.query(Category)
+            .filter(
+                Category.user_id == current_user.id,
+                Category.category_type == CategoryType.EXPENSE,
+                Category.name.ilike("%Tagihan%"),
+            )
+            .first()
+        )
+        if not category:
+            category = (
+                db.query(Category)
+                .filter(
+                    Category.user_id == current_user.id,
+                    Category.category_type == CategoryType.EXPENSE,
+                )
+                .first()
+            )
+        if not category:
+            category = Category(
+                user_id=current_user.id,
+                name="Tagihan",
+                category_type=CategoryType.EXPENSE,
+            )
+            db.add(category)
+            db.flush()
+
+    ledger_service = LedgerService(db, auto_commit=False)
+    tx = ledger_service.record_expense(
+        user_id=current_user.id,
+        account_id=account.id,
+        category_id=category.id,
+        amount=pay_amount,
+        description=req.notes or f"Pembayaran tagihan: {vault.name}",
+        source_channel="WEB_UI",
+    )
+
+    vault.allocated_amount = Decimal("0.00")
+    if vault.target_date:
+        vault.target_date = advance_one_month(vault.target_date)
+
+    db.commit()
+    db.refresh(vault)
+    db.refresh(tx)
+    RunwayService.clear_cache(user_id=current_user.id)
+
+    return VaultPayBillResponse(vault=vault, transaction=tx)
 
 
 @vaults_router.put("/{vault_id}", response_model=VaultResponse)
@@ -117,6 +277,7 @@ def update_vault(
     vault.target_date = req.target_date
     db.commit()
     db.refresh(vault)
+    RunwayService.clear_cache(user_id=current_user.id)
     return vault
 
 
@@ -138,4 +299,5 @@ def delete_vault(
 
     db.delete(vault)
     db.commit()
+    RunwayService.clear_cache(user_id=current_user.id)
     return {"detail": "Vault berhasil dihapus."}
