@@ -37,6 +37,10 @@ describe('useDashboardModals', () => {
     expect(result.current.isVaultModalOpen).toBe(false);
     expect(result.current.isEditVaultModalOpen).toBe(false);
     expect(result.current.selectedVaultForEdit).toBeNull();
+    expect(result.current.isDepositModalOpen).toBe(false);
+    expect(result.current.selectedVaultForDeposit).toBeNull();
+    expect(result.current.isPayBillModalOpen).toBe(false);
+    expect(result.current.selectedVaultForPayBill).toBeNull();
     expect(result.current.isManualModalOpen).toBe(false);
     expect(result.current.isEditTxModalOpen).toBe(false);
     expect(result.current.isEditModalOpen).toBe(false);
@@ -97,6 +101,34 @@ describe('useDashboardModals', () => {
     });
     expect(result.current.isEditVaultModalOpen).toBe(false);
     expect(result.current.selectedVaultForEdit).toBeNull();
+  });
+
+  it('manages deposit and pay-bill modal lifecycle', () => {
+    const { result } = renderHook(() => useDashboardModals());
+
+    act(() => {
+      result.current.openDepositModal(dummyVault);
+    });
+    expect(result.current.isDepositModalOpen).toBe(true);
+    expect(result.current.selectedVaultForDeposit).toEqual(dummyVault);
+
+    act(() => {
+      result.current.closeDepositModal();
+    });
+    expect(result.current.isDepositModalOpen).toBe(false);
+    expect(result.current.selectedVaultForDeposit).toBeNull();
+
+    act(() => {
+      result.current.openPayBillModal(dummyVault);
+    });
+    expect(result.current.isPayBillModalOpen).toBe(true);
+    expect(result.current.selectedVaultForPayBill).toEqual(dummyVault);
+
+    act(() => {
+      result.current.closePayBillModal();
+    });
+    expect(result.current.isPayBillModalOpen).toBe(false);
+    expect(result.current.selectedVaultForPayBill).toBeNull();
   });
 
   it('manages transaction modal and edit transaction modal lifecycle', () => {

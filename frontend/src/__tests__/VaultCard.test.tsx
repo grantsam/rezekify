@@ -187,4 +187,44 @@ describe('VaultCard Component', () => {
     expect(progressBar).toHaveAttribute('aria-valuemin', '0');
     expect(progressBar).toHaveAttribute('aria-valuemax', '100');
   });
+
+  it('renders "+ Nabung" button for SAVINGS vault and triggers onDeposit', () => {
+    const handleDeposit = vi.fn();
+    render(
+      <VaultCard
+        vault={sampleSavingsVault}
+        onToggleLock={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onDeposit={handleDeposit}
+      />
+    );
+
+    const depositBtn = screen.getByTestId('vault-deposit-btn');
+    expect(depositBtn).toBeInTheDocument();
+    expect(depositBtn).toHaveTextContent('+ Nabung');
+
+    fireEvent.click(depositBtn);
+    expect(handleDeposit).toHaveBeenCalledWith(sampleSavingsVault);
+  });
+
+  it('renders "Bayar Tagihan" button for FIXED_BILL vault and triggers onPayBill', () => {
+    const handlePayBill = vi.fn();
+    render(
+      <VaultCard
+        vault={sampleFixedBillVault}
+        onToggleLock={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onPayBill={handlePayBill}
+      />
+    );
+
+    const payBtn = screen.getByTestId('vault-pay-bill-btn');
+    expect(payBtn).toBeInTheDocument();
+    expect(payBtn).toHaveTextContent('Bayar Tagihan');
+
+    fireEvent.click(payBtn);
+    expect(handlePayBill).toHaveBeenCalledWith(sampleFixedBillVault);
+  });
 });

@@ -302,4 +302,35 @@ describe('OverviewView Component', () => {
     );
     expect(screen.getByText('Semua Komitmen Aman')).toBeInTheDocument();
   });
+
+  it('triggers onDepositVault and onPayBillVault when action buttons are clicked in priority vaults list', () => {
+    const handleDeposit = vi.fn();
+    const handlePayBill = vi.fn();
+
+    render(
+      <OverviewView
+        summary={mockSummary}
+        vaults={mockVaults}
+        accounts={mockAccounts}
+        transactions={mockTransactions}
+        isLoading={false}
+        refreshTrigger={0}
+        onNavigateToVaults={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+        onOpenSimulateModal={vi.fn()}
+        onDepositVault={handleDeposit}
+        onPayBillVault={handlePayBill}
+      />
+    );
+
+    const payBillBtn = screen.getByRole('button', { name: /Bayar Tagihan/i });
+    expect(payBillBtn).toBeInTheDocument();
+    fireEvent.click(payBillBtn);
+    expect(handlePayBill).toHaveBeenCalledWith(mockVaults[0]);
+
+    const depositBtn = screen.getByRole('button', { name: /\+ Nabung/i });
+    expect(depositBtn).toBeInTheDocument();
+    fireEvent.click(depositBtn);
+    expect(handleDeposit).toHaveBeenCalledWith(mockVaults[1]);
+  });
 });

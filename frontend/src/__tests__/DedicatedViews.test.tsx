@@ -174,5 +174,33 @@ describe('Dedicated Ledger & Vaults Views', () => {
       fireEvent.click(dismissBtn);
       expect(handleDismiss).toHaveBeenCalledTimes(1);
     });
+
+    it('triggers onDepositVault and onPayBillVault from vault cards', () => {
+      const handleDeposit = vi.fn();
+      const handlePayBill = vi.fn();
+
+      render(
+        <VaultsView
+          vaults={mockVaults}
+          isLoading={false}
+          errorMessage={null}
+          onDismissError={vi.fn()}
+          onToggleLock={vi.fn()}
+          onEditVault={vi.fn()}
+          onDeleteVault={vi.fn()}
+          onOpenCreateVault={vi.fn()}
+          onDepositVault={handleDeposit}
+          onPayBillVault={handlePayBill}
+        />
+      );
+
+      const payBillBtn = screen.getByTestId('vault-pay-bill-btn');
+      fireEvent.click(payBillBtn);
+      expect(handlePayBill).toHaveBeenCalledWith(mockVaults[0]);
+
+      const depositBtn = screen.getByTestId('vault-deposit-btn');
+      fireEvent.click(depositBtn);
+      expect(handleDeposit).toHaveBeenCalledWith(mockVaults[1]);
+    });
   });
 });

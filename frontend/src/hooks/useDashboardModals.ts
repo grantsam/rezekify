@@ -13,6 +13,12 @@ export function useDashboardModals() {
   const [isEditVaultModalOpen, setIsEditVaultModalOpen] = useState<boolean>(false);
   const [selectedVaultForEdit, setSelectedVaultForEdit] = useState<Vault | null>(null);
 
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState<boolean>(false);
+  const [selectedVaultForDeposit, setSelectedVaultForDeposit] = useState<Vault | null>(null);
+
+  const [isPayBillModalOpen, setIsPayBillModalOpen] = useState<boolean>(false);
+  const [selectedVaultForPayBill, setSelectedVaultForPayBill] = useState<Vault | null>(null);
+
   const [isManualModalOpen, setIsManualModalOpen] = useState<boolean>(false);
 
   const [isEditTxModalOpen, setIsEditTxModalOpen] = useState<boolean>(false);
@@ -53,6 +59,26 @@ export function useDashboardModals() {
   const closeEditVaultModal = useCallback(() => {
     setIsEditVaultModalOpen(false);
     setSelectedVaultForEdit(null);
+  }, []);
+
+  const openDepositModal = useCallback((vault: Vault) => {
+    setSelectedVaultForDeposit(vault);
+    setIsDepositModalOpen(true);
+  }, []);
+
+  const closeDepositModal = useCallback(() => {
+    setIsDepositModalOpen(false);
+    setSelectedVaultForDeposit(null);
+  }, []);
+
+  const openPayBillModal = useCallback((vault: Vault) => {
+    setSelectedVaultForPayBill(vault);
+    setIsPayBillModalOpen(true);
+  }, []);
+
+  const closePayBillModal = useCallback(() => {
+    setIsPayBillModalOpen(false);
+    setSelectedVaultForPayBill(null);
   }, []);
 
   const openManualModal = useCallback(() => {
@@ -112,6 +138,16 @@ export function useDashboardModals() {
     selectedVaultForEdit,
     openEditVault,
     closeEditVaultModal,
+
+    isDepositModalOpen,
+    selectedVaultForDeposit,
+    openDepositModal,
+    closeDepositModal,
+
+    isPayBillModalOpen,
+    selectedVaultForPayBill,
+    openPayBillModal,
+    closePayBillModal,
 
     isManualModalOpen,
     openManualModal,

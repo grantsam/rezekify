@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
 import { Plus, AlertCircle, PiggyBank, X } from 'lucide-react';
-import { Vault } from '../types/api';
+import { Account, Vault } from '../types/api';
 import { VaultCard } from './VaultCard';
+
+const DepositVaultModal = React.lazy(() => import('./DepositVaultModal').then(m => ({ default: m.DepositVaultModal })));
+const PayBillModal = React.lazy(() => import('./PayBillModal').then(m => ({ default: m.PayBillModal })));
 
 export interface VaultsViewProps {
   vaults: Vault[];
+  accounts?: Account[];
   isLoading: boolean;
   errorMessage: string | null;
   onDismissError: () => void;
@@ -14,10 +18,14 @@ export interface VaultsViewProps {
   onEditVault: (vault: Vault) => void;
   onDeleteVault: (id: string) => Promise<void> | void;
   onOpenCreateVault: () => void;
+  onDepositVault?: (vault: Vault) => void;
+  onPayBillVault?: (vault: Vault) => void;
+  onDataMutated?: () => Promise<void> | void;
 }
 
 export const VaultsView: React.FC<VaultsViewProps> = ({
   vaults,
+  accounts,
   isLoading: _isLoading,
   errorMessage,
   onDismissError,
@@ -25,8 +33,29 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
   onEditVault,
   onDeleteVault,
   onOpenCreateVault,
+  onDepositVault,
+  onPayBillVault,
+  onDataMutated,
 }) => {
   const [activeTab, setActiveTab] = useState<'ALL' | 'FIXED_BILL' | 'SAVINGS'>('ALL');
+  const [localDepositVault, setLocalDepositVault] = useState<Vault | null>(null);
+  const [localPayBillVault, setLocalPayBillVault] = useState<Vault | null>(null);
+
+  const handleDeposit = (vault: Vault) => {
+    if (onDepositVault) {
+      onDepositVault(vault);
+    } else {
+      setLocalDepositVault(vault);
+    }
+  };
+
+  const handlePayBill = (vault: Vault) => {
+    if (onPayBillVault) {
+      onPayBillVault(vault);
+    } else {
+      setLocalPayBillVault(vault);
+    }
+  };
 
   const filteredVaults = vaults.filter((vault) => {
     if (activeTab === 'FIXED_BILL') return vault.vault_type === 'FIXED_BILL';
@@ -178,10 +207,40 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
               onToggleLock={onToggleLock}
               onEdit={onEditVault}
               onDelete={onDeleteVault}
+              onDeposit={handleDeposit}
+              onPayBill={handlePayBill}
             />
           ))}
         </div>
       )}
+
+      <React.Suspense fallback={null}>
+        {accounts && localDepositVault && (
+          <DepositVaultModal
+            isOpen={Boolean(localDepositVault)}
+            onClose={() => setLocalDepositVault(null)}
+            onSuccess={async () => {
+              setLocalDepositVault(null);
+              await onDataMutated?.();
+            }}
+            vault={localDepositVault}
+            accounts={accounts}
+          />
+        )}
+
+        {accounts && localPayBillVault && (
+          <PayBillModal
+            isOpen={Boolean(localPayBillVault)}
+            onClose={() => setLocalPayBillVault(null)}
+            onSuccess={async () => {
+              setLocalPayBillVault(null);
+              await onDataMutated?.();
+            }}
+            vault={localPayBillVault}
+            accounts={accounts}
+          />
+        )}
+      </React.Suspense>
     </motion.div>
   );
 };

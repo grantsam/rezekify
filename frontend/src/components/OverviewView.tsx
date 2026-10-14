@@ -30,6 +30,8 @@ export interface OverviewViewProps {
   onOpenCreateAccount: () => void;
   onOpenSimulateModal: () => void;
   onOpenChat?: (prompt?: string) => void;
+  onDepositVault?: (vault: Vault) => void;
+  onPayBillVault?: (vault: Vault) => void;
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
@@ -44,6 +46,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onOpenCreateAccount,
   onOpenSimulateModal,
   onOpenChat,
+  onDepositVault,
+  onPayBillVault,
 }) => {
   const activeAccounts = accounts.filter((acc) => acc.is_active !== false);
 
@@ -323,6 +327,28 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                           <span className="text-slate-900 dark:text-white">{formatRupiah(vault.allocated_amount)}</span>
                           <span className="text-slate-400 dark:text-zinc-500">/ {formatRupiah(vault.target_amount)}</span>
                         </div>
+
+                        {(onDepositVault || onPayBillVault) && (
+                          <div className="pt-2">
+                            {vault.vault_type === 'FIXED_BILL' ? (
+                              <button
+                                type="button"
+                                onClick={() => onPayBillVault?.(vault)}
+                                className="w-full py-1.5 px-3 rounded-xl text-[11px] font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-all text-center min-h-[38px] flex items-center justify-center cursor-pointer select-none"
+                              >
+                                Bayar Tagihan
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => onDepositVault?.(vault)}
+                                className="w-full py-1.5 px-3 rounded-xl text-[11px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all text-center min-h-[38px] flex items-center justify-center cursor-pointer select-none"
+                              >
+                                + Nabung
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

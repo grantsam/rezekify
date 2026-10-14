@@ -19,6 +19,8 @@ export interface VaultCardProps {
   onToggleLock: (id: string) => Promise<void> | void;
   onEdit: (vault: Vault) => void;
   onDelete: (id: string) => Promise<void> | void;
+  onDeposit?: (vault: Vault) => void;
+  onPayBill?: (vault: Vault) => void;
   isTogglingLock?: boolean;
   isDeleting?: boolean;
 }
@@ -43,6 +45,8 @@ export const VaultCard: React.FC<VaultCardProps> = ({
   onToggleLock,
   onEdit,
   onDelete,
+  onDeposit,
+  onPayBill,
   isTogglingLock = false,
   isDeleting = false,
 }) => {
@@ -210,6 +214,33 @@ export const VaultCard: React.FC<VaultCardProps> = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Contextual Action Trigger */}
+      <div className="pt-1">
+        {isFixedBill ? (
+          <Button
+            size="sm"
+            data-testid="vault-pay-bill-btn"
+            onPress={() => onPayBill?.(vault)}
+            aria-label={`Bayar tagihan ${vault.name}`}
+            startContent={<Receipt className="w-3.5 h-3.5" />}
+            className="w-full min-h-[38px] rounded-xl text-xs font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-all"
+          >
+            Bayar Tagihan
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            data-testid="vault-deposit-btn"
+            onPress={() => onDeposit?.(vault)}
+            aria-label={`Nabung ke ${vault.name}`}
+            startContent={<PiggyBank className="w-3.5 h-3.5" />}
+            className="w-full min-h-[38px] rounded-xl text-xs font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all"
+          >
+            + Nabung
+          </Button>
+        )}
       </div>
     </div>
   );

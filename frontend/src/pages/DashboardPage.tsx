@@ -17,6 +17,8 @@ const VaultModal = React.lazy(() => import('../components/VaultModal').then(m =>
 const SimulatePurchaseModal = React.lazy(() => import('../components/SimulatePurchaseModal').then(m => ({ default: m.SimulatePurchaseModal })));
 const EditTransactionModal = React.lazy(() => import('../components/EditTransactionModal').then(m => ({ default: m.EditTransactionModal })));
 const EditVaultModal = React.lazy(() => import('../components/EditVaultModal').then(m => ({ default: m.EditVaultModal })));
+const DepositVaultModal = React.lazy(() => import('../components/DepositVaultModal').then(m => ({ default: m.DepositVaultModal })));
+const PayBillModal = React.lazy(() => import('../components/PayBillModal').then(m => ({ default: m.PayBillModal })));
 const SettingsModal = React.lazy(() => import('../components/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const CategoryManagerModal = React.lazy(() => import('../components/CategoryManagerModal').then(m => ({ default: m.CategoryManagerModal })));
 const ProfileModal = React.lazy(() => import('../components/ProfileModal').then(m => ({ default: m.ProfileModal })));
@@ -162,6 +164,8 @@ export const DashboardPage = () => {
                 if (prompt) setChatPrompt(prompt);
                 setActiveView('chat');
               }}
+              onDepositVault={modals.openDepositModal}
+              onPayBillVault={modals.openPayBillModal}
             />
           )}
 
@@ -207,6 +211,7 @@ export const DashboardPage = () => {
           {activeView === 'vaults' && (
             <VaultsView
               vaults={dashboard.vaults}
+              accounts={dashboard.accounts}
               isLoading={dashboard.isLoading}
               errorMessage={dashboard.vaultErrorMessage}
               onDismissError={dashboard.clearVaultError}
@@ -214,6 +219,9 @@ export const DashboardPage = () => {
               onEditVault={modals.openEditVault}
               onDeleteVault={dashboard.handleDeleteVault}
               onOpenCreateVault={modals.openVaultModal}
+              onDepositVault={modals.openDepositModal}
+              onPayBillVault={modals.openPayBillModal}
+              onDataMutated={refreshAllData}
             />
           )}
         </main>
@@ -264,6 +272,32 @@ export const DashboardPage = () => {
                 refreshAllData();
               }}
               vault={modals.selectedVaultForEdit}
+            />
+          )}
+
+          {modals.isDepositModalOpen && (
+            <DepositVaultModal
+              isOpen={modals.isDepositModalOpen}
+              onClose={modals.closeDepositModal}
+              onSuccess={async () => {
+                modals.closeDepositModal();
+                await refreshAllData();
+              }}
+              vault={modals.selectedVaultForDeposit}
+              accounts={dashboard.accounts}
+            />
+          )}
+
+          {modals.isPayBillModalOpen && (
+            <PayBillModal
+              isOpen={modals.isPayBillModalOpen}
+              onClose={modals.closePayBillModal}
+              onSuccess={async () => {
+                modals.closePayBillModal();
+                await refreshAllData();
+              }}
+              vault={modals.selectedVaultForPayBill}
+              accounts={dashboard.accounts}
             />
           )}
 
