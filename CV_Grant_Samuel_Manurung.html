@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curriculum Vitae - Grant Samuel Manurung</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 14mm 12mm 14mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      font-size: 9pt;
+      line-height: 1.38;
+      color: #111827;
+      background-color: #ffffff;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header styling */
+    header {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    h1 {
+      font-size: 15pt;
+      line-height: 1.35;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #0f172a;
+      margin-bottom: 2px;
+    }
+
+    .contact-info {
+      font-size: 8.6pt;
+      color: #334155;
+      line-height: 1.38;
+    }
+
+    .contact-info a {
+      color: #0f172a;
+      text-decoration: none;
+    }
+
+    .contact-info .separator {
+      margin: 0 4px;
+      color: #94a3b8;
+    }
+
+    /* Section styling */
+    section {
+      margin-bottom: 5px;
+    }
+
+    h2 {
+      font-size: 10.4pt;
+      line-height: 1.35;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #0f172a;
+      border-bottom: 1.2px solid #0f172a;
+      padding-bottom: 1px;
+      margin-top: 5px;
+      margin-bottom: 3px;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    /* Entries */
+    .entry {
+      margin-bottom: 3.5px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .entry:last-child {
+      margin-bottom: 0;
+    }
+
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 9.3pt;
+      line-height: 1.35;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .entry-date {
+      font-size: 8.5pt;
+      line-height: 1.35;
+      font-weight: 600;
+      color: #475569;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    .entry-subtitle {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 8.7pt;
+      line-height: 1.35;
+      color: #334155;
+      margin-bottom: 1px;
+    }
+
+    .role-title {
+      font-weight: 600;
+      font-style: italic;
+    }
+
+    .tech-stack {
+      font-size: 8.4pt;
+      line-height: 1.35;
+      font-weight: 600;
+      color: #1e3a8a;
+    }
+
+    /* Lists */
+    ul {
+      margin: 1px 0 0 0;
+      padding-left: 15px;
+    }
+
+    li {
+      margin-bottom: 1px;
+      font-size: 8.8pt;
+      line-height: 1.38;
+      color: #1e293b;
+      text-align: left;
+    }
+
+    li:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Summary text */
+    .summary-text {
+      font-size: 8.8pt;
+      line-height: 1.38;
+      text-align: left;
+      color: #1e293b;
+    }
+
+    /* Skills list */
+    .skills-category {
+      margin-bottom: 2.5px;
+      font-size: 8.8pt;
+      line-height: 1.38;
+    }
+
+    .skills-category strong {
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    /* Certifications */
+    .cert-item {
+      margin-bottom: 1.5px;
+      font-size: 8.7pt;
+      line-height: 1.38;
+    }
+
+    .cert-item strong {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .cert-item .cert-meta {
+      color: #475569;
+    }
+
+    /* Page break control */
+    .page-break {
+      break-before: page;
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <h1>Grant Samuel Manurung</h1>
+    <div class="contact-info">
+      Surabaya, Jawa Timur, Indonesia
+      <span class="separator">|</span>
+      +62895611378917
+      <span class="separator">|</span>
+      <a href="mailto:grantsamuelman@gmail.com">grantsamuelman@gmail.com</a>
+      <br>
+      <a href="https://linkedin.com/in/grant-samuel-manurung-6b376a25b">linkedin.com/in/grant-samuel-manurung-6b376a25b</a>
+      <span class="separator">|</span>
+      <a href="https://github.com/grantsam">github.com/grantsam</a>
+    </div>
+  </header>
+
+  <!-- RINGKASAN PROFESIONAL -->
+  <section>
+    <h2>Ringkasan Profesional</h2>
+    <p class="summary-text">
+      Mahasiswa S1 Sistem Informasi di Universitas Negeri Surabaya (IPK 3,83 / 4,00) dengan spesialisasi pada rekayasa perangkat lunak backend, arsitektur basis data, dan automasi sistem. Berpengalaman merancang dan mengimplementasikan arsitektur Controller-Service-Repository, RESTful API, Stored Procedures, serta komunikasi antar-layanan menggunakan TypeScript, Node.js (NestJS, Express.js), Python (FastAPI), dan PostgreSQL. Memiliki rekam jejak praktis melalui program magang industri di PT Midi Utama Indonesia, Tbk dan pemagangan full-stack di PT Luwes Inovasi Mandiri, mengembangkan dashboard analitik multi-tenant, pipeline integrasi data, dan mesin keuangan deterministik berorientasi keandalan sistem.
+    </p>
+  </section>
+
+  <!-- PENDIDIKAN -->
+  <section>
+    <h2>Pendidikan</h2>
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">UNIVERSITAS NEGERI SURABAYA</span>
+        <span class="entry-date">Surabaya, Jawa Timur</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">S1 Sistem Informasi &mdash; IPK: 3,83 / 4,00</span>
+        <span class="entry-date">2023 &ndash; 2027 (Diharapkan)</span>
+      </div>
+      <ul>
+        <li>Fokus Keilmuan: Rekayasa Perangkat Lunak, Arsitektur Basis Data, Enterprise Resource Planning (ERP), dan Pemodelan Sistem Informasi Terdistribusi.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- PENGALAMAN KERJA & PROGRAM KOMPETENSI -->
+  <section>
+    <h2>Pengalaman Kerja &amp; Program Kompetensi</h2>
+
+    <!-- PT Luwes Inovasi Mandiri -->
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">PT LUWES INOVASI MANDIRI</span>
+        <span class="entry-date">Juli 2026 (1 Bulan)</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">Full-Stack Developer Apprenticeship</span>
+      </div>
+      <ul>
+        <li>Merancang dan membangun modul dashboard manajemen alokasi pupuk dan pemetaan geospasial berbasis multi-tenant menggunakan NestJS, TypeScript, TypeORM, dan PostgreSQL.</li>
+        <li>Mengimplementasikan kalkulasi batas dan luas area poligon geospasial menggunakan library <code>@turf/area</code> untuk validasi akurasi luasan lahan secara presisi.</li>
+        <li>Menerapkan mekanisme idempotensi transaksi berbasis <em>scheduler-coordinated idempotency keys</em> dan Redis cache untuk mencegah duplikasi pemrosesan data pada operasi terjadwal.</li>
+        <li>Mengembangkan antarmuka dashboard analitik terpadu dan visualisasi data pemantauan operasional secara interaktif menggunakan React dan Vite.</li>
+      </ul>
+    </div>
+
+    <!-- PT Midi Utama Indonesia, Tbk -->
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">PT MIDI UTAMA INDONESIA, TBK</span>
+        <span class="entry-date">Agustus 2025 &ndash; Desember 2025</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">Location Backend Developer Intern (Predikat: Cumlaude) &mdash; Magang Berdampak</span>
+      </div>
+      <ul>
+        <li>Mengembangkan layanan backend sistem internal MIDILOC, platform terintegrasi untuk alur kerja administrasi Usulan Lokasi (ULOK) dan Komitmen Penggunaan Lahan Toko (KPLT).</li>
+        <li>Membangun REST API modular menggunakan Next.js (App Router API), TypeScript, dan Supabase (PostgreSQL), mencakup endpoint autentikasi, manajemen alur persetujuan bertingkat, serta pengelolaan data master wilayah administratif.</li>
+        <li>Mengimplementasikan Stored Procedures dan Remote Procedure Calls (RPC) pada PostgreSQL untuk menjamin integritas transaksi dan keamanan eksekusi baca/tulis data.</li>
+        <li>Mengintegrasikan validasi skema bertipe ketat dengan Zod, pembatasan hak akses berbasis peran (RBAC) dengan pemfilteran berbasis cabang, serta visualisasi pemetaan geospasial Leaflet.</li>
+      </ul>
+    </div>
+
+    <!-- Coding Camp DBS 2026 -->
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">CODING CAMP 2026 OLEH DBS FOUNDATION (DICODING INDONESIA)</span>
+        <span class="entry-date">Februari 2026 &ndash; Juli 2026</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">Peserta Jalur Pengembang Web Full-Stack &amp; Backend Developer Capstone</span>
+      </div>
+      <ul>
+        <li>Menyelesaikan program intensif rekayasa perangkat lunak web yang mencakup perancangan RESTful API, arsitektur basis data relasional, pengujian kode, dan integrasi React.</li>
+        <li>Berperan sebagai Backend Developer pada proyek capstone CakapKarier AI, memimpin perancangan skema basis data PostgreSQL, API gateway Express.js, dan orkestrasi integrasi antar-layanan.</li>
+      </ul>
+    </div>
+
+    <!-- Asisten Dosen ERP UNESA -->
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">UNIVERSITAS NEGERI SURABAYA</span>
+        <span class="entry-date">Mei 2025 &ndash; Juni 2025</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">Asisten Dosen Enterprise Resource Planning (ERP)</span>
+        <span class="entry-date">Surabaya, Jawa Timur</span>
+      </div>
+      <ul>
+        <li>Memfasilitasi praktikum laboratorium dan asistensi materi bagi lebih dari 50 mahasiswa S1 mengenai konsep sistem ERP dan alur integrasi proses bisnis fungsional.</li>
+        <li>Membimbing mahasiswa dalam pemodelan basis data relasional, simulasi proses bisnis, dan penerapan skenario integrasi modul pada platform Odoo.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- PENGALAMAN ORGANISASI -->
+  <section>
+    <h2>Pengalaman Organisasi</h2>
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">SCIENTIFIC &amp; LITERACY PROGRAMMING (SLP) UNESA</span>
+        <span class="entry-date">November 2024 &ndash; Desember 2025</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">Core Team Web Development</span>
+        <span class="entry-date">Surabaya, Jawa Timur</span>
+      </div>
+      <ul>
+        <li>Merancang dan menyusun silabus teknis pengembangan web menyeluruh dan arsitektur backend bagi 145+ anggota aktif organisasi.</li>
+        <li>Membawakan lokakarya teknis terstruktur mengenai dasar arsitektur MVC, pemrograman berorientasi objek, dan integrasi basis data.</li>
+        <li>Mengoordinasikan kolaborasi tim dalam pengembangan repositori perangkat lunak dan sistem portal internal untuk menunjang kegiatan evaluasi teknis anggota.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- PROYEK REKAYASA PERANGKAT LUNAK (HALAMAN 2) -->
+  <section class="page-break">
+    <h2>Proyek Rekayasa Perangkat Lunak</h2>
+
+    <!-- Rezekify -->
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">Rezekify: Autonomous Financial Manager &amp; Deterministic Runway Engine</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">Software Engineer (Backend &amp; Systems)</span>
+        <span class="tech-stack">Python, FastAPI, PostgreSQL, React, TypeScript, Docker, GitHub Actions</span>
+      </div>
+      <ul>
+        <li>Merancang dan mengimplementasikan mesin buku besar berpasangan (double-entry ledger) deterministik dengan tipe data <code>Decimal</code> guna mengeliminasi ketidakakuratan perhitungan floating-point.</li>
+        <li>Mengembangkan algoritma perhitungan runway harian (<em>daily safe runway formula</em>) serta menerapkan isolasi tenant tingkat baris (<em>row-level tenant isolation</em>) pada PostgreSQL untuk keamanan data multi-pengguna.</li>
+        <li>Membangun arsitektur Rotary Key Pool dan Agent Orchestrator untuk mengelola failover penyedia layanan inferensi eksternal secara tangguh dan asinkron.</li>
+        <li>Mengonfigurasi automasi pipeline CI/CD pada GitHub Actions yang mencakup pengujian unit otomatis dengan pytest, pemeriksaan tipe ketat, dan standardisasi kualitas sistem.</li>
+      </ul>
+    </div>
+
+    <!-- Snap2Sheet Automation Hub -->
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">Snap2Sheet Automation Hub: WhatsApp to Cloud Ingestion Pipeline</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">Backend &amp; Systems Engineer</span>
+        <span class="tech-stack">Node.js, TypeScript, Express, Google APIs, Docker, Tailwind CSS</span>
+      </div>
+      <ul>
+        <li>Membangun pipeline penyerapan data multi-penyewa (multi-tenant) otomatis dari pesan WhatsApp ke Google Sheets melalui Google APIs dan protokol OAuth 2.0.</li>
+        <li>Mengimplementasikan mekanisme deduplikasi pesan menggunakan <em>sliding-window buffer</em> guna mencegah pencatatan entri ganda akibat pengiriman ulang pesan dari webhook.</li>
+        <li>Merancang dashboard pemantauan berbasis desktop web secara real-time untuk inspeksi metrik ingestion, status koneksi webhook, dan log audit transaksi.</li>
+        <li>Menyiapkan deployment terkontainerisasi menggunakan Docker untuk memastikan isolasi dependensi dan konsistensi lingkungan eksekusi pipeline.</li>
+      </ul>
+    </div>
+
+    <!-- CakapKarier AI -->
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">CakapKarier AI: Career Assessment &amp; Recommendation Engine</span>
+      </div>
+      <div class="entry-subtitle">
+        <span class="role-title">Backend Developer</span>
+        <span class="tech-stack">Node.js, Express.js, PostgreSQL 16, FastAPI, Zod, JWT, Docker</span>
+      </div>
+      <ul>
+        <li>Mengembangkan backend RESTful API dengan arsitektur Controller-Service-Repository untuk memisahkan domain logika bisnis, akses persistensi data, dan protokol HTTP.</li>
+        <li>Merancang skema basis data PostgreSQL 16 dengan identitas UUID v4, kueri terparameter untuk pencegahan SQL injection, serta kolom JSONB untuk penyimpanan payload asesmen dinamis.</li>
+        <li>Mengimplementasikan orkestrasi komunikasi HTTP antar-layanan (<em>inter-service HTTP orchestration</em>) yang menghubungkan gateway Express.js ke microservice inferensi model Python FastAPI.</li>
+        <li>Menerapkan middleware keamanan mencakup validasi skema input dengan Zod, autentikasi rute berbasis JWT, serta isolasi container menggunakan Docker.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SERTIFIKASI -->
+  <section>
+    <h2>Sertifikasi</h2>
+    <div class="cert-item">
+      <strong>Kelulusan Coding Camp 2026 &ndash; Pengembang Web Full-Stack</strong>, <span class="cert-meta">DBS Foundation x Dicoding Indonesia (2026)</span>
+    </div>
+    <div class="cert-item">
+      <strong>Belajar Fundamental Back-End dengan JavaScript</strong>, <span class="cert-meta">Dicoding Indonesia &mdash; ID: L4PQ9LRJOPO1 (2026)</span>
+    </div>
+    <div class="cert-item">
+      <strong>Belajar Fundamental Aplikasi Web dengan React</strong>, <span class="cert-meta">Dicoding Indonesia &mdash; ID: 0LZ0Y45GNX65 (2026)</span>
+    </div>
+    <div class="cert-item">
+      <strong>Belajar Membuat Aplikasi Back-End untuk Pemula dengan Google Cloud</strong>, <span class="cert-meta">Dicoding Indonesia &mdash; ID: NVP75L28RXR0 (2025)</span>
+    </div>
+    <div class="cert-item">
+      <strong>Magang Berdampak Kemdiktisaintek</strong>, <span class="cert-meta">PT Midi Utama Indonesia, Tbk (2025)</span>
+    </div>
+    <div class="cert-item">
+      <strong>AWS re/Start Graduate</strong>, <span class="cert-meta">Amazon Web Services (AWS) &mdash; Cloud Computing &amp; Systems Foundations (2024)</span>
+    </div>
+    <div class="cert-item">
+      <strong>Belajar Dasar Structured Query Language (SQL)</strong>, <span class="cert-meta">Dicoding Indonesia &mdash; ID: EYX4YQ35WZDL (2024)</span>
+    </div>
+  </section>
+
+  <!-- KEAHLIAN TEKNIS -->
+  <section>
+    <h2>Keahlian Teknis</h2>
+    <div class="skills-category">
+      <strong>Languages:</strong> TypeScript, JavaScript, Python, SQL, PHP, HTML, CSS
+    </div>
+    <div class="skills-category">
+      <strong>Backend &amp; Architecture:</strong> NestJS, FastAPI, Express.js, Next.js (App Router API), RESTful API, Remote Procedure Calls (RPC), Controller-Service-Repository, Microservices &amp; Inter-service Communication, RBAC, JWT, Zod
+    </div>
+    <div class="skills-category">
+      <strong>Databases &amp; Spatial:</strong> PostgreSQL, Supabase, MySQL, Redis, TypeORM, Stored Procedures, Database Transactions &amp; Indexing, Geospatial Calculation (@turf/area, Leaflet)
+    </div>
+    <div class="skills-category">
+      <strong>Frontend:</strong> React, Vite, Next.js, TypeScript, Tailwind CSS, SWR, Responsive Web Design
+    </div>
+    <div class="skills-category">
+      <strong>DevOps &amp; Tools:</strong> Docker, GitHub Actions (CI/CD), Git, Linux, Google Cloud, AWS, Postman
+    </div>
+  </section>
+
+</body>
+</html>
