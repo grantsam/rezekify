@@ -158,7 +158,7 @@ describe('DashboardPage Component', () => {
     });
   });
 
-  it('navigates to AIChatView with pre-filled prompt when clicking AISpotlightHero chip and handles chat submission', async () => {
+  it('navigates to AIChatView via sidebar and handles chat submission', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
       if (endpoint === '/dashboard/summary') return mockSummary;
       if (endpoint.startsWith('/transactions')) return mockTransactions;
@@ -172,14 +172,15 @@ describe('DashboardPage Component', () => {
     render(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Asisten AI Rezekify')).toBeInTheDocument();
+      expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
     });
 
-    const chip = screen.getByRole('button', { name: /Makan siang 35rb Gopay/i });
-    fireEvent.click(chip);
+    const chatNavBtn = screen.getAllByRole('button', { name: /AI Copilot/i })[0];
+    fireEvent.click(chatNavBtn);
 
-    // Should switch to AIChatView with prompt populated
+    // Should switch to AIChatView
     const omniInput = await screen.findByPlaceholderText(/tanya atau catat keuangan/i);
+    fireEvent.change(omniInput, { target: { value: 'Makan siang 35rb Gopay' } });
     expect(omniInput).toHaveValue('Makan siang 35rb Gopay');
 
     // Submit the message
