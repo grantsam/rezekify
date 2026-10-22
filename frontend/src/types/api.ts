@@ -7,6 +7,14 @@ export type VaultType = 'SAVINGS' | 'FIXED_BILL';
 export type CategoryType = 'EXPENSE' | 'INCOME';
 export type EntryType = 'DEBIT' | 'CREDIT';
 export type HealthStatus = 'HEALTHY' | 'WARNING' | 'CRITICAL';
+export type GuidanceTone = 'CRITICAL' | 'WARNING' | 'HEALTHY';
+
+export interface SurvivalGuidance {
+  headline: string;
+  message: string;
+  tactical_action: string;
+  tone: GuidanceTone;
+}
 
 export interface User {
   id: string;
@@ -132,6 +140,7 @@ export interface DashboardSummaryResponse {
   safe_runway_threshold?: number;
   health_status: HealthStatus;
   upcoming_bills: UpcomingBill[];
+  survival_guidance?: SurvivalGuidance;
 }
 
 export interface LedgerEntry {
