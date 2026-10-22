@@ -470,14 +470,15 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         Tambah Cepat:
                       </span>
                       {[
-                        { label: '+50rb', amount: 50000 },
-                        { label: '+100rb', amount: 100000 },
-                        { label: '+250rb', amount: 250000 },
-                        { label: '+500rb', amount: 500000 },
+                        { label: '+50rb', amount: 50000, ariaLabel: 'Tambah 50 ribu rupiah' },
+                        { label: '+100rb', amount: 100000, ariaLabel: 'Tambah 100 ribu rupiah' },
+                        { label: '+250rb', amount: 250000, ariaLabel: 'Tambah 250 ribu rupiah' },
+                        { label: '+500rb', amount: 500000, ariaLabel: 'Tambah 500 ribu rupiah' },
                       ].map((preset) => (
                         <button
                           key={preset.label}
                           type="button"
+                          aria-label={preset.ariaLabel}
                           onClick={() => handleAddPreset(preset.amount)}
                           className="min-h-[38px] min-w-[38px] px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 transition-all cursor-pointer select-none active:scale-95"
                         >
@@ -534,6 +535,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
                     {/* Jika Jadi Beli */}
                     <div
+                      data-testid="projected-card"
+                      aria-live="polite"
                       className={`bg-white dark:bg-zinc-950/60 border rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-colors ${
                         simulationResults.status === 'CRITICAL'
                           ? 'border-rose-500/40 bg-rose-500/[0.02]'
@@ -634,7 +637,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         setQuickCaptureDraft(`Beli Rp ${new Intl.NumberFormat('id-ID').format(simulationNominal)}`);
                         setIsSimulationOpen(false);
                       }}
-                      className="min-h-[38px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all shrink-0 cursor-pointer"
+                      isDisabled={simulationNominal <= 0}
+                      disabled={simulationNominal <= 0}
+                      className="min-h-[38px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Lanjut Catat Pengeluaran ➔
                     </Button>

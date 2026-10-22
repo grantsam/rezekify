@@ -449,10 +449,15 @@ describe('OverviewView Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
       const input = screen.getByPlaceholderText(/Misal: 150\.000/i) as HTMLInputElement;
 
-      fireEvent.click(screen.getByRole('button', { name: /\+50rb/i }));
+      // Quick chips have descriptive aria-labels
+      const chip50k = screen.getByRole('button', { name: /Tambah 50 ribu rupiah/i });
+      expect(chip50k).toBeInTheDocument();
+      fireEvent.click(chip50k);
       expect(input.value).toBe('50.000');
 
-      fireEvent.click(screen.getByRole('button', { name: /\+100rb/i }));
+      const chip100k = screen.getByRole('button', { name: /Tambah 100 ribu rupiah/i });
+      expect(chip100k).toBeInTheDocument();
+      fireEvent.click(chip100k);
       expect(input.value).toBe('150.000');
 
       // Reset button clears nominal
@@ -559,10 +564,20 @@ describe('OverviewView Component', () => {
       );
 
       fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+
+      // Projected calculation card has aria-live="polite"
+      const projectedCard = screen.getByTestId('projected-card');
+      expect(projectedCard).toBeInTheDocument();
+      expect(projectedCard).toHaveAttribute('aria-live', 'polite');
+
+      // Bridge button is disabled when nominal <= 0
+      const bridgeBtn = screen.getByRole('button', { name: /Lanjut Catat Pengeluaran/i });
+      expect(bridgeBtn).toBeDisabled();
+
       const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
       fireEvent.change(input, { target: { value: '150000' } });
 
-      const bridgeBtn = screen.getByRole('button', { name: /Lanjut Catat Pengeluaran/i });
+      expect(bridgeBtn).not.toBeDisabled();
       fireEvent.click(bridgeBtn);
 
       // Drawer closed
