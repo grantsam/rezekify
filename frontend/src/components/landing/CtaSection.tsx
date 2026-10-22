@@ -24,7 +24,7 @@ export default function CtaSection() {
 
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-[1.15]">
                 Siap Mengelola Keuanganmu <br />
-                Bersama <span className="bg-gradient-to-r from-[#0F766E] via-[#10B981] to-[#34D399] bg-clip-text text-transparent">Rezekify?</span>
+                Bersama <span className="text-emerald-500 dark:text-emerald-400">Rezekify?</span>
               </h2>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-emerald-100/80 max-w-xl font-normal leading-relaxed">
@@ -50,7 +50,7 @@ export default function CtaSection() {
 
             <div className="lg:col-span-6 flex justify-center lg:justify-end relative">
               
-              <div className="absolute -top-6 left-2 sm:left-6 z-30 bg-white/95 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 p-3.5 rounded-2xl shadow-xl max-w-[210px] animate-bounce duration-[4000ms]">
+              <div className="absolute -top-6 left-2 sm:left-6 z-30 bg-white/95 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 p-3.5 rounded-2xl shadow-xl max-w-[210px]">
                 <div className="flex items-center gap-2">
                   <span className="text-base">✨</span>
                   <p className="text-[11px] font-bold text-slate-800 dark:text-white leading-tight">

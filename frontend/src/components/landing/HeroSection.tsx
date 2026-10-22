@@ -35,9 +35,7 @@ export default function HeroSection() {
               Kelola Keuangan <br />
               Lebih Mudah, <br />
               Raih Masa Depan <br />
-              <span className="bg-gradient-to-r from-[#0F766E] via-[#10B981] to-[#34D399] bg-clip-text text-transparent">
-                Lebih Baik
-              </span>
+              <span className="text-emerald-500 dark:text-emerald-400">Lebih Baik</span>
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-xl leading-relaxed font-normal">
@@ -145,7 +143,7 @@ export default function HeroSection() {
                 </svg>
               </div>
 
-              <div className="absolute -top-6 left-2 sm:left-6 z-20 bg-white/90 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 p-3.5 rounded-2xl shadow-xl shadow-black/10 animate-bounce duration-[3000ms] transition-transform hover:scale-105">
+              <div className="absolute -top-6 left-2 sm:left-6 z-20 bg-white/90 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 p-3.5 rounded-2xl shadow-xl shadow-black/10 transition-transform hover:scale-105">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-[#10B981] flex items-center justify-center font-bold">
                     💰
@@ -208,7 +206,7 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              <div className="absolute -bottom-5 right-0 z-20 bg-white/90 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce duration-[4000ms]">
+              <div className="absolute -bottom-5 right-0 z-20 bg-white/90 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 p-3 rounded-2xl shadow-xl flex items-center gap-3">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-xs font-bold">
                   ✨
                 </div>

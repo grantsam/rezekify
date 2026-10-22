@@ -95,7 +95,7 @@ export default function HowItWorksSection() {
 
           <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.3] text-slate-900 dark:text-white">
             Mudah Digunakan, <br />
-            Hanya dalam <span className="bg-gradient-to-r from-[#0F766E] via-[#10B981] to-[#34D399] bg-clip-text text-transparent">5 Langkah Sederhana</span>
+            Hanya dalam <span className="text-emerald-500 dark:text-emerald-400">5 Langkah Sederhana</span>
           </h2>
 
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal max-w-xl mx-auto">

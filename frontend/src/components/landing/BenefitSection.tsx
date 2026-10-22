@@ -95,7 +95,7 @@ export default function BenefitsSection() {
 
               <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight leading-[1.3] text-slate-900 dark:text-white">
                 Lebih dari Sekadar Mencatat, <br />
-                Ini tentang <span className="bg-gradient-to-r from-[#0F766E] via-[#10B981] to-[#34D399] bg-clip-text text-transparent">Masa Depan Finansialmu</span>
+                Ini tentang <span className="text-emerald-500 dark:text-emerald-400">Masa Depan Finansialmu</span>
               </h2>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal">

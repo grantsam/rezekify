@@ -1,15 +1,24 @@
 import React from 'react';
-import { Card, CardBody, Chip } from '@heroui/react';
+import { Card, CardBody, Chip, Button } from '@heroui/react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Calendar, ShieldCheck } from 'lucide-react';
-import { UpcomingBill } from '../types/api';
+import { UpcomingBill, Vault } from '../types/api';
 
 interface Props {
   bills?: UpcomingBill[];
   isLoading?: boolean;
+  vaults?: Vault[];
+  onDepositVault?: (vault: Vault) => void;
+  onPayBillVault?: (vault: Vault) => void;
 }
 
-export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = false }) => {
+export const UpcomingBillsCard: React.FC<Props> = ({
+  bills = [],
+  isLoading = false,
+  vaults = [],
+  onDepositVault,
+  onPayBillVault,
+}) => {
   if (isLoading) {
     return (
       <div
@@ -83,6 +92,8 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
             {urgentBills.map((bill) => {
               const shortage = bill.target_amount - bill.allocated_amount;
               const isUrgent = bill.days_until_due <= 3;
+              // ponytail: Name-based bill-to-vault matching. Upgrade to bill.vault_id reference when backend model adds foreign key.
+              const matchingVault = vaults?.find((v) => v.name.toLowerCase() === bill.name.toLowerCase());
               return (
                 <div
                   key={bill.name}
@@ -123,6 +134,30 @@ export const UpcomingBillsCard: React.FC<Props> = ({ bills = [], isLoading = fal
                     <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono font-medium tabular-nums block mt-0.5">
                       Target: Rp {bill.target_amount.toLocaleString('id-ID')}
                     </span>
+                    <div className="flex items-center gap-1.5 mt-2 justify-end">
+                      {onDepositVault && matchingVault && (
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => onDepositVault(matchingVault)}
+                          aria-label={`Nabung ke ${bill.name}`}
+                          className="text-[11px] font-bold h-7 px-2.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 min-h-[30px]"
+                        >
+                          + Alokasi
+                        </Button>
+                      )}
+                      {onPayBillVault && matchingVault && (
+                        <Button
+                          size="sm"
+                          variant="solid"
+                          onPress={() => onPayBillVault(matchingVault)}
+                          aria-label={`Bayar tagihan ${bill.name}`}
+                          className="text-[11px] font-extrabold h-7 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white min-h-[30px] shadow-xs"
+                        >
+                          Bayar
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

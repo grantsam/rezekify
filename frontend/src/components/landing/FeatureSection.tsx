@@ -133,7 +133,7 @@ export default function FeaturesSection() {
 
                 <div className="p-3.5 rounded-2xl bg-white/60 dark:bg-[#141417]/80 border border-white/80 dark:border-zinc-800/80 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[#10B981]/20 text-[#10B981] flex items-center justify-center font-bold text-xs animate-bounce">
+                    <div className="w-8 h-8 rounded-xl bg-[#10B981]/20 text-[#10B981] flex items-center justify-center font-bold text-xs">
                       📷
                     </div>
                     <div className="text-left">
@@ -175,9 +175,7 @@ export default function FeaturesSection() {
 
             <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight leading-[1.35] text-slate-900 dark:text-white">
               Teknologi Canggih untuk <br className="hidden sm:block" />
-              <span className="bg-gradient-to-r from-[#0F766E] via-[#10B981] to-[#34D399] bg-clip-text text-transparent">
-                Pengelolaan Keuangan
-              </span> yang Lebih Baik
+              <span className="text-emerald-500 dark:text-emerald-400">Pengelolaan Keuangan</span> yang Lebih Baik
             </h2>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal">

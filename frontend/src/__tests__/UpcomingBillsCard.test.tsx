@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { UpcomingBillsCard } from '../components/UpcomingBillsCard';
+import { Vault } from '../types/api';
 
 describe('UpcomingBillsCard Component', () => {
   it('renders upcoming bill warning when bills due within 7 days exist with calm badge for >3 days', () => {
@@ -69,5 +70,50 @@ describe('UpcomingBillsCard Component', () => {
     render(<UpcomingBillsCard bills={nonUrgentBills} />);
     expect(screen.getByTestId('upcoming-bills-empty')).toBeInTheDocument();
     expect(screen.getByText('Semua Komitmen Aman')).toBeInTheDocument();
+  });
+
+  it('renders in-place action buttons and triggers callbacks with matching vault when provided', () => {
+    const mockBills = [
+      {
+        name: 'Listrik & Air',
+        target_amount: 500000,
+        allocated_amount: 200000,
+        target_date: '2026-09-21',
+        days_until_due: 2,
+      },
+    ];
+    const mockVaults: Vault[] = [
+      {
+        id: 'v-1',
+        name: 'Listrik & Air',
+        vault_type: 'FIXED_BILL',
+        target_amount: 500000,
+        allocated_amount: 200000,
+        target_date: '2026-09-21',
+        is_locked: false,
+      },
+    ];
+    const onDepositVault = vi.fn();
+    const onPayBillVault = vi.fn();
+
+    render(
+      <UpcomingBillsCard
+        bills={mockBills}
+        vaults={mockVaults}
+        onDepositVault={onDepositVault}
+        onPayBillVault={onPayBillVault}
+      />
+    );
+
+    const alokasiBtn = screen.getByRole('button', { name: /Nabung ke Listrik & Air/i });
+    const bayarBtn = screen.getByRole('button', { name: /Bayar tagihan Listrik & Air/i });
+    expect(alokasiBtn).toBeInTheDocument();
+    expect(bayarBtn).toBeInTheDocument();
+
+    fireEvent.click(alokasiBtn);
+    expect(onDepositVault).toHaveBeenCalledWith(mockVaults[0]);
+
+    fireEvent.click(bayarBtn);
+    expect(onPayBillVault).toHaveBeenCalledWith(mockVaults[0]);
   });
 });

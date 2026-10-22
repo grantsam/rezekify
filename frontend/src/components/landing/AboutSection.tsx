@@ -86,9 +86,7 @@ export default function AboutSection() {
             <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.35] text-slate-900 dark:text-white pb-1">
               Semua yang Kamu <br />
               Butuhkan dalam <br />
-              <span className="bg-gradient-to-r from-[#0F766E] via-[#10B981] to-[#34D399] bg-clip-text text-transparent">
-                Satu Platform
-              </span>
+              <span className="text-emerald-500 dark:text-emerald-400">Satu Platform</span>
             </h2>
 
             <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal max-w-lg">

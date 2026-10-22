@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 # Stage 1: Build static distribution files
 FROM node:20-alpine AS builder
 

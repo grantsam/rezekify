@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OverviewView } from '../components/OverviewView';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
@@ -99,7 +99,7 @@ describe('OverviewView Component', () => {
 
     // Jatah Belanja Hari Ini
     expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
-    expect(screen.getByText(/Rp\s*133\.333/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Rp\s*133\.333/)[0]).toBeInTheDocument();
 
     // Pengeluaran Hari Ini & Sisa Jatah Hari Ini
     expect(screen.getByText(/Pengeluaran Hari Ini/i)).toBeInTheDocument();
@@ -114,6 +114,11 @@ describe('OverviewView Component', () => {
 
     // Sisa hari siklus
     expect(screen.getByText(/15 hari lagi menuju siklus baru/i)).toBeInTheDocument();
+
+    // Mathematical Reconciliation Strip
+    expect(screen.getByText('Total Kas:')).toBeInTheDocument();
+    expect(screen.getByText('Terkunci di Pos/Tagihan:')).toBeInTheDocument();
+    expect(screen.getByText('Bebas Pakai:')).toBeInTheDocument();
   });
 
   it('renders negative remaining budget correctly when today_spent exceeds daily runway', () => {
@@ -140,7 +145,10 @@ describe('OverviewView Component', () => {
 
     expect(screen.getByText('Waspada')).toBeInTheDocument();
     expect(screen.getByText('STATUS KEUANGAN HARI INI')).toHaveClass('text-amber-600');
-    expect(screen.getByText(/Melebihi jatah:\s*Rp\s*50\.000/i)).toBeInTheDocument();
+    expect(screen.getByText(/Jatah hari ini terlampaui/i)).toBeInTheDocument();
+    expect(screen.getByText('Total Kas:')).toBeInTheDocument();
+    expect(screen.getByText('Terkunci di Pos/Tagihan:')).toBeInTheDocument();
+    expect(screen.getByText('Bebas Pakai:')).toBeInTheDocument();
   });
 
   it('renders Tier 2 side-by-side: ExpenseCharts and RecentTransactionsCard and handles navigation to ledger', () => {
@@ -195,7 +203,7 @@ describe('OverviewView Component', () => {
     expect(screen.getByText('Komitmen & Vaults Prioritas')).toBeInTheDocument();
     expect(screen.getByText('Simpanan Pajak')).toBeInTheDocument();
     expect(screen.getByText('Dana Darurat')).toBeInTheDocument();
-    expect(screen.getByText('Rp 1.000.000')).toBeInTheDocument();
+    expect(screen.getAllByText('Rp 1.000.000')[0]).toBeInTheDocument();
     expect(screen.getByText('/ Rp 1.500.000')).toBeInTheDocument();
 
     const vaultProgress = screen.getByRole('progressbar', { name: /Progres Simpanan Pajak/i });
@@ -332,5 +340,41 @@ describe('OverviewView Component', () => {
     expect(depositBtn).toBeInTheDocument();
     fireEvent.click(depositBtn);
     expect(handleDeposit).toHaveBeenCalledWith(mockVaults[1]);
+  });
+
+  it('renders QuickCaptureBar and handles transaction submission triggering onRefreshData', async () => {
+    const handleRefreshData = vi.fn();
+    const submitChatSpy = vi.spyOn(apiClient, 'submitChatMessage').mockResolvedValue({
+      reply: 'Tercatat: Makan siang Rp 25.000 (GoPay)',
+      message_id: 'msg-1',
+      transaction: null,
+    });
+
+    render(
+      <OverviewView
+        summary={mockSummary}
+        vaults={mockVaults}
+        accounts={mockAccounts}
+        transactions={mockTransactions}
+        isLoading={false}
+        refreshTrigger={0}
+        onNavigateToVaults={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+        onOpenSimulateModal={vi.fn()}
+        onRefreshData={handleRefreshData}
+      />
+    );
+
+    const input = screen.getByPlaceholderText('Ketik mutasi, drop foto struk kasir, atau rekam suara...');
+    expect(input).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: 'Makan siang 25rb Gopay' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+
+    expect(submitChatSpy).toHaveBeenCalledWith('Makan siang 25rb Gopay');
+    await waitFor(() => {
+      expect(handleRefreshData).toHaveBeenCalledTimes(1);
+    });
+    expect(await screen.findByText('Tercatat: Makan siang Rp 25.000 (GoPay)')).toBeInTheDocument();
   });
 });

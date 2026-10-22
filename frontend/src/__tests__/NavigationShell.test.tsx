@@ -98,6 +98,10 @@ describe('Navigation Shell Components', () => {
     );
 
     expect(screen.queryByText('Ringkasan')).not.toBeInTheDocument();
+    const collapsedAccounts = screen.getByLabelText('Daftar Rekening Ringkas');
+    expect(collapsedAccounts).toBeInTheDocument();
+    expect(screen.getByTitle('BCA Utama: Rp 2.500.000')).toBeInTheDocument();
+    expect(screen.getByTitle('GoPay: Rp 350.000')).toBeInTheDocument();
   });
 
   it('renders BottomDock with 4 tabs and elevated center AI Copilot button with onQuickCapturePress', () => {

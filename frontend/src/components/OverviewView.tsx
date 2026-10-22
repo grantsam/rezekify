@@ -17,6 +17,8 @@ import { ExpenseCharts } from './ExpenseCharts';
 import { UpcomingBillsCard } from './UpcomingBillsCard';
 import { RecentTransactionsCard } from './RecentTransactionsCard';
 import { AISpotlightHero } from './AISpotlightHero';
+import { QuickCaptureBar } from './QuickCaptureBar';
+import * as apiClient from '../services/apiClient';
 
 export interface OverviewViewProps {
   summary: DashboardSummaryResponse | null;
@@ -32,6 +34,7 @@ export interface OverviewViewProps {
   onOpenChat?: (prompt?: string) => void;
   onDepositVault?: (vault: Vault) => void;
   onPayBillVault?: (vault: Vault) => void;
+  onRefreshData?: () => Promise<void> | void;
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
@@ -48,7 +51,65 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onOpenChat,
   onDepositVault,
   onPayBillVault,
+  onRefreshData,
 }) => {
+  const [isQuickCaptureLoading, setIsQuickCaptureLoading] = React.useState<boolean>(false);
+  const [quickCaptureToast, setQuickCaptureToast] = React.useState<{ text: string; isError?: boolean } | null>(null);
+
+  const handleQuickCaptureSubmit = async (
+    input: string | { text: string; file: File | null },
+    fileArg?: File | null
+  ) => {
+    const textStr = typeof input === 'string' ? input.trim() : (input.text || '').trim();
+    const fileObj = typeof input === 'string' ? fileArg : input.file;
+    if (!textStr && !fileObj) return;
+
+    setIsQuickCaptureLoading(true);
+    try {
+      let res;
+      if (fileObj) {
+        res = await apiClient.submitChatReceipt(fileObj, textStr || undefined);
+      } else {
+        res = await apiClient.submitChatMessage(textStr);
+      }
+      setQuickCaptureToast({
+        text: res.reply || 'Transaksi berhasil dicatat!',
+        isError: false,
+      });
+      if (onRefreshData) {
+        await onRefreshData();
+      }
+    } catch (err: any) {
+      setQuickCaptureToast({
+        text: err?.message || 'Gagal mencatat transaksi.',
+        isError: true,
+      });
+    } finally {
+      setIsQuickCaptureLoading(false);
+    }
+  };
+
+  const handleQuickCaptureVoiceSubmit = async (blob: Blob, caption?: string) => {
+    setIsQuickCaptureLoading(true);
+    try {
+      const res = await apiClient.submitChatVoice(blob, caption);
+      setQuickCaptureToast({
+        text: res.reply || 'Pesan suara berhasil diproses!',
+        isError: false,
+      });
+      if (onRefreshData) {
+        await onRefreshData();
+      }
+    } catch (err: any) {
+      setQuickCaptureToast({
+        text: err?.message || 'Gagal memproses pesan suara.',
+        isError: true,
+      });
+    } finally {
+      setIsQuickCaptureLoading(false);
+    }
+  };
+
   const activeAccounts = accounts.filter((acc) => acc.is_active !== false);
 
   const getStatusConfig = (status?: string) => {
@@ -126,6 +187,19 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </Card>
       )}
 
+      {/* QUICK CAPTURE COMMAND BAR (CENTER OF GRAVITY) */}
+      <div className="w-full">
+        <QuickCaptureBar
+          onSubmit={handleQuickCaptureSubmit}
+          onVoiceSubmit={handleQuickCaptureVoiceSubmit}
+          isLoading={isQuickCaptureLoading}
+          toastMessage={quickCaptureToast}
+          onDismissToast={() => setQuickCaptureToast(null)}
+        />
+      </div>
+
+      <AISpotlightHero onOpenChat={onOpenChat ?? (() => {})} />
+
       {/* 2. TIER 1: HERO TELEMETRY (JATAH BELANJA HARI INI) */}
       <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 overflow-hidden relative">
         <CardBody className="p-6 sm:p-8 relative z-10 flex flex-col gap-6">
@@ -176,9 +250,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
               <div>
                 {isOverspent ? (
-                  <span className="text-rose-600 dark:text-rose-400 font-extrabold font-mono tabular-nums">
-                    Melebihi jatah: {formatRupiah(Math.abs(remainingBudget))}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      Jatah hari ini terlampaui ({formatRupiah(Math.abs(remainingBudget))})
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400 hidden sm:inline">
+                      · Sisa siklus disesuaikan otomatis
+                    </span>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className="text-slate-500 dark:text-zinc-400 font-bold">Sisa Jatah Hari Ini:</span>
@@ -195,7 +274,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               size="sm"
               radius="full"
               value={spentPercentage}
-              color={isOverspent ? 'danger' : statusConfig.progressColor}
+              color={isOverspent ? 'warning' : statusConfig.progressColor}
               aria-label="Progres Pengeluaran Hari Ini"
               className="h-2.5"
             />
@@ -216,14 +295,36 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Mathematical Reconciliation Strip */}
+            <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800/80">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="font-medium text-slate-600 dark:text-zinc-300">Total Kas:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                    {formatRupiah(summary?.total_liquid_cash ?? 0)}
+                  </span>
+                  <span className="text-slate-400 dark:text-zinc-500 font-mono font-bold">−</span>
+                  <span className="font-medium text-amber-700 dark:text-amber-400">Terkunci di Pos/Tagihan:</span>
+                  <span className="font-mono font-bold text-amber-700 dark:text-amber-400 tabular-nums">
+                    {formatRupiah(summary?.vault_locked_cash ?? 0)}
+                  </span>
+                  <span className="text-slate-400 dark:text-zinc-500 font-mono font-bold">=</span>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">Bebas Pakai:</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    {formatRupiah(summary?.operational_free_cash ?? 0)}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
+                  ÷ {summary?.days_remaining ?? 0} hari = <strong className="font-mono text-slate-700 dark:text-zinc-200">{formatRupiah(dailyRunway)}/hari</strong>
+                </div>
+              </div>
+            </div>
           </div>
         </CardBody>
       </Card>
 
-      {/* 3. TIER 2: ASISTEN AI COPILOT SPOTLIGHT */}
-      <AISpotlightHero onOpenChat={onOpenChat ?? (() => {})} />
-
-      {/* 4. TIER 3: BENTO GRID ANALITIK & TRANSAKSI TERAKHIR (SPAN 7:5) */}
+      {/* 3. TIER 2: BENTO GRID ANALITIK & TRANSAKSI TERAKHIR (SPAN 7:5) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div className="lg:col-span-7 w-full flex flex-col h-full">
           <ExpenseCharts refreshTrigger={refreshTrigger} />
@@ -242,7 +343,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Col 1: Upcoming Bills Card */}
         <div className="w-full flex flex-col h-full">
-          <UpcomingBillsCard bills={summary?.upcoming_bills} isLoading={isLoading} />
+          <UpcomingBillsCard
+            bills={summary?.upcoming_bills}
+            isLoading={isLoading}
+            vaults={vaults}
+            onDepositVault={onDepositVault}
+            onPayBillVault={onPayBillVault}
+          />
         </div>
 
         {/* Col 2: Komitmen & Vaults Prioritas */}

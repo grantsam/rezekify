@@ -46,14 +46,12 @@ export default function FaqSection() {
 
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-[1.3] text-slate-900 dark:text-white text-left">
               Pertanyaan yang <br />
-              <span className="bg-gradient-to-r from-[#0F766E] via-[#10B981] to-[#34D399] bg-clip-text text-transparent">
-                Sering Diajukan
-              </span>
+              <span className="text-emerald-500 dark:text-emerald-400">Sering Diajukan</span>
             </h2>
 
             <div className="bg-[#0F766E]/10 dark:bg-[#141417] backdrop-blur-3xl border border-white/50 dark:border-zinc-800/80 rounded-3xl p-6 shadow-xl space-y-5 text-center relative overflow-hidden">
 
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-3xl shadow-lg animate-bounce duration-[4000ms]">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-3xl shadow-lg">
                 💬
               </div>
 

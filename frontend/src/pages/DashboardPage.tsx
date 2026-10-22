@@ -166,6 +166,7 @@ export const DashboardPage = () => {
               }}
               onDepositVault={modals.openDepositModal}
               onPayBillVault={modals.openPayBillModal}
+              onRefreshData={refreshAllData}
             />
           )}
 
