@@ -518,7 +518,7 @@ export const TransactionsTable: React.FC<Props> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.2 }}
-                  className="p-4 hover:bg-[#10B981]/5 transition-colors flex flex-col gap-3"
+                  className="p-4 hover:bg-emerald-500/5 transition-colors flex flex-col gap-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
