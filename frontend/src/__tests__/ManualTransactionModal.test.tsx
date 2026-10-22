@@ -1,13 +1,33 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ManualTransactionModal } from '../components/ManualTransactionModal';
-import { Account } from '../types/api';
+import { Account, Vault } from '../types/api';
 import * as apiClient from '../services/apiClient';
 
 describe('ManualTransactionModal Component', () => {
   const mockAccounts: Account[] = [
     { id: 'acc-1', name: 'BCA Utama', account_type: 'BANK', current_balance: 1000000, is_active: true },
     { id: 'acc-2', name: 'GoPay', account_type: 'EWALLET', current_balance: 150000, is_active: true },
+  ];
+
+  const mockVaults: Vault[] = [
+    {
+      id: 'vault-1',
+      name: 'Wifi Indihome',
+      vault_type: 'FIXED_BILL',
+      target_amount: 350000,
+      allocated_amount: 350000,
+      target_date: '2026-10-25',
+      is_locked: true,
+    },
+    {
+      id: 'vault-2',
+      name: 'Dana Darurat',
+      vault_type: 'SAVINGS',
+      target_amount: 10000000,
+      allocated_amount: 2000000,
+      is_locked: false,
+    },
   ];
 
   beforeEach(() => {
@@ -197,6 +217,47 @@ describe('ManualTransactionModal Component', () => {
         account_id: 'acc-2',
         category_id: 'cat-makan',
       });
+    });
+  });
+
+  it('renders vault dropdown for FIXED_BILL vaults when type is EXPENSE', () => {
+    render(
+      <ManualTransactionModal
+        isOpen={true}
+        onClose={vi.fn()}
+        accounts={mockAccounts}
+        vaults={mockVaults}
+      />
+    );
+
+    expect(screen.getByLabelText(/Hubungkan ke Pos Tagihan/i)).toBeInTheDocument();
+    // Dana Darurat (SAVINGS) must NOT be listed
+    expect(screen.queryByText(/Dana Darurat/i)).not.toBeInTheDocument();
+  });
+
+  it('submits manual expense with selected vault_id', async () => {
+    const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({ id: 'tx-new' });
+    render(
+      <ManualTransactionModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        accounts={mockAccounts}
+        vaults={mockVaults}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Nominal/i), { target: { value: '350000' } });
+    fireEvent.change(screen.getByLabelText(/Deskripsi/i), { target: { value: 'Tagihan Indihome' } });
+    fireEvent.change(screen.getByLabelText(/Pilih Akun/i), { target: { value: 'acc-1' } });
+    fireEvent.change(screen.getByLabelText(/Hubungkan ke Pos Tagihan/i), { target: { value: 'vault-1' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Transaksi/i }));
+
+    await waitFor(() => {
+      const callArgs = apiFetchSpy.mock.calls[0][1] as any;
+      const parsedBody = JSON.parse(callArgs.body);
+      expect(parsedBody.vault_id).toBe('vault-1');
     });
   });
 });

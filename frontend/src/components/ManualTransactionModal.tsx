@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Loader2, Save, Calendar, Tag, CreditCard, FileText } from 'lucide-react';
+import { PlusCircle, Loader2, Save, Calendar, Tag, CreditCard, FileText, Lock } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem } from '@heroui/react';
-import { Account, Category, Transaction, TransactionUpdateRequest } from '../types/api';
+import { Account, Category, Transaction, TransactionCreateRequest, TransactionUpdateRequest, Vault } from '../types/api';
 import { apiFetch, updateTransaction } from '../services/apiClient';
+import { formatRupiah } from '../utils/formatters';
 
 export interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   accounts: Account[];
   categories?: Category[];
+  vaults?: Vault[];
   onSuccess?: () => void;
   transaction?: Transaction | null;
   initialTransaction?: Transaction | null;
@@ -21,6 +23,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
   onClose,
   accounts,
   categories = [],
+  vaults = [],
   onSuccess,
   transaction,
   initialTransaction,
@@ -30,6 +33,8 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
   const activeTx = transaction ?? initialTransaction;
   const isEdit = mode === 'edit' || Boolean(activeTx);
 
+  const fixedBillVaults = (vaults || []).filter((v) => v.vault_type === 'FIXED_BILL');
+
   const [type, setType] = useState<'EXPENSE' | 'INCOME' | 'TRANSFER'>('EXPENSE');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -37,6 +42,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
   const [fromAccountId, setFromAccountId] = useState(accounts[0]?.id || '');
   const [toAccountId, setToAccountId] = useState(accounts[1]?.id || accounts[0]?.id || '');
   const [categoryId, setCategoryId] = useState('');
+  const [selectedVaultId, setSelectedVaultId] = useState<string>('');
   const [transactionDate, setTransactionDate] = useState(() => {
     const d = new Date();
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -69,11 +75,18 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
       const entries = activeTx.ledger_entries || [];
       const accountEntries = entries.filter((e) => e.account_id);
       const categoryEntry = entries.find((e) => e.category_id);
+      const vaultEntry = entries.find((e) => e.vault_id);
 
       if (categoryEntry) {
         setCategoryId(categoryEntry.category_id || '');
       } else {
         setCategoryId('');
+      }
+
+      if (vaultEntry?.vault_id) {
+        setSelectedVaultId(vaultEntry.vault_id);
+      } else {
+        setSelectedVaultId('');
       }
 
       if (accountEntries.length >= 2) {
@@ -106,11 +119,27 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
       setFromAccountId(accounts[0]?.id || '');
       setToAccountId(accounts[1]?.id || accounts[0]?.id || '');
       setCategoryId('');
+      setSelectedVaultId('');
       const d = new Date();
       setTransactionDate(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
       setErrorMsg(null);
     }
   }, [isEdit, activeTx, accounts, isOpen]);
+
+  // ponytail: client-side keyword heuristic for auto-reconciliation link candidate; upgrade to server embeddings if alias collisions occur.
+  useEffect(() => {
+    if (isEdit || !description.trim() || type !== 'EXPENSE') return;
+    const lowerDesc = description.toLowerCase();
+    const candidate = fixedBillVaults.find((v) => {
+      const vName = v.name.toLowerCase();
+      if (lowerDesc.includes(vName)) return true;
+      const words = vName.split(/\s+/).filter((w) => w.length >= 3);
+      return words.some((w) => lowerDesc.includes(w));
+    });
+    if (candidate && !selectedVaultId) {
+      setSelectedVaultId(candidate.id);
+    }
+  }, [description, isEdit, type, fixedBillVaults, selectedVaultId]);
 
   const titleId = isEdit ? 'edit-modal-title' : 'manual-modal-title';
 
@@ -160,6 +189,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
           category_id: type !== 'TRANSFER' && categoryId ? categoryId : undefined,
           from_account_id: type === 'TRANSFER' ? (fromAccountId || accounts[0]?.id) : undefined,
           to_account_id: type === 'TRANSFER' ? (toAccountId || accounts[1]?.id || accounts[0]?.id) : undefined,
+          vault_id: type === 'EXPENSE' && selectedVaultId ? selectedVaultId : undefined,
           transaction_date: transactionDate ? new Date(transactionDate).toISOString() : undefined,
         };
 
@@ -171,7 +201,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
         onSuccess?.();
         onClose();
       } else {
-        const payload = {
+        const payload: TransactionCreateRequest = {
           transaction_type: type,
           amount: parsedAmount,
           description: description.trim() || (type === 'TRANSFER' ? 'Transfer Antar Akun' : 'Transaksi Manual'),
@@ -179,6 +209,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
           from_account_id: type === 'TRANSFER' ? (fromAccountId || accounts[0]?.id) : undefined,
           to_account_id: type === 'TRANSFER' ? (toAccountId || accounts[1]?.id || accounts[0]?.id) : undefined,
           category_id: type !== 'TRANSFER' ? (categoryId || undefined) : undefined,
+          vault_id: type === 'EXPENSE' && selectedVaultId ? selectedVaultId : undefined,
           transaction_date: transactionDate ? new Date(transactionDate).toISOString() : undefined,
           source_channel: 'WEB_MANUAL',
         };
@@ -514,6 +545,60 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                         ]}
                       </Select>
                     </div>
+                  </div>
+                )}
+
+                {type === 'EXPENSE' && fixedBillVaults.length > 0 && (
+                  <div>
+                    <label
+                      htmlFor="vault-select"
+                      className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5 flex items-center gap-1.5"
+                    >
+                      <Lock className="w-3.5 h-3.5 text-violet-500" />
+                      <span>Hubungkan ke Pos Tagihan (Opsional)</span>
+                    </label>
+                    <Select
+                      id="vault-select"
+                      name="vault_id"
+                      role="combobox"
+                      aria-label="Hubungkan ke Pos Tagihan (Opsional)"
+                      selectedKeys={selectedVaultId ? [selectedVaultId] : ['none']}
+                      onSelectionChange={(keys) => {
+                        const selected = Array.from(keys)[0] as string;
+                        setSelectedVaultId(selected === 'none' ? '' : (selected || ''));
+                      }}
+                      onChange={(e) => {
+                        setSelectedVaultId(e.target.value === 'none' ? '' : (e.target.value || ''));
+                      }}
+                      disallowEmptySelection
+                      placeholder="-- Tidak dihubungkan --"
+                      className="w-full"
+                      classNames={{
+                        trigger:
+                          'bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
+                        popoverContent:
+                          'bg-white dark:bg-[#141417] border border-slate-200 dark:border-zinc-800/80 text-slate-900 dark:text-white',
+                        value: 'text-slate-900 dark:text-white text-xs font-bold',
+                      }}
+                    >
+                      {[
+                        <SelectItem key="none" textValue="Tidak dihubungkan" className="text-slate-400 font-medium">
+                          -- Tidak dihubungkan --
+                        </SelectItem>,
+                        ...fixedBillVaults.map((vault) => {
+                          const label = `${vault.name} (Target: ${formatRupiah(vault.target_amount)} - Tempo: ${vault.target_date || '-'})`;
+                          return (
+                            <SelectItem
+                              key={vault.id}
+                              textValue={label}
+                              className="text-slate-700 dark:text-slate-200 hover:bg-zinc-800/50 font-medium"
+                            >
+                              {label}
+                            </SelectItem>
+                          );
+                        }),
+                      ]}
+                    </Select>
                   </div>
                 )}
 

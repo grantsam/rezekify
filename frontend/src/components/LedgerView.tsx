@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
 import { PlusCircle, Calculator, Tag, Download } from 'lucide-react';
-import { Transaction, Account, Category, TransactionFilterParams } from '../types/api';
+import { Transaction, Account, Category, TransactionFilterParams, Vault } from '../types/api';
 import { downloadTransactionsCSV } from '../services/apiClient';
 import { TransactionsTable } from './TransactionsTable';
 
@@ -10,6 +10,7 @@ export interface LedgerViewProps {
   transactions: Transaction[];
   accounts: Account[];
   categories: Category[];
+  vaults?: Vault[];
   total: number;
   page: number;
   pageSize: number;
@@ -30,6 +31,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   transactions,
   accounts,
   categories,
+  vaults,
   total,
   page,
   pageSize,
@@ -131,6 +133,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
         transactions={transactions}
         accounts={accounts}
         categories={categories}
+        vaults={vaults}
         total={total}
         page={page}
         pageSize={pageSize}

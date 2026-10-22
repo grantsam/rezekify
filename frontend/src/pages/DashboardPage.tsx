@@ -193,6 +193,7 @@ export const DashboardPage = () => {
               transactions={ledger.transactions}
               accounts={dashboard.accounts}
               categories={dashboard.categories}
+              vaults={dashboard.vaults}
               total={ledger.pagination.total}
               page={ledger.pagination.page}
               pageSize={ledger.filters.page_size ?? 20}
@@ -240,6 +241,7 @@ export const DashboardPage = () => {
               transaction={modals.selectedTxForEdit}
               accounts={dashboard.accounts}
               categories={dashboard.categories}
+              vaults={dashboard.vaults}
             />
           )}
 
@@ -315,6 +317,7 @@ export const DashboardPage = () => {
               onClose={modals.closeManualModal}
               accounts={dashboard.accounts}
               categories={dashboard.categories}
+              vaults={dashboard.vaults}
               onSuccess={() => {
                 refreshAllData();
               }}

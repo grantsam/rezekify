@@ -207,6 +207,19 @@ export interface MonthlySpendingResponse {
 
 export type SpendingBreakdownResponse = DailySpendingResponse | MonthlySpendingResponse;
 
+export interface TransactionCreateRequest {
+  transaction_type: 'EXPENSE' | 'INCOME' | 'TRANSFER';
+  amount: number;
+  description: string;
+  account_id?: string;
+  category_id?: string;
+  from_account_id?: string;
+  to_account_id?: string;
+  transaction_date?: string;
+  source_channel?: string;
+  vault_id?: string | null;
+}
+
 export interface TransactionUpdateRequest {
   transaction_type?: 'EXPENSE' | 'INCOME' | 'TRANSFER';
   amount: number;
@@ -216,6 +229,7 @@ export interface TransactionUpdateRequest {
   from_account_id?: string;
   to_account_id?: string;
   transaction_date?: string;
+  vault_id?: string | null;
 }
 
 export type AIProviderType = 'SYSTEM' | 'CUSTOM';

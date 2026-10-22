@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { TransactionsTable } from '../components/TransactionsTable';
-import { Account, Category, Transaction } from '../types/api';
+import { Account, Category, Transaction, Vault } from '../types/api';
 
 describe('TransactionsTable Component', () => {
   const mockTransactions: Transaction[] = [
@@ -35,6 +35,26 @@ describe('TransactionsTable Component', () => {
   const mockCategories: Category[] = [
     { id: 'cat-1', name: 'Makanan', category_type: 'EXPENSE' },
     { id: 'cat-2', name: 'Transportasi', category_type: 'EXPENSE' },
+  ];
+
+  const mockVaults: Vault[] = [
+    {
+      id: 'vault-1',
+      name: 'Wifi Indihome',
+      vault_type: 'FIXED_BILL',
+      target_amount: 350000,
+      allocated_amount: 350000,
+      target_date: '2026-10-25',
+      is_locked: true,
+    },
+    {
+      id: 'vault-2',
+      name: 'Dana Darurat',
+      vault_type: 'SAVINGS',
+      target_amount: 10000000,
+      allocated_amount: 2000000,
+      is_locked: false,
+    },
   ];
 
   it('renders transactions with description and formatted amount', () => {
@@ -354,5 +374,28 @@ describe('TransactionsTable Component', () => {
     expect(handleParamsChange).toHaveBeenCalledTimes(2);
 
     vi.useRealTimers();
+  });
+
+  it('renders linked vault badge when transaction has vault_id in ledger_entry', () => {
+    const txWithVault: Transaction = {
+      id: 'tx-1',
+      description: 'Bayar Wifi',
+      source_channel: 'WEB_MANUAL',
+      transaction_date: '2026-10-22T10:00:00Z',
+      ledger_entries: [
+        { id: 'le-1', vault_id: 'vault-1', entry_type: 'DEBIT', amount: 350000 },
+        { id: 'le-2', account_id: 'acc-1', entry_type: 'CREDIT', amount: 350000 },
+      ],
+    };
+
+    render(
+      <TransactionsTable
+        transactions={[txWithVault]}
+        onDelete={vi.fn()}
+        vaults={mockVaults}
+      />
+    );
+
+    expect(screen.getAllByText(/Wifi Indihome/i).length).toBeGreaterThan(0);
   });
 });

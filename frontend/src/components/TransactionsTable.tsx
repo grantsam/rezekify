@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trash2, ArrowUpRight, ArrowDownLeft, Clock, Pencil, Search, X } from 'lucide-react';
+import { Trash2, ArrowUpRight, ArrowDownLeft, Clock, Pencil, Search, X, Lock } from 'lucide-react';
 import { Chip, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Select, SelectItem } from '@heroui/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Account, Category, Transaction, TransactionFilterParams } from '../types/api';
+import { Account, Category, Transaction, TransactionFilterParams, Vault } from '../types/api';
 import { formatRupiah } from '../utils/formatters';
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
   isLoading?: boolean;
   accounts?: Account[];
   categories?: Category[];
+  vaults?: Vault[];
   total?: number;
   page?: number;
   pageSize?: number;
@@ -34,6 +35,7 @@ export const TransactionsTable: React.FC<Props> = ({
   isLoading,
   accounts,
   categories,
+  vaults,
   total,
   page,
   pageSize = 20,
@@ -333,12 +335,18 @@ export const TransactionsTable: React.FC<Props> = ({
     const catId = tx.ledger_entries?.find((e) => e.category_id)?.category_id;
     const category = categories?.find((c) => c.id === catId);
 
+    const vaultId = tx.ledger_entries?.find((e) => Boolean(e.vault_id))?.vault_id;
+    const linkedVault = vaultId
+      ? (vaults?.find((v) => v.id === vaultId) || { id: vaultId, name: 'Pos Tagihan' })
+      : null;
+
     return {
       dateStr,
       formattedAmount,
       isIncome,
       channelChipProps,
       category,
+      linkedVault,
     };
   };
 
@@ -501,7 +509,7 @@ export const TransactionsTable: React.FC<Props> = ({
         ) : (
           <AnimatePresence initial={false}>
             {displayTransactions.map((tx) => {
-              const { dateStr, formattedAmount, isIncome, channelChipProps, category } = getTxDetails(tx);
+              const { dateStr, formattedAmount, isIncome, channelChipProps, category, linkedVault } = getTxDetails(tx);
 
               return (
                 <motion.div
@@ -551,6 +559,12 @@ export const TransactionsTable: React.FC<Props> = ({
                       {category && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800/80">
                           {category.name}
+                        </span>
+                      )}
+                      {linkedVault && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                          <Lock className="w-2.5 h-2.5" />
+                          {linkedVault.name}
                         </span>
                       )}
                       <Chip
@@ -621,7 +635,7 @@ export const TransactionsTable: React.FC<Props> = ({
             ) : (
               <AnimatePresence initial={false}>
                 {displayTransactions.map((tx) => {
-                  const { dateStr, formattedAmount, isIncome, channelChipProps, category } = getTxDetails(tx);
+                  const { dateStr, formattedAmount, isIncome, channelChipProps, category, linkedVault } = getTxDetails(tx);
 
                   return (
                     <motion.tr
@@ -657,6 +671,12 @@ export const TransactionsTable: React.FC<Props> = ({
                               {category && (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800/80">
                                   {category.name}
+                                </span>
+                              )}
+                              {linkedVault && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                                  <Lock className="w-2.5 h-2.5" />
+                                  {linkedVault.name}
                                 </span>
                               )}
                               <Chip
