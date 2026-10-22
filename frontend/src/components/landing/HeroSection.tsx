@@ -1,8 +1,59 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, ArrowUpRight, ArrowDownRight, Sparkles } from 'lucide-react';
+import {
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight,
+  Sparkles,
+  UtensilsCrossed,
+  Fuel,
+  ShoppingBag,
+  RotateCcw,
+} from 'lucide-react';
+import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
+import { formatRupiah } from '../../utils/formatters';
+
+const BASELINE_LIQUID = 810000;
+const DAYS_REMAINING = 18;
+const baselineRunway = Math.floor(BASELINE_LIQUID / DAYS_REMAINING); // 45000
+
+const CHART_BARS = [
+  { targetHeight: '40%', bg: 'bg-emerald-500/20' },
+  { targetHeight: '70%', bg: 'bg-emerald-500/40' },
+  { targetHeight: '95%', bg: 'bg-emerald-500' },
+  { targetHeight: '50%', bg: 'bg-emerald-500/30' },
+  { targetHeight: '85%', bg: 'bg-teal-600' },
+];
 
 export default function HeroSection() {
   const navigate = useNavigate();
+  const [simulatedExpense, setSimulatedExpense] = useState(0);
+
+  const simulatedRunway =
+    simulatedExpense === 0
+      ? baselineRunway
+      : Math.max(0, Math.floor((BASELINE_LIQUID - simulatedExpense) / DAYS_REMAINING));
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const springConfig = { stiffness: 150, damping: 20 };
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], ['3deg', '-3deg']), springConfig);
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], ['-3deg', '3deg']), springConfig);
+
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const x = (event.clientX - rect.left) / rect.width - 0.5;
+    const y = (event.clientY - rect.top) / rect.height - 0.5;
+    mouseX.set(x);
+    mouseY.set(y);
+  };
+
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
 
   return (
     <section
@@ -110,9 +161,14 @@ export default function HeroSection() {
 
           </div>
 
-          <div className="lg:col-span-6 relative flex justify-center lg:justify-end items-center py-6 lg:py-0 px-4 sm:px-6">
+          <div className="lg:col-span-6 relative flex justify-center lg:justify-end items-center py-6 lg:py-0 px-4 sm:px-6 [perspective:1000px]">
 
-            <div className="relative w-full max-w-md lg:max-w-lg space-y-4 my-4">
+            <motion.div
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+              className="relative w-full max-w-md lg:max-w-lg space-y-4 my-4"
+            >
 
               <div className="absolute -top-8 left-0 text-amber-400 animate-pulse duration-[1000ms] pointer-events-none z-30">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
@@ -158,55 +214,133 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              <div className="w-full bg-white/80 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 rounded-3xl p-6 shadow-2xl transition-all duration-500 hover:border-zinc-700/60">
-                <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 pb-3.5 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2.5 w-2.5 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+              {/* Live Telemetry Card with Animated Perimeter Border Beam */}
+              <div className="relative rounded-3xl p-[1px] overflow-hidden shadow-2xl transition-all duration-500">
+                {/* Subtle glowing perimeter border beam */}
+                <motion.div
+                  className="absolute -inset-[100%] bg-[conic-gradient(from_0deg,transparent_0_300deg,#10b981_340deg,transparent_360deg)] opacity-60 dark:opacity-80 pointer-events-none"
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+                />
+
+                <div className="relative w-full bg-white/90 dark:bg-[#141417]/95 backdrop-blur-xl rounded-[23px] p-6 border border-white/60 dark:border-zinc-800/80">
+                  <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 pb-3.5 mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-2.5 w-2.5 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">Live AI Telemetry</span>
+                    </div>
+                    <span className="text-[10px] bg-emerald-500/15 text-teal-700 dark:text-emerald-400 font-bold px-2.5 py-0.5 rounded-full">
+                      Realtime
                     </span>
-                    <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">Live AI Telemetry</span>
                   </div>
-                  <span className="text-[10px] bg-emerald-500/15 text-teal-700 dark:text-emerald-400 font-bold px-2.5 py-0.5 rounded-full">
-                    Realtime
-                  </span>
-                </div>
 
-                <div className="space-y-3.5">
-                  {/* Pemasukan */}
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">
-                        <ArrowUpRight className="w-4 h-4" />
+                  <div className="space-y-3">
+                    {/* Pemasukan */}
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">
+                          <ArrowUpRight className="w-4 h-4" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[11px] text-slate-600 dark:text-emerald-200">Pemasukan (Payable)</p>
+                          <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tabular-nums">Rp 3.800.000</p>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <p className="text-[11px] text-slate-600 dark:text-emerald-200">Pemasukan (Payable)</p>
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tabular-nums">Rp 3.800.000</p>
-                      </div>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">+12%</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">+12%</span>
-                  </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center text-xs font-bold">
-                        <ArrowDownRight className="w-4 h-4" />
+                    {/* Pengeluaran Rutin */}
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center text-xs font-bold">
+                          <ArrowDownRight className="w-4 h-4" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[11px] text-slate-600 dark:text-rose-200">Pengeluaran Rutin</p>
+                          <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tabular-nums">Rp 2.950.000</p>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <p className="text-[11px] text-slate-600 dark:text-rose-200">Pengeluaran Rutin</p>
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tabular-nums">Rp 2.950.000</p>
-                      </div>
+                      <span className="text-xs font-bold text-rose-500">-5%</span>
                     </div>
-                    <span className="text-xs font-bold text-rose-500">-5%</span>
                   </div>
-                </div>
 
-                <div className="mt-5 pt-3.5 border-t border-slate-200/50 dark:border-zinc-800/80 flex items-end justify-between gap-2.5 h-16 px-2">
-                  <div className="w-full bg-emerald-500/20 rounded-t-md h-[40%] hover:h-[65%] transition-all" />
-                  <div className="w-full bg-emerald-500/40 rounded-t-md h-[70%] hover:h-[85%] transition-all" />
-                  <div className="w-full bg-emerald-500 rounded-t-md h-[95%] hover:h-[100%] transition-all" />
-                  <div className="w-full bg-emerald-500/30 rounded-t-md h-[50%] hover:h-[70%] transition-all" />
-                  <div className="w-full bg-teal-600 rounded-t-md h-[85%] hover:h-[95%] transition-all" />
+                  {/* Interactive Runway Sandbox */}
+                  <div className="mt-3.5 p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/70 border border-slate-200/70 dark:border-zinc-800/70 text-left">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                          Simulasi Runway Harian
+                        </p>
+                        <div className="flex items-baseline gap-1 mt-0.5">
+                          <span
+                            data-testid="hero-sim-runway"
+                            className="font-mono text-base sm:text-lg font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums"
+                          >
+                            {formatRupiah(simulatedRunway)}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-sans">/hari</span>
+                        </div>
+                      </div>
+                      {simulatedExpense > 0 && (
+                        <button
+                          type="button"
+                          data-testid="hero-sim-reset"
+                          onClick={() => setSimulatedExpense(0)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white bg-slate-200/70 dark:bg-zinc-800 hover:bg-slate-300/70 dark:hover:bg-zinc-700 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Reset</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div
+                      data-testid="hero-sim-chips"
+                      className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/50 dark:border-zinc-800/60"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSimulatedExpense((prev) => prev + 25000)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <UtensilsCrossed className="w-3 h-3" />
+                        <span>+25rb Makan Siang</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSimulatedExpense((prev) => prev + 30000)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-teal-500/10 hover:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/20 hover:border-teal-500/40 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Fuel className="w-3 h-3" />
+                        <span>+30rb Bensin</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSimulatedExpense((prev) => prev + 50000)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 hover:border-indigo-500/40 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <ShoppingBag className="w-3 h-3" />
+                        <span>+50rb Belanja</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 5 Rising Chart Bars */}
+                  <div className="mt-4 pt-3.5 border-t border-slate-200/50 dark:border-zinc-800/80 flex items-end justify-between gap-2.5 h-16 px-2">
+                    {CHART_BARS.map((bar, idx) => (
+                      <motion.div
+                        key={idx}
+                        className={`w-full rounded-t-md ${bar.bg}`}
+                        initial={{ height: '0%' }}
+                        whileInView={{ height: bar.targetHeight }}
+                        transition={{ duration: 0.6, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                        viewport={{ once: true }}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -220,7 +354,7 @@ export default function HeroSection() {
                 </div>
               </div>
 
-            </div>
+            </motion.div>
 
           </div>
 
