@@ -147,7 +147,7 @@ export default function HowItWorksSection() {
                   </div>
 
                   {idx < steps.length - 1 && (
-                    <div className="hidden lg:flex items-center justify-center absolute -right-3.5 top-[40px] -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-slate-50 dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800 text-emerald-500 shadow-sm pointer-events-none">
+                    <div className="hidden lg:flex items-center justify-center absolute left-[calc(100%+0.5rem)] top-[40px] -translate-x-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-slate-50 dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800/80 text-emerald-500 shadow-sm pointer-events-none">
                       <ArrowRight className="w-3.5 h-3.5" />
                     </div>
                   )}
