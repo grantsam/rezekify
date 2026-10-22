@@ -17,6 +17,7 @@ class AccountCreateRequest(BaseModel):
     name: str
     account_type: AccountType
     initial_balance: Decimal = Decimal("0.00")
+    current_balance: Optional[Decimal] = None
 
 
 class AccountUpdateRequest(BaseModel):
@@ -56,11 +57,12 @@ def create_account(
     db: Session = Depends(get_db),
 ):
     """Creates a new cash/bank/ewallet account bucket."""
+    balance = req.current_balance if req.current_balance is not None else req.initial_balance
     acc = Account(
         user_id=current_user.id,
         name=req.name.strip(),
         account_type=req.account_type,
-        current_balance=req.initial_balance,
+        current_balance=balance,
     )
     db.add(acc)
     db.commit()

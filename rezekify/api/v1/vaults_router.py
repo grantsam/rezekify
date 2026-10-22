@@ -2,7 +2,7 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, cast
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -65,6 +65,25 @@ class VaultPayBillResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class VaultAllocationItem(BaseModel):
+    vault_id: UUID
+    amount: Decimal = Field(gt=0)
+
+
+class VaultDistributeRequest(BaseModel):
+    total_amount: Decimal = Field(gt=0)
+    source_account_id: Optional[UUID] = None
+    allocations: List[VaultAllocationItem] = Field(min_length=1)
+
+
+class VaultDistributeResponse(BaseModel):
+    total_allocated: Decimal
+    source_account_id: Optional[UUID] = None
+    vaults: List[VaultResponse]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 @vaults_router.get("", response_model=List[VaultResponse])
 @vaults_router.get("/", response_model=List[VaultResponse])
 def list_vaults(
@@ -76,6 +95,64 @@ def list_vaults(
         db.query(Vault)
         .filter(Vault.user_id == current_user.id)
         .all()
+    )
+
+
+@vaults_router.post("/distribute", response_model=VaultDistributeResponse)
+def distribute_vaults(
+    req: VaultDistributeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Distributes a lump-sum amount across multiple vaults atomically."""
+    total_alloc = sum((item.amount for item in req.allocations), Decimal("0.00"))
+    if total_alloc != req.total_amount:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Total alokasi ({total_alloc}) tidak sama dengan total dana yang didistribusikan ({req.total_amount}).",
+        )
+
+    if req.source_account_id:
+        source_acc = (
+            db.query(Account)
+            .filter_by(id=req.source_account_id, user_id=current_user.id)
+            .one_or_none()
+        )
+        if not source_acc:
+            raise HTTPException(status_code=404, detail="Akun sumber tidak ditemukan.")
+        if source_acc.current_balance < req.total_amount:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Saldo akun tidak mencukupi untuk dialokasikan ke vault.",
+            )
+
+    target_vault_ids = {item.vault_id for item in req.allocations}
+    vaults = (
+        db.query(Vault)
+        .filter(Vault.user_id == current_user.id, Vault.id.in_(target_vault_ids))
+        .all()
+    )
+    vault_map: dict[UUID, Vault] = {cast(UUID, vault.id): vault for vault in vaults}
+    if len(vault_map) != len(target_vault_ids):
+        raise HTTPException(status_code=404, detail="Satu atau lebih vault tidak ditemukan.")
+
+    for item in req.allocations:
+        vault = vault_map[item.vault_id]
+        vault.allocated_amount += item.amount
+        vault.is_locked = True
+
+    db.commit()
+    for vault in vaults:
+        db.refresh(vault)
+
+    RunwayService.clear_cache(user_id=current_user.id)
+
+    ordered_vaults = [vault_map[vid] for vid in dict.fromkeys(item.vault_id for item in req.allocations)]
+
+    return VaultDistributeResponse(
+        total_allocated=total_alloc,
+        source_account_id=req.source_account_id,
+        vaults=ordered_vaults,
     )
 
 

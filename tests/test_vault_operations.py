@@ -313,3 +313,129 @@ def test_pay_bill_cross_tenant_isolation():
         headers=headers_b,
     )
     assert res_b.status_code == 404
+
+
+def test_distribute_vaults_success():
+    headers = _get_auth_headers("distribute_success@rezekify.id")
+
+    # 1. Create funding account
+    acc_res = client.post(
+        "/api/v1/accounts/",
+        headers=headers,
+        json={"name": "BCA Rekening", "account_type": "BANK", "current_balance": 10000000.0},
+    )
+    assert acc_res.status_code == 200
+    account_id = acc_res.json()["id"]
+
+    # 2. Create 2 vaults: 1 Fixed Bill, 1 Savings
+    v1_res = client.post(
+        "/api/v1/vaults/",
+        headers=headers,
+        json={"name": "Listrik PLN", "vault_type": "FIXED_BILL", "target_amount": 500000.0, "allocated_amount": 0.0},
+    )
+    v2_res = client.post(
+        "/api/v1/vaults/",
+        headers=headers,
+        json={"name": "Dana Darurat", "vault_type": "SAVINGS", "target_amount": 5000000.0, "allocated_amount": 1000000.0},
+    )
+    v1_id = v1_res.json()["id"]
+    v2_id = v2_res.json()["id"]
+
+    # 3. Distribute Rp 2.500.000 (500k to bill, 2.000.000 to savings)
+    dist_res = client.post(
+        "/api/v1/vaults/distribute",
+        headers=headers,
+        json={
+            "total_amount": 2500000.0,
+            "source_account_id": account_id,
+            "allocations": [
+                {"vault_id": v1_id, "amount": 500000.0},
+                {"vault_id": v2_id, "amount": 2000000.0},
+            ],
+        },
+    )
+    assert dist_res.status_code == 200
+    data = dist_res.json()
+    assert float(data["total_allocated"]) == 2500000.0
+    assert len(data["vaults"]) == 2
+
+    # Verify both vaults are updated and locked
+    v_map = {v["id"]: v for v in data["vaults"]}
+    assert float(v_map[v1_id]["allocated_amount"]) == 500000.0
+    assert v_map[v1_id]["is_locked"] is True
+    assert float(v_map[v2_id]["allocated_amount"]) == 3000000.0
+    assert v_map[v2_id]["is_locked"] is True
+
+
+def test_distribute_vaults_exact_sum_mismatch_raises_400():
+    headers = _get_auth_headers("distribute_mismatch@rezekify.id")
+    v_res = client.post(
+        "/api/v1/vaults/",
+        headers=headers,
+        json={"name": "Kost", "vault_type": "FIXED_BILL", "target_amount": 1500000.0, "allocated_amount": 0.0},
+    )
+    v_id = v_res.json()["id"]
+
+    # total_amount is 1.000.000 but allocation is 800.000
+    res = client.post(
+        "/api/v1/vaults/distribute",
+        headers=headers,
+        json={
+            "total_amount": 1000000.0,
+            "allocations": [{"vault_id": v_id, "amount": 800000.0}],
+        },
+    )
+    assert res.status_code == 400
+    assert "tidak sama dengan total dana" in res.json()["detail"]
+
+
+def test_distribute_vaults_insufficient_source_account_balance_raises_400():
+    headers = _get_auth_headers("distribute_solvency@rezekify.id")
+    acc_res = client.post(
+        "/api/v1/accounts/",
+        headers=headers,
+        json={"name": "Gopay", "account_type": "EWALLET", "current_balance": 200000.0},
+    )
+    acc_id = acc_res.json()["id"]
+    v_res = client.post(
+        "/api/v1/vaults/",
+        headers=headers,
+        json={"name": "Kost", "vault_type": "FIXED_BILL", "target_amount": 1000000.0, "allocated_amount": 0.0},
+    )
+    v_id = v_res.json()["id"]
+
+    res = client.post(
+        "/api/v1/vaults/distribute",
+        headers=headers,
+        json={
+            "total_amount": 500000.0,
+            "source_account_id": acc_id,
+            "allocations": [{"vault_id": v_id, "amount": 500000.0}],
+        },
+    )
+    assert res.status_code == 400
+    assert "tidak mencukupi" in res.json()["detail"]
+
+
+def test_distribute_vaults_cross_tenant_isolation_raises_404():
+    user1_headers = _get_auth_headers("dist_user1@rezekify.id")
+    user2_headers = _get_auth_headers("dist_user2@rezekify.id")
+
+    v_res = client.post(
+        "/api/v1/vaults/",
+        headers=user1_headers,
+        json={"name": "User 1 Vault", "vault_type": "SAVINGS", "target_amount": 1000000.0, "allocated_amount": 0.0},
+    )
+    v_id = v_res.json()["id"]
+
+    # User 2 tries to allocate to User 1's vault
+    res = client.post(
+        "/api/v1/vaults/distribute",
+        headers=user2_headers,
+        json={
+            "total_amount": 500000.0,
+            "allocations": [{"vault_id": v_id, "amount": 500000.0}],
+        },
+    )
+    assert res.status_code == 404
+
