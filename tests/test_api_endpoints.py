@@ -1390,3 +1390,163 @@ def test_account_lifecycle_and_tenant_isolation():
     assert found["is_active"] is False
 
 
+def test_create_transaction_with_explicit_vault_id():
+    auth_headers = _get_auth_headers("vault_tx_test@rezekify.id")
+    # 1. Create account & fixed_bill vault
+    acc_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "BCA", "account_type": "BANK", "current_balance": 1000000.00},
+        headers=auth_headers,
+    )
+    acc_id = acc_res.json()["id"]
+
+    vault_res = client.post(
+        "/api/v1/vaults",
+        json={
+            "name": "Wifi Indihome",
+            "vault_type": "FIXED_BILL",
+            "target_amount": 350000.00,
+            "allocated_amount": 350000.00,
+            "target_date": "2026-10-25",
+        },
+        headers=auth_headers,
+    )
+    vault_id = vault_res.json()["id"]
+
+    # 2. Record expense with explicit vault_id
+    tx_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc_id,
+            "amount": 350000.00,
+            "description": "Pembayaran Indihome Manual",
+            "vault_id": vault_id,
+        },
+        headers=auth_headers,
+    )
+    assert tx_res.status_code == 200
+    tx_data = tx_res.json()
+    debit_entry = [e for e in tx_data["ledger_entries"] if e["entry_type"] == "DEBIT"][0]
+    assert debit_entry["vault_id"] == vault_id
+
+    # 3. Verify vault rolled over
+    v_check = client.get(f"/api/v1/vaults/{vault_id}", headers=auth_headers).json()
+    assert Decimal(str(v_check["allocated_amount"])) == Decimal("0.00")
+    assert v_check["target_date"] == "2026-11-25"
+
+
+def test_create_transaction_cross_tenant_vault_returns_404():
+    user1_headers = _get_auth_headers("user1_vault@rezekify.id")
+    user2_headers = _get_auth_headers("user2_vault@rezekify.id")
+
+    # User 1 creates vault
+    v_res = client.post(
+        "/api/v1/vaults",
+        json={"name": "PLN", "vault_type": "FIXED_BILL", "target_amount": 100000.00},
+        headers=user1_headers,
+    )
+    user1_vault_id = v_res.json()["id"]
+
+    # User 2 creates account
+    acc_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "GoPay", "account_type": "EWALLET", "current_balance": 500000.00},
+        headers=user2_headers,
+    )
+    user2_acc_id = acc_res.json()["id"]
+
+    # User 2 tries to link User 1's vault
+    res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": user2_acc_id,
+            "amount": 100000.00,
+            "description": "PLN",
+            "vault_id": user1_vault_id,
+        },
+        headers=user2_headers,
+    )
+    assert res.status_code == 404
+
+
+def test_create_transaction_savings_vault_returns_400():
+    auth_headers = _get_auth_headers("user_sav_vault@rezekify.id")
+    # Create account
+    acc_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "BCA Savings", "account_type": "BANK", "current_balance": 500000.00},
+        headers=auth_headers,
+    )
+    acc_id = acc_res.json()["id"]
+
+    # Create SAVINGS vault
+    v_res = client.post(
+        "/api/v1/vaults",
+        json={"name": "Tabungan Rumah", "vault_type": "SAVINGS", "target_amount": 50000000.00},
+        headers=auth_headers,
+    )
+    vault_id = v_res.json()["id"]
+
+    # Attempt to link SAVINGS vault to expense
+    res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc_id,
+            "amount": 100000.00,
+            "description": "Tabungan Rumah",
+            "vault_id": vault_id,
+        },
+        headers=auth_headers,
+    )
+    assert res.status_code == 400
+    assert res.json()["detail"] == "Hanya pos tagihan (FIXED_BILL) yang dapat dihubungkan ke transaksi."
+
+
+def test_create_transaction_omitted_vault_id_auto_reconciles():
+    auth_headers = _get_auth_headers("vault_auto_recon@rezekify.id")
+    acc_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "Mandiri", "account_type": "BANK", "current_balance": 1000000.00},
+        headers=auth_headers,
+    )
+    acc_id = acc_res.json()["id"]
+
+    vault_res = client.post(
+        "/api/v1/vaults",
+        json={
+            "name": "Tagihan Listrik PLN",
+            "vault_type": "FIXED_BILL",
+            "target_amount": 200000.00,
+            "allocated_amount": 200000.00,
+            "target_date": "2026-10-15",
+        },
+        headers=auth_headers,
+    )
+    vault_id = vault_res.json()["id"]
+
+    # Record expense with omitted vault_id matching description and amount
+    tx_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc_id,
+            "amount": 200000.00,
+            "description": "Bayar tagihan listrik pln bulanan",
+        },
+        headers=auth_headers,
+    )
+    assert tx_res.status_code == 200
+    tx_data = tx_res.json()
+    debit_entry = [e for e in tx_data["ledger_entries"] if e["entry_type"] == "DEBIT"][0]
+    assert debit_entry["vault_id"] == vault_id
+
+    # Verify vault was auto-reconciled
+    v_check = client.get(f"/api/v1/vaults/{vault_id}", headers=auth_headers).json()
+    assert Decimal(str(v_check["allocated_amount"])) == Decimal("0.00")
+    assert v_check["target_date"] == "2026-11-15"
+
+
+

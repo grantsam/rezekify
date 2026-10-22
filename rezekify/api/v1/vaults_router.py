@@ -89,6 +89,20 @@ def list_vaults(
     )
 
 
+@vaults_router.get("/{vault_id}", response_model=VaultResponse)
+def get_vault(
+    vault_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retrieves a single vault by ID."""
+    vault = db.query(Vault).filter_by(id=vault_id, user_id=current_user.id).one_or_none()
+    if not vault:
+        raise HTTPException(status_code=404, detail="Vault tidak ditemukan.")
+    return vault
+
+
+
 @vaults_router.post("", response_model=VaultResponse)
 @vaults_router.post("/", response_model=VaultResponse)
 def create_vault(

@@ -9,72 +9,41 @@ from typing import List, Optional, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, ConfigDict
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.exc import NoResultFound
 
 from rezekify.api.deps import get_current_user, get_db
-from rezekify.db.models import Account, Category, EntryType, LedgerEntry, Transaction, User
+from rezekify.db.models import (
+    Account,
+    Category,
+    EntryType,
+    LedgerEntry,
+    Transaction,
+    User,
+    Vault,
+    VaultType,
+)
+from rezekify.schemas.transaction import (
+    LedgerEntryResponse,
+    PaginatedTransactionsResponse,
+    TransactionCreateRequest,
+    TransactionItemResponse,
+    TransactionUpdateRequest,
+)
 from rezekify.services.ledger import LedgerService
+from rezekify.services.vault_reconciliation import VaultReconciliationService
+
+__all__ = [
+    "transactions_router",
+    "LedgerEntryResponse",
+    "PaginatedTransactionsResponse",
+    "TransactionCreateRequest",
+    "TransactionItemResponse",
+    "TransactionUpdateRequest",
+]
 
 transactions_router = APIRouter()
-
-
-class LedgerEntryResponse(BaseModel):
-    id: UUID
-    account_id: Optional[UUID] = None
-    category_id: Optional[UUID] = None
-    vault_id: Optional[UUID] = None
-    entry_type: EntryType
-    amount: Decimal
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class TransactionItemResponse(BaseModel):
-    id: UUID
-    description: str
-    source_channel: str
-    transaction_date: datetime
-    raw_input_text: Optional[str] = None
-    receipt_image_url: Optional[str] = None
-    ledger_entries: List[LedgerEntryResponse] = []
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class PaginatedTransactionsResponse(BaseModel):
-    items: List[TransactionItemResponse]
-    total: int
-    page: int
-    page_size: int
-    total_pages: int
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class TransactionCreateRequest(BaseModel):
-    transaction_type: str = "EXPENSE"  # EXPENSE, INCOME, TRANSFER
-    amount: Decimal
-    description: str
-    account_id: Optional[UUID] = None
-    category_id: Optional[UUID] = None
-    from_account_id: Optional[UUID] = None
-    to_account_id: Optional[UUID] = None
-    source_channel: str = "WEB_MANUAL"
-    transaction_date: Optional[datetime] = None
-
-
-class TransactionUpdateRequest(BaseModel):
-    amount: Decimal
-    description: str
-    account_id: Optional[UUID] = None
-    category_id: Optional[UUID] = None
-    to_account_id: Optional[UUID] = None
-    transaction_date: Optional[datetime] = None
-    from_account_id: Optional[UUID] = None
-    transaction_type: Optional[str] = None
 
 
 @transactions_router.get("", response_model=Union[PaginatedTransactionsResponse, List[TransactionItemResponse]])
@@ -153,15 +122,66 @@ def create_transaction(
         if tt == "EXPENSE":
             if not req.account_id:
                 raise ValueError("account_id is required for expense.")
-            return ledger.record_expense(
-                user_id=current_user.id,
-                account_id=req.account_id,
-                category_id=req.category_id,
-                amount=req.amount,
-                description=req.description,
-                source_channel=req.source_channel,
-                transaction_date=req.transaction_date,
-            )
+            # ponytail: sequential vault lookup and settlement in route handler; move to an event-driven post-transaction background task if latency increases.
+            if req.vault_id:
+                vault = (
+                    db.query(Vault)
+                    .filter_by(id=req.vault_id, user_id=current_user.id)
+                    .one_or_none()
+                )
+                if not vault:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Pos tagihan (vault) tidak ditemukan.",
+                    )
+                if vault.vault_type != VaultType.FIXED_BILL:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Hanya pos tagihan (FIXED_BILL) yang dapat dihubungkan ke transaksi.",
+                    )
+                tx = ledger.record_expense(
+                    user_id=current_user.id,
+                    account_id=req.account_id,
+                    category_id=req.category_id,
+                    amount=req.amount,
+                    description=req.description,
+                    source_channel=req.source_channel,
+                    transaction_date=req.transaction_date,
+                    vault_id=vault.id,
+                )
+                ledger.reconcile_fixed_bill_vault(
+                    user_id=current_user.id,
+                    vault=vault,
+                    transaction=tx,
+                    amount=req.amount,
+                )
+                db.refresh(tx)
+                return tx
+            else:
+                tx = ledger.record_expense(
+                    user_id=current_user.id,
+                    account_id=req.account_id,
+                    category_id=req.category_id,
+                    amount=req.amount,
+                    description=req.description,
+                    source_channel=req.source_channel,
+                    transaction_date=req.transaction_date,
+                )
+                recon_service = VaultReconciliationService(db)
+                vault = recon_service.find_matching_fixed_bill_vault(
+                    user_id=current_user.id,
+                    description=req.description,
+                    amount=req.amount,
+                )
+                if vault:
+                    ledger.reconcile_fixed_bill_vault(
+                        user_id=current_user.id,
+                        vault=vault,
+                        transaction=tx,
+                        amount=req.amount,
+                    )
+                    db.refresh(tx)
+                return tx
         elif tt == "INCOME":
             if not req.account_id:
                 raise ValueError("account_id is required for income.")
