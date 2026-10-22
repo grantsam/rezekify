@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import uuid
 from urllib.parse import urljoin
 
@@ -242,17 +243,20 @@ def test_headless_browser_dom_mounting():
     if not browser_exe:
         pytest.skip("Neither Google Chrome nor Microsoft Edge executable was located.")
 
-    cmd = [
-        browser_exe,
-        "--headless",
-        "--disable-gpu",
-        "--dump-dom",
-        f"{BASE_URL}/",
-    ]
-    res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
+    with tempfile.TemporaryDirectory() as temp_user_data_dir:
+        cmd = [
+            browser_exe,
+            "--headless",
+            "--disable-gpu",
+            "--no-sandbox",
+            f"--user-data-dir={temp_user_data_dir}",
+            "--dump-dom",
+            f"{BASE_URL}/",
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
 
-    assert res.returncode == 0
-    assert '<div id="root">' in res.stdout
-    assert "Rezekify" in res.stdout
-    assert "SyntaxError" not in res.stdout
-    assert "Uncaught" not in res.stdout
+        assert res.returncode == 0
+        assert '<div id="root">' in res.stdout
+        assert "Rezekify" in res.stdout
+        assert "SyntaxError" not in res.stdout
+        assert "Uncaught" not in res.stdout
