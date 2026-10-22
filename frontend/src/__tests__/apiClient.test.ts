@@ -34,6 +34,7 @@ import {
   submitChatMessage,
   submitChatReceipt,
   submitChatVoice,
+  distributeToVaults,
 } from '../services/apiClient';
 import {
   Account,
@@ -45,6 +46,7 @@ import {
   VaultDepositRequest,
   VaultPayBillRequest,
   VaultPayBillResponse,
+  VaultDistributeRequest,
   Category,
   CategoryCreateRequest,
   CategoryUpdateRequest,
@@ -1427,4 +1429,44 @@ describe('apiClient chat endpoints', () => {
     expect(body.get('message')).toBe('caption test');
   });
 });
+
+describe('distributeToVaults API client method', () => {
+  it('posts payload to /vaults/distribute and returns response', async () => {
+    const mockRequest: VaultDistributeRequest = {
+      total_amount: 5000000,
+      source_account_id: 'acc-123',
+      allocations: [
+        { vault_id: 'vault-1', amount: 1500000 },
+        { vault_id: 'vault-2', amount: 3500000 },
+      ],
+    };
+
+    const mockResponse = {
+      total_allocated: 5000000,
+      source_account_id: 'acc-123',
+      vaults: [
+        { id: 'vault-1', name: 'Kost', allocated_amount: 1500000, is_locked: true },
+        { id: 'vault-2', name: 'Tabungan', allocated_amount: 3500000, is_locked: true },
+      ],
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => mockResponse,
+      headers: new Headers({ 'content-type': 'application/json' }),
+    } as Response);
+
+    const result = await distributeToVaults(mockRequest);
+    expect(result).toEqual(mockResponse);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/vaults/distribute'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(mockRequest),
+      })
+    );
+  });
+});
+
 

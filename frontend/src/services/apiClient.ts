@@ -14,6 +14,8 @@ import {
   VaultDepositRequest,
   VaultPayBillRequest,
   VaultPayBillResponse,
+  VaultDistributeRequest,
+  VaultDistributeResponse,
   Category,
   CategoryCreateRequest,
   CategoryUpdateRequest,
@@ -313,6 +315,16 @@ export async function payBillVault(
   data: VaultPayBillRequest
 ): Promise<VaultPayBillResponse> {
   return apiFetch<VaultPayBillResponse>(`/vaults/${id}/pay-bill`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// ponytail: direct payload pass-through without zod validation; add schema parser when client-side form validation layer is centralized.
+export async function distributeToVaults(
+  data: VaultDistributeRequest
+): Promise<VaultDistributeResponse> {
+  return apiFetch<VaultDistributeResponse>('/vaults/distribute', {
     method: 'POST',
     body: JSON.stringify(data),
   });

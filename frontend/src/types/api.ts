@@ -95,6 +95,25 @@ export interface VaultPayBillResponse {
   transaction: Transaction;
 }
 
+export type DistributionStrategy = 'PRIORITY_BILLS' | 'PROPORTIONAL' | 'CUSTOM';
+
+export interface VaultAllocationItem {
+  vault_id: string;
+  amount: number;
+}
+
+export interface VaultDistributeRequest {
+  total_amount: number;
+  source_account_id?: string | null;
+  allocations: VaultAllocationItem[];
+}
+
+export interface VaultDistributeResponse {
+  total_allocated: number;
+  source_account_id?: string | null;
+  vaults: Vault[];
+}
+
 export interface UpcomingBill {
   name: string;
   target_amount: number;
