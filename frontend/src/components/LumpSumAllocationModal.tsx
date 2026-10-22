@@ -258,7 +258,7 @@ export const LumpSumAllocationModal: React.FC<LumpSumAllocationModalProps> = ({
   };
 
   const handleVaultAllocChange = (vaultId: string, valStr: string) => {
-    const val = parseFloat(valStr) || 0;
+    const val = Math.max(0, parseFloat(valStr) || 0);
     setStrategy('CUSTOM');
     setAllocations((prev) => ({
       ...prev,

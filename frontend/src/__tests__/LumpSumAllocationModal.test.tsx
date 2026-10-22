@@ -229,4 +229,21 @@ describe('LumpSumAllocationModal Component', () => {
     expect(submitBtn).toBeDisabled();
     expect(screen.getByText(/Saldo rekening tidak mencukupi/i)).toBeInTheDocument();
   });
+
+  it('clamps negative manual allocation keystroke inputs to zero', () => {
+    render(
+      <LumpSumAllocationModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        vaults={mockVaults}
+        accounts={mockAccounts}
+      />
+    );
+
+    const billInput = screen.getByLabelText(/Alokasi Listrik PLN/i) as HTMLInputElement;
+    fireEvent.change(billInput, { target: { value: '-25000' } });
+
+    expect(billInput.value).toBe('0');
+  });
 });
