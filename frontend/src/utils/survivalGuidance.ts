@@ -1,4 +1,5 @@
 import { SurvivalGuidance } from '../types/api';
+export type { SurvivalGuidance };
 
 // ponytail: Client fallback rule engine mirrors backend RunwayService; upgrade path is consuming backend guidance directly.
 export function generateSurvivalGuidance(

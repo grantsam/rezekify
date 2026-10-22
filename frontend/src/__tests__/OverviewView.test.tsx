@@ -211,7 +211,7 @@ describe('OverviewView Component', () => {
     expect(vaultProgress).toHaveAttribute('aria-valuenow', '67');
 
     // Simulate button in vaults card
-    const simBtn = screen.getByRole('button', { name: /Simulasi Belanja/i });
+    const simBtn = screen.getByRole('button', { name: /^Simulasi Belanja$/i });
     fireEvent.click(simBtn);
     expect(handleOpenSimulate).toHaveBeenCalledTimes(1);
 
@@ -586,6 +586,132 @@ describe('OverviewView Component', () => {
       // QuickCaptureBar command input populated
       const commandInput = screen.getByPlaceholderText(/Ketik mutasi/i) as HTMLInputElement;
       expect(commandInput.value).toBe('Beli Rp 150.000');
+    });
+  });
+
+  describe('contextual survival guidance', () => {
+    it('renders contextual survival guidance banner with headline and tactical action', () => {
+      const criticalSummary: DashboardSummaryResponse = {
+        ...mockSummary,
+        operational_free_cash: 150000,
+        daily_safe_runway: 15000,
+        days_remaining: 10,
+        survival_guidance: {
+          tone: 'CRITICAL',
+          headline: 'Mode Hemat Terarah',
+          message: 'Jatah harian Rp 15.000/hari berada di bawah standar makan harian. Utamakan makan 1-2x warteg atau memasak sendiri.',
+          tactical_action: 'Tunda pos hiburan/jajan di luar hingga siklus baru 10 hari lagi.',
+        },
+      };
+
+      render(
+        <OverviewView
+          summary={criticalSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Mode Hemat Terarah')).toBeInTheDocument();
+      expect(screen.getByText(/standar makan harian/i)).toBeInTheDocument();
+      expect(screen.getByText(/Tunda pos hiburan/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Buka Simulasi Belanja/i })).toBeInTheDocument();
+    });
+
+    it('invokes simulation drawer toggle when clicking Buka Simulasi Belanja in guidance banner', () => {
+      const warningSummary: DashboardSummaryResponse = {
+        ...mockSummary,
+        daily_safe_runway: 25000,
+        survival_guidance: {
+          tone: 'WARNING',
+          headline: 'Mode Waspada Santai',
+          message: 'Jatah harian Rp 25.000/hari cukup untuk kebutuhan harian, namun mendekati batas aman.',
+          tactical_action: 'Pertahankan ritme harian agar cadangan tetap terjaga menuju akhir siklus.',
+        },
+      };
+
+      render(
+        <OverviewView
+          summary={warningSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      const simBtn = screen.getByRole('button', { name: /Buka Simulasi Belanja/i });
+      fireEvent.click(simBtn);
+
+      // Verifies the in-cockpit simulation panel expands
+      expect(screen.getByTestId('runway-simulation-panel')).toBeInTheDocument();
+    });
+
+    it('navigates to vaults when clicking Lihat Pos in Tier 1 Mode Pertahanan Kas', () => {
+      const handleNavigateToVaults = vi.fn();
+      const emptyCashSummary: DashboardSummaryResponse = {
+        ...mockSummary,
+        operational_free_cash: 0,
+        daily_safe_runway: 0,
+        survival_guidance: {
+          tone: 'CRITICAL',
+          headline: 'Mode Pertahanan Kas',
+          message: 'Kas operasional bebas telah habis untuk siklus ini.',
+          tactical_action: 'Tinjau pos tabungan atau kurangi belanja non-esensial selama 15 hari ke depan.',
+        },
+      };
+
+      render(
+        <OverviewView
+          summary={emptyCashSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={handleNavigateToVaults}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      const vaultsCta = screen.getByRole('button', { name: /Lihat Pos Simpanan/i });
+      fireEvent.click(vaultsCta);
+      expect(handleNavigateToVaults).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to deterministic client calculation if summary has no survival_guidance (Review Focus 5)', () => {
+      const summaryWithoutGuidance: DashboardSummaryResponse = {
+        ...mockSummary,
+        operational_free_cash: 180000,
+        daily_safe_runway: 18000,
+        days_remaining: 10,
+        survival_guidance: undefined,
+      };
+
+      render(
+        <OverviewView
+          summary={summaryWithoutGuidance}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      // Client fallback generated Mode Hemat Terarah
+      expect(screen.getByText('Mode Hemat Terarah')).toBeInTheDocument();
+      expect(screen.getByText(/Rp 18\.000\/hari/)).toBeInTheDocument();
     });
   });
 });

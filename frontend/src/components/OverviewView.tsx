@@ -3,6 +3,8 @@ import { Button, Chip, Card, CardBody, Progress } from '@heroui/react';
 import {
   Building2,
   ShieldCheck,
+  ShieldAlert,
+  Compass,
   ArrowRight,
   Lock,
   Unlock,
@@ -15,6 +17,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
 import { formatRupiah } from '../utils/formatters';
+import { generateSurvivalGuidance, SurvivalGuidance } from '../utils/survivalGuidance';
 import { ExpenseCharts } from './ExpenseCharts';
 import { UpcomingBillsCard } from './UpcomingBillsCard';
 import { RecentTransactionsCard } from './RecentTransactionsCard';
@@ -101,6 +104,43 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       statusCopy,
     };
   }, [summary, simulationNominal]);
+
+  // ponytail: Client fallback computes guidance when backend field is absent; upgrade path is consuming backend guidance directly
+  const survivalGuidance: SurvivalGuidance = React.useMemo(() => {
+    if (summary?.survival_guidance) {
+      return summary.survival_guidance;
+    }
+    return generateSurvivalGuidance(
+      summary?.operational_free_cash ?? 0,
+      summary?.daily_safe_runway ?? 0,
+      summary?.days_remaining ?? 1,
+      summary?.safe_runway_threshold ?? 30000
+    );
+  }, [summary]);
+
+  const guidanceTheme = React.useMemo(() => {
+    switch (survivalGuidance.tone) {
+      case 'CRITICAL':
+        return {
+          containerClass: 'bg-rose-500/10 dark:bg-rose-950/20 border-rose-500/25 text-rose-900 dark:text-rose-100',
+          badgeClass: 'text-rose-700 dark:text-rose-300',
+          icon: <ShieldAlert className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />,
+        };
+      case 'WARNING':
+        return {
+          containerClass: 'bg-amber-500/10 dark:bg-amber-950/20 border-amber-500/25 text-amber-900 dark:text-amber-100',
+          badgeClass: 'text-amber-700 dark:text-amber-300',
+          icon: <Compass className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />,
+        };
+      case 'HEALTHY':
+      default:
+        return {
+          containerClass: 'bg-emerald-500/10 dark:bg-emerald-950/20 border-emerald-500/25 text-emerald-900 dark:text-emerald-100',
+          badgeClass: 'text-emerald-700 dark:text-emerald-300',
+          icon: <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />,
+        };
+    }
+  }, [survivalGuidance.tone]);
 
   const handleNominalInputChange = (raw: string) => {
     const cleaned = raw.replace(/\D/g, '');
@@ -367,6 +407,67 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               </div>
             </div>
 
+            {/* CONTEXTUAL SURVIVAL GUIDANCE BANNER */}
+            <div
+              data-testid="survival-guidance-banner"
+              className={`rounded-2xl p-4 border transition-all ${guidanceTheme.containerClass}`}
+            >
+              <div className="flex items-start gap-3">
+                {guidanceTheme.icon}
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs font-black tracking-wide uppercase px-2 py-0.5 rounded-md bg-white/40 dark:bg-black/20 ${guidanceTheme.badgeClass}`}>
+                      {survivalGuidance.headline}
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm font-medium leading-relaxed opacity-95">
+                    {survivalGuidance.message}
+                  </p>
+                  <div className="pt-1 text-[11px] sm:text-xs font-semibold opacity-90">
+                    <span className="font-bold">Langkah Praktis: </span>
+                    {survivalGuidance.tactical_action}
+                  </div>
+
+                  {/* Tactical Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    {survivalGuidance.tone === 'CRITICAL' && (summary?.operational_free_cash ?? 0) <= 0 ? (
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={onNavigateToVaults}
+                        className="min-h-[38px] text-xs font-extrabold rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-sm"
+                        endContent={<ArrowRight className="w-3.5 h-3.5" />}
+                      >
+                        Lihat Pos Simpanan
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => setIsSimulationOpen(true)}
+                          className="min-h-[38px] text-xs font-extrabold rounded-xl bg-slate-900/10 dark:bg-white/10 hover:bg-slate-900/20 dark:hover:bg-white/20 transition-all"
+                        >
+                          ⚡ Buka Simulasi Belanja
+                        </Button>
+                        {survivalGuidance.tone !== 'HEALTHY' && (
+                          <Button
+                            size="sm"
+                            variant="light"
+                            onPress={onNavigateToVaults}
+                            className="min-h-[38px] text-xs font-bold rounded-xl text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white"
+                            endContent={<ArrowRight className="w-3.5 h-3.5" />}
+                          >
+                            Lihat Pos Pengeluaran
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Mathematical Reconciliation Strip */}
             <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800/80">
               <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400">
@@ -387,7 +488,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
-                  ÷ {summary?.days_remaining ?? 0} hari = <strong className="font-mono text-slate-700 dark:text-zinc-200">{formatRupiah(dailyRunway)}/hari</strong>
+                  ÷ {summary?.days_remaining ?? 0} hari = <strong className="font-mono text-slate-700 dark:text-zinc-200">{formatRupiah(dailyRunway)} / hari</strong>
                 </div>
               </div>
             </div>
