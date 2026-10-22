@@ -607,6 +607,76 @@ def test_update_transaction_negative_amount_rejected(db_session, sample_user):
             account_id=acc.id,
         )
 
+
+def test_update_expense_with_vault_id(db_session, sample_user):
+    from rezekify.db.models import Vault, VaultType
+
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    v_bill = Vault(
+        user_id=sample_user.id,
+        name="PLN Pasca",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("300000.00"),
+        allocated_amount=Decimal("300000.00"),
+    )
+    v_savings = Vault(
+        user_id=sample_user.id,
+        name="Tabungan",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("1000000.00"),
+        allocated_amount=Decimal("100000.00"),
+    )
+    db_session.add_all([acc, v_bill, v_savings])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("200000.00"),
+        description="Tagihan Listrik",
+    )
+
+    # 1. Reject linking non-FIXED_BILL vault
+    with pytest.raises(ValueError, match="FIXED_BILL"):
+        service.update_transaction(
+            user_id=sample_user.id,
+            transaction_id=tx.id,
+            amount=Decimal("200000.00"),
+            description="Tagihan Listrik",
+            account_id=acc.id,
+            vault_id=v_savings.id,
+        )
+
+    # 2. Successfully update and link FIXED_BILL vault
+    updated = service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("200000.00"),
+        description="Tagihan Listrik",
+        account_id=acc.id,
+        vault_id=v_bill.id,
+    )
+    debit = next(e for e in updated.ledger_entries if e.entry_type == EntryType.DEBIT)
+    assert debit.vault_id == v_bill.id
+
+    # 3. Update without specifying vault_id (defaults to None) preserves existing vault_id
+    updated_preserve = service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("250000.00"),
+        description="Tagihan Listrik Update",
+        account_id=acc.id,
+    )
+    debit_preserve = next(e for e in updated_preserve.ledger_entries if e.entry_type == EntryType.DEBIT)
+    assert debit_preserve.vault_id == v_bill.id
+
     with pytest.raises(ValueError, match="Amount must be positive"):
         service.update_transaction(
             user_id=sample_user.id,

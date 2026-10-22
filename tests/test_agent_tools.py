@@ -441,7 +441,10 @@ def test_agent_expense_auto_reconciles_fixed_bill(db_session: Session, sample_us
 
     assert result["status"] == "success"
     assert "reconciled_vault" in result["transaction"]
-    assert result["transaction"]["reconciled_vault"]["name"] == "Wifi Indihome"
+    recon_vault = result["transaction"]["reconciled_vault"]
+    assert recon_vault["name"] == "Wifi Indihome"
+    assert isinstance(recon_vault["settled_amount"], Decimal)
+    assert recon_vault["settled_amount"] == Decimal("350000.00")
     assert "Wifi Indihome" in result["message"]
 
     db_session.refresh(v_bill)

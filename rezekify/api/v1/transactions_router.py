@@ -403,6 +403,7 @@ def update_transaction(
             transaction_date=req.transaction_date,
             from_account_id=req.from_account_id,
             transaction_type=req.transaction_type,
+            vault_id=req.vault_id,
         )
         return tx
     except NoResultFound:

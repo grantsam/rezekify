@@ -65,3 +65,4 @@ class TransactionUpdateRequest(BaseModel):
     transaction_date: Optional[datetime] = None
     from_account_id: Optional[UUID] = None
     transaction_type: Optional[str] = None
+    vault_id: Optional[UUID] = None

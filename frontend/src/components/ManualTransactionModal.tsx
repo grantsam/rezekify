@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PlusCircle, Loader2, Save, Calendar, Tag, CreditCard, FileText, Lock } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem } from '@heroui/react';
 import { Account, Category, Transaction, TransactionCreateRequest, TransactionUpdateRequest, Vault } from '../types/api';
@@ -17,6 +17,8 @@ export interface TransactionModalProps {
   mode?: 'create' | 'edit';
   onSubmit?: (data: any) => Promise<void>;
 }
+
+const STOP_WORDS = new Set(['bayar', 'tagihan', 'beli', 'pembayaran', 'biaya', 'untuk', 'ke', 'dari', 'bulan', 'ini', 'dan']);
 
 export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
@@ -43,6 +45,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
   const [toAccountId, setToAccountId] = useState(accounts[1]?.id || accounts[0]?.id || '');
   const [categoryId, setCategoryId] = useState('');
   const [selectedVaultId, setSelectedVaultId] = useState<string>('');
+  const isVaultManuallyModified = useRef(false);
   const [transactionDate, setTransactionDate] = useState(() => {
     const d = new Date();
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -52,6 +55,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
 
   useEffect(() => {
     if (isEdit && activeTx) {
+      isVaultManuallyModified.current = false;
       setDescription(activeTx.description || '');
 
       if (activeTx.transaction_date) {
@@ -112,6 +116,7 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
       }
       setErrorMsg(null);
     } else if (!isEdit && isOpen) {
+      isVaultManuallyModified.current = false;
       setType('EXPENSE');
       setAmount('');
       setDescription('');
@@ -126,14 +131,19 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
     }
   }, [isEdit, activeTx, accounts, isOpen]);
 
+  const handleVaultChange = (val: string) => {
+    isVaultManuallyModified.current = true;
+    setSelectedVaultId(val);
+  };
+
   // ponytail: client-side keyword heuristic for auto-reconciliation link candidate; upgrade to server embeddings if alias collisions occur.
   useEffect(() => {
-    if (isEdit || !description.trim() || type !== 'EXPENSE') return;
+    if (isEdit || !description.trim() || type !== 'EXPENSE' || isVaultManuallyModified.current) return;
     const lowerDesc = description.toLowerCase();
     const candidate = fixedBillVaults.find((v) => {
       const vName = v.name.toLowerCase();
-      if (lowerDesc.includes(vName)) return true;
-      const words = vName.split(/\s+/).filter((w) => w.length >= 3);
+      if (lowerDesc.includes(vName) && !STOP_WORDS.has(vName)) return true;
+      const words = vName.split(/\s+/).filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
       return words.some((w) => lowerDesc.includes(w));
     });
     if (candidate && !selectedVaultId) {
@@ -565,10 +575,10 @@ export const ManualTransactionModal: React.FC<TransactionModalProps> = ({
                       selectedKeys={selectedVaultId ? [selectedVaultId] : ['none']}
                       onSelectionChange={(keys) => {
                         const selected = Array.from(keys)[0] as string;
-                        setSelectedVaultId(selected === 'none' ? '' : (selected || ''));
+                        handleVaultChange(selected === 'none' ? '' : (selected || ''));
                       }}
                       onChange={(e) => {
-                        setSelectedVaultId(e.target.value === 'none' ? '' : (e.target.value || ''));
+                        handleVaultChange(e.target.value === 'none' ? '' : (e.target.value || ''));
                       }}
                       disallowEmptySelection
                       placeholder="-- Tidak dihubungkan --"

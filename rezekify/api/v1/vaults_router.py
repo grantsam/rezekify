@@ -1,6 +1,5 @@
 """Vaults (Sinking Funds & Fixed Commitments) Router."""
 
-from calendar import monthrange
 from datetime import date
 from decimal import Decimal
 from typing import List, Optional
@@ -11,21 +10,12 @@ from sqlalchemy.orm import Session
 
 from rezekify.api.deps import get_current_user, get_db
 from rezekify.api.v1.transactions_router import TransactionItemResponse
-from rezekify.db.models import Account, Category, CategoryType, User, Vault, VaultType
+from rezekify.db.models import Account, Category, CategoryType, LedgerEntry, User, Vault, VaultType
 from rezekify.services.ledger import LedgerService
 from rezekify.services.runway import RunwayService
+from rezekify.services.vault_reconciliation import advance_one_month
 
 vaults_router = APIRouter()
-
-
-def advance_one_month(d: date) -> date:
-    """Advances date by one calendar month, clamping day to month-end if needed."""
-    # ponytail: month arithmetic clamped with calendar.monthrange; upgrade to dateutil.relativedelta if variable cadences needed
-    year = d.year + (d.month // 12)
-    month = (d.month % 12) + 1
-    max_day = monthrange(year, month)[1]
-    day = min(d.day, max_day)
-    return date(year, month, day)
 
 
 class VaultCreateRequest(BaseModel):
@@ -254,6 +244,7 @@ def pay_bill_vault(
         amount=pay_amount,
         description=req.notes or f"Pembayaran tagihan: {vault.name}",
         source_channel="WEB_UI",
+        vault_id=vault.id,
     )
 
     vault.allocated_amount = Decimal("0.00")
@@ -311,6 +302,7 @@ def delete_vault(
             detail="Komitmen dana terkunci. Buka kunci terlebih dahulu untuk menghapus vault.",
         )
 
+    db.query(LedgerEntry).filter(LedgerEntry.vault_id == vault.id).update({LedgerEntry.vault_id: None})
     db.delete(vault)
     db.commit()
     RunwayService.clear_cache(user_id=current_user.id)

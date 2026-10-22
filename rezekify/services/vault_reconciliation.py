@@ -91,17 +91,27 @@ class VaultReconciliationService:
         user_id: UUID,
         description: str,
         amount: Optional[Decimal] = None,
+        today: Optional[date] = None,
     ) -> Optional[Vault]:
         """Matches a transaction description against user's active FIXED_BILL vaults."""
         # ponytail: keyword and amount heuristic; upgrade to semantic embedding matching if keyword overlap proves insufficient.
         if not description or not description.strip():
             return None
 
-        vaults = (
-            self.db.query(Vault)
-            .filter(Vault.user_id == user_id, Vault.vault_type == VaultType.FIXED_BILL)
-            .all()
-        )
+        current_date = today or date.today()
+        vaults = [
+            v
+            for v in (
+                self.db.query(Vault)
+                .filter(Vault.user_id == user_id, Vault.vault_type == VaultType.FIXED_BILL)
+                .all()
+            )
+            if not (
+                v.allocated_amount == Decimal("0.00")
+                and v.target_date
+                and v.target_date > current_date
+            )
+        ]
         if not vaults:
             return None
 

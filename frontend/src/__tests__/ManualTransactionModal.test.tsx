@@ -260,4 +260,71 @@ describe('ManualTransactionModal Component', () => {
       expect(parsedBody.vault_id).toBe('vault-1');
     });
   });
+
+  it('does not auto-match vault when description only contains stop words like bayar or tagihan', async () => {
+    const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({ id: 'tx-new' });
+    const vaultsWithStopWord: Vault[] = [
+      {
+        id: 'vault-listrik',
+        name: 'Tagihan Listrik',
+        vault_type: 'FIXED_BILL',
+        target_amount: 200000,
+        allocated_amount: 200000,
+        is_locked: false,
+      },
+    ];
+
+    render(
+      <ManualTransactionModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        accounts={mockAccounts}
+        vaults={vaultsWithStopWord}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Nominal/i), { target: { value: '50000' } });
+    fireEvent.change(screen.getByLabelText(/Deskripsi/i), { target: { value: 'bayar tagihan' } });
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Transaksi/i }));
+
+    await waitFor(() => {
+      const callArgs = apiFetchSpy.mock.calls[0][1] as any;
+      const parsedBody = JSON.parse(callArgs.body);
+      expect(parsedBody.vault_id).toBeUndefined();
+    });
+  });
+
+  it('respects manual deselection of vault and does not auto-match again on description change', async () => {
+    const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({ id: 'tx-new' });
+    render(
+      <ManualTransactionModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        accounts={mockAccounts}
+        vaults={mockVaults}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/Nominal/i), { target: { value: '350000' } });
+    // First trigger auto-match on Wifi
+    fireEvent.change(screen.getByLabelText(/Deskripsi/i), { target: { value: 'Wifi' } });
+
+    // User manually deselects the vault
+    const vaultCombobox = screen.getByRole('combobox', { name: /Hubungkan ke Pos Tagihan/i });
+    fireEvent.click(vaultCombobox);
+    const noneOption = screen.getByRole('option', { name: /Tidak dihubungkan/i });
+    fireEvent.click(noneOption);
+
+    // User changes description further
+    fireEvent.change(screen.getByLabelText(/Deskripsi/i), { target: { value: 'Wifi Indihome Rumah' } });
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Transaksi/i }));
+
+    await waitFor(() => {
+      const callArgs = apiFetchSpy.mock.calls[0][1] as any;
+      const parsedBody = JSON.parse(callArgs.body);
+      expect(parsedBody.vault_id).toBeUndefined();
+    });
+  });
 });

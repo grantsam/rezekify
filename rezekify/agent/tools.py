@@ -8,12 +8,14 @@ from uuid import UUID
 from pydantic import BaseModel, Field, ValidationError, model_validator
 from sqlalchemy.orm import Session
 
-from rezekify.api.v1.vaults_router import advance_one_month
-from rezekify.db.models import Account, Category, CategoryType, Vault, VaultType
+from rezekify.db.models import Account, Category, CategoryType, Vault
 from rezekify.services.faceted_query import FacetedQueryEngine, FacetedQueryParams
 from rezekify.services.ledger import LedgerService
 from rezekify.services.runway import RunwayService
-from rezekify.services.vault_reconciliation import VaultReconciliationService
+from rezekify.services.vault_reconciliation import (
+    VaultReconciliationService,
+    advance_one_month,
+)
 
 
 AGENT_TOOL_DEFINITIONS: List[Dict[str, Any]] = [
@@ -619,7 +621,7 @@ class AgentToolDispatcher:
                 "name": matched_vault.name,
                 "previous_due_date": str(recon_res.previous_due_date) if recon_res.previous_due_date else None,
                 "new_due_date": str(recon_res.new_due_date) if recon_res.new_due_date else None,
-                "settled_amount": float(recon_res.settled_amount or validated.amount),
+                "settled_amount": recon_res.settled_amount or validated.amount,
             }
             res["transaction"]["reconciled_vault"] = reconciled_vault
             res["message"] += f" Tagihan '{matched_vault.name}' otomatis diselesaikan & jatuh tempo bergulir ke {recon_res.new_due_date}."

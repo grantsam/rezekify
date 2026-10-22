@@ -215,6 +215,8 @@ def test_pay_bill_success_and_rollover():
     tx_data = data["transaction"]
     assert "Listrik" in tx_data["description"]
     assert len(tx_data["ledger_entries"]) == 2
+    debit_entry = next(e for e in tx_data["ledger_entries"] if e["entry_type"] == "DEBIT")
+    assert debit_entry["vault_id"] == vault_id
 
     # 3. Check account balance deducted
     acc_check = client.get("/api/v1/accounts/", headers=headers)

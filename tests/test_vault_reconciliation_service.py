@@ -168,3 +168,40 @@ def test_reconcile_cross_tenant_raises_error(db_session: Session, recon_db: User
             transaction=tx,
             amount=Decimal("10000.00"),
         )
+
+
+def test_already_reconciled_bill_does_not_auto_match_again(db_session: Session, recon_db: User):
+    acc = db_session.query(Account).filter_by(user_id=recon_db.id).first()
+    vault = db_session.query(Vault).filter_by(user_id=recon_db.id, name="Wifi Indihome").first()
+
+    ledger = LedgerService(db_session)
+    tx = ledger.record_expense(
+        user_id=recon_db.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("350000.00"),
+        description="Bayar Wifi Indihome",
+    )
+
+    service = VaultReconciliationService(db_session)
+    res = service.reconcile_fixed_bill_vault(
+        user_id=recon_db.id,
+        vault=vault,
+        transaction=tx,
+        amount=Decimal("350000.00"),
+    )
+    assert res.reconciled is True
+    assert vault.target_date == date(2026, 11, 25)
+    assert vault.allocated_amount == Decimal("0.00")
+
+    # Second transaction with same description during current period should NOT auto-match
+    simulated_today = date(2026, 10, 26)
+    second_match = service.find_matching_fixed_bill_vault(
+        user_id=recon_db.id,
+        description="Bayar Wifi Indihome",
+        amount=Decimal("350000.00"),
+        today=simulated_today,
+    )
+    assert second_match is None
+    # Ensure target_date did not advance twice
+    assert vault.target_date == date(2026, 11, 25)

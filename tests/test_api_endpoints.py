@@ -1549,4 +1549,57 @@ def test_create_transaction_omitted_vault_id_auto_reconciles():
     assert v_check["target_date"] == "2026-11-15"
 
 
+def test_delete_reconciled_vault_nullifies_ledger_entry_vault_id():
+    auth_headers = _get_auth_headers("vault_nullify_test@rezekify.id")
+    # 1. Create account & unlocked fixed_bill vault
+    acc_res = client.post(
+        "/api/v1/accounts",
+        json={"name": "BCA Nullify", "account_type": "BANK", "initial_balance": 1000000.00},
+        headers=auth_headers,
+    )
+    acc_id = acc_res.json()["id"]
+
+    vault_res = client.post(
+        "/api/v1/vaults",
+        json={
+            "name": "Gym Subscription",
+            "vault_type": "FIXED_BILL",
+            "target_amount": 250000.00,
+            "allocated_amount": 250000.00,
+            "is_locked": False,
+        },
+        headers=auth_headers,
+    )
+    vault_id = vault_res.json()["id"]
+
+    # 2. Record transaction linked to vault
+    tx_res = client.post(
+        "/api/v1/transactions",
+        json={
+            "transaction_type": "EXPENSE",
+            "account_id": acc_id,
+            "amount": 250000.00,
+            "description": "Bayar Gym bulanan",
+            "vault_id": vault_id,
+        },
+        headers=auth_headers,
+    )
+    assert tx_res.status_code == 200
+    tx_id = tx_res.json()["id"]
+
+    # Verify debit entry has vault_id
+    debit_entry = [e for e in tx_res.json()["ledger_entries"] if e["entry_type"] == "DEBIT"][0]
+    assert debit_entry["vault_id"] == vault_id
+
+    # 3. Delete the unlocked vault
+    del_res = client.delete(f"/api/v1/vaults/{vault_id}", headers=auth_headers)
+    assert del_res.status_code == 200
+
+    # 4. Fetch transactions and verify entry.vault_id is nullified (None)
+    tx_list = client.get("/api/v1/transactions?page=1&page_size=10", headers=auth_headers).json()
+    matched_tx = next(tx for tx in tx_list["items"] if tx["id"] == tx_id)
+    debit_after = [e for e in matched_tx["ledger_entries"] if e["entry_type"] == "DEBIT"][0]
+    assert debit_after["vault_id"] is None
+
+
 

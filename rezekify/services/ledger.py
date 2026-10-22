@@ -7,7 +7,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from rezekify.db.models import Account, Category, EntryType, LedgerEntry, Transaction, Vault
+from rezekify.db.models import Account, Category, EntryType, LedgerEntry, Transaction, Vault, VaultType
 from rezekify.services.runway import RunwayService
 from rezekify.services.vault_reconciliation import (
     VaultReconciliationResult,
@@ -268,6 +268,7 @@ class LedgerService:
         transaction_date: Optional[datetime] = None,
         transaction_type: Optional[str] = None,
         from_account_id: Optional[UUID] = None,
+        vault_id: Optional[UUID] = None,
     ) -> Transaction:
         """Deterministically updates an existing transaction using reversal and re-post pattern.
 
@@ -331,6 +332,17 @@ class LedgerService:
             (e.vault_id for e in tx.ledger_entries if e.entry_type == EntryType.DEBIT and e.vault_id is not None),
             None,
         )
+        if vault_id is not None:
+            v = (
+                self.db.query(Vault)
+                .filter_by(id=vault_id, user_id=user_id)
+                .one_or_none()
+            )
+            if not v or v.vault_type != VaultType.FIXED_BILL:
+                raise ValueError("Target vault must exist, belong to user, and be a FIXED_BILL vault.")
+            target_vault_id = vault_id
+        else:
+            target_vault_id = existing_vault_id
 
         new_entries: list[LedgerEntry] = []
 
@@ -362,7 +374,7 @@ class LedgerService:
                     transaction_id=tx.id,
                     user_id=user_id,
                     category_id=category_id,
-                    vault_id=existing_vault_id,
+                    vault_id=target_vault_id,
                     entry_type=EntryType.DEBIT,
                     amount=amount,
                 ),
