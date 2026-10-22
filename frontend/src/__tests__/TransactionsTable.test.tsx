@@ -398,4 +398,62 @@ describe('TransactionsTable Component', () => {
 
     expect(screen.getAllByText(/Wifi Indihome/i).length).toBeGreaterThan(0);
   });
+
+  it('toolbar container and inputs support responsive fluid wrapping layout on tablet viewports', () => {
+    render(
+      <TransactionsTable
+        transactions={mockTransactions}
+        accounts={mockAccounts}
+        categories={mockCategories}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const searchInput = screen.getByPlaceholderText(/Cari transaksi atau channel/i);
+    const searchWrapper = searchInput.parentElement;
+    expect(searchWrapper).toHaveClass('min-w-[200px]', 'flex-1');
+
+    const accountSelect = screen.getByTestId('filter-account-select');
+    expect(accountSelect.className).toContain('sm:min-w-[160px]');
+
+    const categorySelect = screen.getByTestId('filter-category-select');
+    expect(categorySelect.className).toContain('sm:min-w-[160px]');
+  });
+
+  it('filter controls and date buttons adhere to accessibility standards and minimum 38px touch targets', () => {
+    render(
+      <TransactionsTable
+        transactions={mockTransactions}
+        onDelete={vi.fn()}
+        onEdit={vi.fn()}
+        page={2}
+        total={20}
+        pageSize={10}
+        totalPages={2}
+      />
+    );
+
+    const dateButtons = screen.getAllByRole('button', { name: /Semua|Hari Ini|7 Hari Terakhir|Bulan Ini/i });
+    dateButtons.forEach((btn) => {
+      expect(btn).toHaveClass('min-h-[38px]');
+    });
+
+    const activeDateBtn = screen.getByRole('button', { name: 'Semua' });
+    expect(activeDateBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(activeDateBtn).toHaveClass('from-emerald-600', 'to-teal-500');
+
+    const prevBtn = screen.getByRole('button', { name: /Sebelumnya/i });
+    const nextBtn = screen.getByRole('button', { name: /Berikutnya/i });
+    expect(prevBtn).toHaveClass('min-h-[38px]');
+    expect(nextBtn).toHaveClass('min-h-[38px]');
+
+    const editBtns = screen.getAllByRole('button', { name: /Edit transaksi/i });
+    const deleteBtns = screen.getAllByRole('button', { name: /Hapus transaksi/i });
+    editBtns.forEach((btn) => {
+      expect(btn).toHaveClass('min-w-[38px]', 'min-h-[38px]');
+    });
+    deleteBtns.forEach((btn) => {
+      expect(btn).toHaveClass('min-w-[38px]', 'min-h-[38px]');
+    });
+  });
 });

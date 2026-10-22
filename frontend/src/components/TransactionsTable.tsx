@@ -363,9 +363,9 @@ export const TransactionsTable: React.FC<Props> = ({
       </div>
 
       {/* Filter and Search Controls */}
-      <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-zinc-800/80 flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center bg-slate-50/50 dark:bg-zinc-900/40">
-        <div className="flex flex-1 flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
-          <div className="relative flex-1 max-w-md">
+      <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-zinc-800/80 flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap gap-3 justify-between items-stretch md:items-center bg-slate-50/50 dark:bg-zinc-900/40">
+        <div className="flex flex-1 flex-col sm:flex-row flex-wrap lg:flex-nowrap gap-2.5 items-stretch sm:items-center">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 text-emerald-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -400,9 +400,9 @@ export const TransactionsTable: React.FC<Props> = ({
                 handleAccountChange(selected === 'ALL' ? '' : (selected || ''));
               }}
               disallowEmptySelection
-              className="w-full sm:w-44"
+              className="w-full sm:w-auto sm:min-w-[160px]"
               classNames={{
-                trigger: 'bg-white dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
+                trigger: 'bg-white dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px] sm:min-w-[160px]',
                 popoverContent: 'bg-white dark:bg-[#141417] border border-slate-200 dark:border-zinc-800/80 text-slate-900 dark:text-white',
                 value: 'text-slate-900 dark:text-white text-xs font-bold',
               }}
@@ -444,9 +444,9 @@ export const TransactionsTable: React.FC<Props> = ({
                 handleCategoryChange(selected === 'ALL' ? '' : (selected || ''));
               }}
               disallowEmptySelection
-              className="w-full sm:w-44"
+              className="w-full sm:w-auto sm:min-w-[160px]"
               classNames={{
-                trigger: 'bg-white dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px]',
+                trigger: 'bg-white dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-bold rounded-2xl min-h-[40px] sm:min-w-[160px]',
                 popoverContent: 'bg-white dark:bg-[#141417] border border-slate-200 dark:border-zinc-800/80 text-slate-900 dark:text-white',
                 value: 'text-slate-900 dark:text-white text-xs font-bold',
               }}
@@ -478,7 +478,7 @@ export const TransactionsTable: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="flex flex-wrap gap-1 p-1 bg-slate-200/60 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl self-start lg:self-auto shrink-0">
+        <div className="flex flex-wrap gap-1 p-1 bg-slate-200/60 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl self-start md:self-auto shrink-0">
           {DATE_FILTERS.map((filter) => (
             <Button
               key={filter.key}
@@ -486,10 +486,10 @@ export const TransactionsTable: React.FC<Props> = ({
               variant={dateFilter === filter.key ? 'solid' : 'flat'}
               aria-pressed={dateFilter === filter.key}
               onPress={() => handleDateFilterChange(filter.key)}
-              className={`px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all min-h-[36px] flex items-center justify-center ${
+              className={`px-3 py-1.5 text-xs font-extrabold rounded-xl transition-all min-h-[38px] flex items-center justify-center ${
                 dateFilter === filter.key
-                  ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-[#10B981]/20'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-[#10B981] bg-transparent'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 bg-transparent'
               }`}
             >
               {filter.label}
@@ -585,7 +585,7 @@ export const TransactionsTable: React.FC<Props> = ({
                           variant="light"
                           onPress={() => onEdit(tx)}
                           isDisabled={isLoading}
-                          className="min-w-[34px] min-h-[34px] p-2 text-slate-400 hover:text-emerald-500 rounded-xl bg-transparent"
+                          className="min-w-[38px] min-h-[38px] p-2 text-slate-400 hover:text-emerald-500 rounded-xl bg-transparent"
                           aria-label="Edit transaksi"
                           title="Edit transaksi"
                         >
@@ -598,7 +598,7 @@ export const TransactionsTable: React.FC<Props> = ({
                         variant="light"
                         onPress={() => setTxToDelete(tx)}
                         isDisabled={isLoading}
-                        className="min-w-[34px] min-h-[34px] p-2 text-slate-400 hover:text-rose-500 rounded-xl bg-transparent"
+                        className="min-w-[38px] min-h-[38px] p-2 text-slate-400 hover:text-rose-500 rounded-xl bg-transparent"
                         aria-label="Hapus transaksi"
                         title="Hapus transaksi"
                       >
@@ -709,7 +709,7 @@ export const TransactionsTable: React.FC<Props> = ({
                               variant="light"
                               onPress={() => onEdit(tx)}
                               isDisabled={isLoading}
-                              className="min-w-[34px] min-h-[34px] p-2 text-slate-400 hover:text-emerald-500 rounded-xl bg-transparent"
+                              className="min-w-[38px] min-h-[38px] p-2 text-slate-400 hover:text-emerald-500 rounded-xl bg-transparent"
                               aria-label="Edit transaksi"
                               title="Edit transaksi"
                             >
@@ -722,7 +722,7 @@ export const TransactionsTable: React.FC<Props> = ({
                             variant="light"
                             onPress={() => setTxToDelete(tx)}
                             isDisabled={isLoading}
-                            className="min-w-[34px] min-h-[34px] p-2 text-slate-400 hover:text-rose-500 rounded-xl bg-transparent"
+                            className="min-w-[38px] min-h-[38px] p-2 text-slate-400 hover:text-rose-500 rounded-xl bg-transparent"
                             aria-label="Hapus transaksi"
                             title="Hapus transaksi (otomatis kembalikan saldo)"
                           >
@@ -751,7 +751,7 @@ export const TransactionsTable: React.FC<Props> = ({
             isDisabled={currentPage <= 1 || isLoading}
             onPress={() => handlePageStep(-1)}
             aria-label="Halaman Sebelumnya"
-            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold border border-emerald-500/20 min-h-[36px] px-4 rounded-xl text-xs disabled:opacity-40"
+            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold border border-emerald-500/20 min-h-[38px] px-4 rounded-xl text-xs disabled:opacity-40"
           >
             Sebelumnya
           </Button>
@@ -761,7 +761,7 @@ export const TransactionsTable: React.FC<Props> = ({
             isDisabled={currentPage >= totalPagesCount || isLoading}
             onPress={() => handlePageStep(1)}
             aria-label="Halaman Berikutnya"
-            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold border border-emerald-500/20 min-h-[36px] px-4 rounded-xl text-xs disabled:opacity-40"
+            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold border border-emerald-500/20 min-h-[38px] px-4 rounded-xl text-xs disabled:opacity-40"
           >
             Berikutnya
           </Button>
