@@ -38,4 +38,19 @@ describe('AISpotlightHero Component', () => {
     fireEvent.click(openChatBtn);
     expect(onOpenChat).toHaveBeenCalledWith();
   });
+
+  it('applies semantic emerald button styling and minimum 38px touch target on Buka AI Copilot button', () => {
+    render(<AISpotlightHero onOpenChat={vi.fn()} />);
+
+    const ctaBtn = screen.getByRole('button', { name: /Buka AI Copilot/i });
+    expect(ctaBtn).toHaveClass('bg-emerald-500', 'hover:bg-emerald-600', 'min-h-[38px]');
+    expect(ctaBtn.className).not.toContain('#0F766E');
+    expect(ctaBtn.className).not.toContain('#10B981');
+  });
+
+  it('renders sparkles icon with semantic emerald-to-teal gradient', () => {
+    const { container } = render(<AISpotlightHero onOpenChat={vi.fn()} />);
+    const iconContainer = container.querySelector('.rounded-2xl.bg-gradient-to-tr');
+    expect(iconContainer).toHaveClass('from-emerald-600', 'to-teal-500');
+  });
 });

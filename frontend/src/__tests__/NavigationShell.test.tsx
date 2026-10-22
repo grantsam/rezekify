@@ -201,14 +201,34 @@ describe('Navigation Shell Components', () => {
 
     const activeNavBtn = screen.getByRole('button', { name: /Ringkasan/i });
     expect(activeNavBtn).toHaveClass('bg-gradient-to-r');
-    expect(activeNavBtn).toHaveClass('from-[#0F766E]');
-    expect(activeNavBtn).toHaveClass('to-[#10B981]');
+    expect(activeNavBtn).toHaveClass('from-emerald-600');
+    expect(activeNavBtn).toHaveClass('to-teal-500');
 
     const activeIcon = activeNavBtn.querySelector('svg');
     expect(activeIcon).toHaveClass('text-white');
 
     const collapseBtn = screen.getByRole('button', { name: /Ciutkan sidebar/i });
     expect(collapseBtn).toBeInTheDocument();
+  });
+
+  it('renders Telegram active indicator and user avatar with semantic emerald design tokens', () => {
+    render(
+      <Sidebar
+        activeView="overview"
+        onViewChange={vi.fn()}
+        accounts={mockAccounts}
+        user={mockUser}
+        onLogout={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+      />
+    );
+
+    const telegramStatus = screen.getByText('Telegram Terhubung');
+    const dot = telegramStatus.previousElementSibling;
+    expect(dot).toHaveClass('bg-emerald-500');
+
+    const avatar = screen.getByText('BS');
+    expect(avatar).toHaveClass('from-emerald-600', 'to-teal-500');
   });
 
   it('applies emerald active styling to BottomDock active navigation item', () => {

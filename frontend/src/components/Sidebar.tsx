@@ -169,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : 'w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl text-xs min-h-[42px] h-auto'
                 } ${
                   isActive
-                    ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20 border border-emerald-500/30'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20 border border-emerald-500/30'
                     : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-white hover:bg-zinc-800/50 bg-transparent'
                 }`}
               >
@@ -207,7 +207,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 variant="light"
                 onPress={onOpenCreateAccount}
                 aria-label="+ Rekening"
-                className="p-1 min-h-[26px] text-[10px] font-extrabold text-[#10B981] hover:text-[#0F766E] dark:hover:text-emerald-300 bg-transparent flex items-center gap-1"
+                className="p-1 min-h-[26px] text-[10px] font-extrabold text-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 bg-transparent flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
                 <span>Rekening</span>
@@ -282,7 +282,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                user?.telegram_chat_id ? 'bg-[#10B981] animate-pulse' : 'bg-slate-400'
+                user?.telegram_chat_id ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
               }`}
             />
             <span className="truncate">{user?.telegram_chat_id ? 'Telegram Terhubung' : 'Telegram Off'}</span>
@@ -302,7 +302,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="Buka Profil Pengguna"
             className="flex items-center gap-2.5 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity p-1 rounded-xl"
           >
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white text-xs font-black flex items-center justify-center shrink-0 shadow-sm">
               {getUserInitials(user?.full_name)}
             </div>
             {!isCollapsed && (

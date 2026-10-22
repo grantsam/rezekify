@@ -12,7 +12,7 @@ export const AISpotlightHero: React.FC<AISpotlightHeroProps> = ({ onOpenChat }) 
       <CardBody className="p-6 flex flex-col gap-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-900/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-900/20">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -30,7 +30,7 @@ export const AISpotlightHero: React.FC<AISpotlightHeroProps> = ({ onOpenChat }) 
 
           <Button
             onPress={() => onOpenChat()}
-            className="bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-900/20 px-5 py-2.5 shrink-0 self-end md:self-center"
+            className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-900/20 min-h-[38px] px-5 py-2.5 shrink-0 self-end md:self-center transition-colors"
           >
             Buka AI Copilot
             <ArrowUpRight className="w-4 h-4 ml-1" />
