@@ -106,9 +106,6 @@ export default function HowItWorksSection() {
         </div>
 
         <div className="relative mb-8">
-          
-          <div className="hidden lg:block absolute top-[45px] left-[6%] right-[6%] h-0.5 bg-gradient-to-r from-[#0F766E]/30 via-[#10B981] to-[#34D399]/30 -z-0" />
-
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 relative z-10">
             {steps.map((item, idx) => {
               const isActive = activeStep === idx;
@@ -118,7 +115,7 @@ export default function HowItWorksSection() {
                   onClick={() => setActiveStep(idx)}
                   className={`group cursor-pointer p-5 rounded-3xl backdrop-blur-2xl border transition-all duration-300 text-left flex flex-col justify-between relative ${
                     isActive
-                      ? 'bg-white/90 dark:bg-[#141417] border-emerald-500 shadow-xl shadow-black/20 -translate-y-1.5'
+                      ? 'bg-white/90 dark:bg-[#141417] border-emerald-500 shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/50'
                       : 'bg-white/50 dark:bg-[#141417]/50 border-white/80 dark:border-zinc-800/80 hover:border-zinc-700/60 hover:bg-white/70 dark:hover:bg-[#141417]/70'
                   }`}
                 >
@@ -150,8 +147,8 @@ export default function HowItWorksSection() {
                   </div>
 
                   {idx < steps.length - 1 && (
-                    <div className="hidden lg:block absolute -right-3 top-[38px] z-20 text-emerald-400 opacity-70">
-                      <ArrowRight className="w-4 h-4 ml-1.5 inline" />
+                    <div className="hidden lg:flex items-center justify-center absolute -right-3.5 top-[40px] -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-slate-50 dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800 text-emerald-500 shadow-sm pointer-events-none">
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </div>
                   )}
                 </div>
