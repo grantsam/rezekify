@@ -4,7 +4,7 @@ from calendar import monthrange
 from datetime import date, timedelta
 from decimal import Decimal
 import time
-from typing import Dict, List, NamedTuple, Optional
+from typing import Dict, List, Literal, NamedTuple, Optional
 from uuid import UUID
 
 from sqlalchemy import func, or_
@@ -42,6 +42,13 @@ class UpcomingBill(NamedTuple):
     days_until_due: int
 
 
+class SurvivalGuidance(NamedTuple):
+    headline: str
+    message: str
+    tactical_action: str
+    tone: Literal["CRITICAL", "WARNING", "HEALTHY"]
+
+
 class RunwayReport(NamedTuple):
     total_liquid_cash: Decimal
     vault_locked_cash: Decimal
@@ -52,6 +59,7 @@ class RunwayReport(NamedTuple):
     upcoming_bills: List[UpcomingBill]
     today_spent: Decimal = Decimal("0.00")
     safe_runway_threshold: Decimal = Decimal("30000.00")
+    survival_guidance: Optional[SurvivalGuidance] = None
 
 
 class SimulationReport(NamedTuple):
@@ -117,6 +125,45 @@ class RunwayService:
                 _runway_cache.pop(k, None)
         else:
             _runway_cache.clear()
+
+    @staticmethod
+    def _build_survival_guidance(
+        operational_free: Decimal,
+        daily_safe: Decimal,
+        days_remaining: int,
+        safe_runway_threshold: Decimal,
+    ) -> SurvivalGuidance:
+        # ponytail: rule-based 4-tier survival guidance; upgrade to configurable thresholds or dynamic LLM advice when needed
+        days = max(1, days_remaining)
+        formatted_daily = f"{int(daily_safe):,}".replace(",", ".")
+
+        if operational_free <= Decimal("0.00"):
+            return SurvivalGuidance(
+                headline="Mode Pertahanan Kas",
+                message="Kas operasional bebas telah habis untuk siklus ini. Seluruh pengeluaran pokok disarankan memanfaatkan dana darurat atau pos simpanan yang tersedia.",
+                tactical_action=f"Tinjau pos tabungan atau kurangi belanja non-esensial selama {days} hari ke depan.",
+                tone="CRITICAL",
+            )
+        if daily_safe < Decimal("20000.00"):
+            return SurvivalGuidance(
+                headline="Mode Hemat Terarah",
+                message=f"Jatah harian Rp {formatted_daily}/hari berada di bawah standar makan harian. Utamakan makan 1-2x warteg atau memasak sendiri.",
+                tactical_action=f"Tunda pos hiburan/jajan di luar hingga siklus baru {days} hari lagi.",
+                tone="CRITICAL",
+            )
+        if daily_safe < safe_runway_threshold:
+            return SurvivalGuidance(
+                headline="Mode Waspada Santai",
+                message=f"Jatah harian Rp {formatted_daily}/hari cukup untuk kebutuhan harian, namun mendekati batas aman.",
+                tactical_action="Pertahankan ritme harian agar cadangan tetap terjaga menuju akhir siklus.",
+                tone="WARNING",
+            )
+        return SurvivalGuidance(
+            headline="Arus Kas Terkendali",
+            message=f"Jatah harian Rp {formatted_daily}/hari berada dalam zona aman di atas ambang batas.",
+            tactical_action="Kamu berada di jalur yang tepat menuju siklus baru.",
+            tone="HEALTHY",
+        )
 
     def calculate_runway(
         self, user_id: UUID, today: Optional[date] = None, use_cache: bool = True
@@ -222,6 +269,13 @@ class RunwayService:
             .scalar()
         ) or Decimal("0.00")
 
+        guidance = self._build_survival_guidance(
+            operational_free=operational_free,
+            daily_safe=daily_safe,
+            days_remaining=days_remaining,
+            safe_runway_threshold=threshold,
+        )
+
         report = RunwayReport(
             total_liquid_cash=liquid_sum,
             vault_locked_cash=vault_sum,
@@ -232,6 +286,7 @@ class RunwayService:
             upcoming_bills=upcoming_bills,
             today_spent=today_spent,
             safe_runway_threshold=threshold,
+            survival_guidance=guidance,
         )
         _runway_cache[(user_id, today)] = (report, time.time())
         return report

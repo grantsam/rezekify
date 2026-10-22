@@ -1602,4 +1602,17 @@ def test_delete_reconciled_vault_nullifies_ledger_entry_vault_id():
     assert debit_after["vault_id"] is None
 
 
+def test_dashboard_summary_includes_survival_guidance(client, auth_headers):
+    res = client.get("/api/v1/dashboard/summary", headers=auth_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert "survival_guidance" in data
+    guidance = data["survival_guidance"]
+    assert guidance["tone"] in ["CRITICAL", "WARNING", "HEALTHY"]
+    assert len(guidance["headline"]) > 0
+    assert len(guidance["message"]) > 0
+    assert len(guidance["tactical_action"]) > 0
+
+
+
 

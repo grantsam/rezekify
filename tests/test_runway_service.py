@@ -767,4 +767,102 @@ def test_runway_cache_fifo_eviction_when_unexpired(db_session):
     assert len(_runway_cache) <= MAX_RUNWAY_CACHE
 
 
+def test_survival_guidance_zero_operational_free_cash(db_session, sample_user):
+    sample_user.monthly_cycle_day = 25
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    vlt = Vault(
+        user_id=sample_user.id,
+        name="Tabungan Darurat",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("1000000.00"),
+        allocated_amount=Decimal("500000.00"),
+        is_locked=True,
+    )
+    db_session.add_all([acc, vlt])
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 15))
+
+    assert report.operational_free_cash == Decimal("0.00")
+    assert report.survival_guidance is not None
+    assert report.survival_guidance.tone == "CRITICAL"
+    assert report.survival_guidance.headline == "Mode Pertahanan Kas"
+    assert "Kas operasional bebas telah habis" in report.survival_guidance.message
+    assert "10 hari ke depan" in report.survival_guidance.tactical_action
+
+
+def test_survival_guidance_sub_warteg_daily_safe(db_session, sample_user):
+    sample_user.monthly_cycle_day = 25
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("150000.00"),
+    )
+    db_session.add(acc)
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    # 10 days remaining -> 150.000 / 10 = Rp 15.000/day (< 20.000)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 15))
+
+    assert report.survival_guidance is not None
+    assert report.survival_guidance.tone == "CRITICAL"
+    assert report.survival_guidance.headline == "Mode Hemat Terarah"
+    assert "15.000/hari" in report.survival_guidance.message
+    assert "warteg" in report.survival_guidance.message.lower()
+    assert "10 hari lagi" in report.survival_guidance.tactical_action
+
+
+def test_survival_guidance_exact_threshold_boundaries(db_session, sample_user):
+    # Tier 2 to Tier 3 boundary: daily_safe == 20000.00 -> WARNING
+    g_20k = RunwayService._build_survival_guidance(
+        operational_free=Decimal("200000.00"),
+        daily_safe=Decimal("20000.00"),
+        days_remaining=10,
+        safe_runway_threshold=Decimal("30000.00"),
+    )
+    assert g_20k.tone == "WARNING"
+    assert g_20k.headline == "Mode Waspada Santai"
+
+    # Tier 3 to Tier 4 boundary: daily_safe == 30000.00 -> HEALTHY
+    g_30k = RunwayService._build_survival_guidance(
+        operational_free=Decimal("300000.00"),
+        daily_safe=Decimal("30000.00"),
+        days_remaining=10,
+        safe_runway_threshold=Decimal("30000.00"),
+    )
+    assert g_30k.tone == "HEALTHY"
+    assert g_30k.headline == "Arus Kas Terkendali"
+
+
+def test_survival_guidance_custom_user_threshold(db_session, sample_user):
+    # Custom threshold 50.000; daily_safe 40.000 must be WARNING
+    guidance = RunwayService._build_survival_guidance(
+        operational_free=Decimal("400000.00"),
+        daily_safe=Decimal("40000.00"),
+        days_remaining=10,
+        safe_runway_threshold=Decimal("50000.00"),
+    )
+    assert guidance.tone == "WARNING"
+    assert guidance.headline == "Mode Waspada Santai"
+
+
+def test_survival_guidance_zero_days_remaining_clamped():
+    guidance = RunwayService._build_survival_guidance(
+        operational_free=Decimal("0.00"),
+        daily_safe=Decimal("0.00"),
+        days_remaining=0,
+        safe_runway_threshold=Decimal("30000.00"),
+    )
+    assert "selama 1 hari ke depan" in guidance.tactical_action
+
+
+
 

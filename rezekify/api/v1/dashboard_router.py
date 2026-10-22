@@ -56,6 +56,13 @@ class UpcomingBillResponse(BaseModel):
     days_until_due: int
 
 
+class SurvivalGuidanceResponse(BaseModel):
+    headline: str
+    message: str
+    tactical_action: str
+    tone: Literal["CRITICAL", "WARNING", "HEALTHY"]
+
+
 class DashboardSummaryResponse(BaseModel):
     total_liquid_cash: Decimal
     vault_locked_cash: Decimal
@@ -66,6 +73,7 @@ class DashboardSummaryResponse(BaseModel):
     upcoming_bills: List[UpcomingBillResponse]
     today_spent: Decimal = Decimal("0.00")
     safe_runway_threshold: Decimal = Decimal("30000.00")
+    survival_guidance: SurvivalGuidanceResponse
 
 
 class ChatRequest(BaseModel):
@@ -137,6 +145,12 @@ def get_dashboard_summary(
     """Calculates deterministic liquid free cash and dynamic daily safe runway."""
     service = RunwayService(db)
     report = service.calculate_runway(user_id=current_user.id)
+    guidance = report.survival_guidance or RunwayService._build_survival_guidance(
+        operational_free=report.operational_free_cash,
+        daily_safe=report.daily_safe_runway,
+        days_remaining=report.days_remaining,
+        safe_runway_threshold=report.safe_runway_threshold,
+    )
     return DashboardSummaryResponse(
         total_liquid_cash=report.total_liquid_cash,
         vault_locked_cash=report.vault_locked_cash,
@@ -156,6 +170,12 @@ def get_dashboard_summary(
         ],
         today_spent=report.today_spent,
         safe_runway_threshold=report.safe_runway_threshold,
+        survival_guidance=SurvivalGuidanceResponse(
+            headline=guidance.headline,
+            message=guidance.message,
+            tactical_action=guidance.tactical_action,
+            tone=guidance.tone,
+        ),
     )
 
 
