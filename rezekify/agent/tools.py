@@ -2,7 +2,7 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
@@ -12,6 +12,10 @@ from rezekify.db.models import Account, Category, CategoryType, Vault
 from rezekify.services.faceted_query import FacetedQueryEngine, FacetedQueryParams
 from rezekify.services.ledger import LedgerService
 from rezekify.services.runway import RunwayService
+from rezekify.services.vault_distribution import (
+    calculate_priority_bills_distribution,
+    calculate_proportional_distribution,
+)
 from rezekify.services.vault_reconciliation import (
     VaultReconciliationService,
     advance_one_month,
@@ -156,22 +160,22 @@ AGENT_TOOL_DEFINITIONS: List[Dict[str, Any]] = [
     },
     {
         "name": "manage_vault",
-        "description": "Kelola pos alokasi dana dan sinking fund (vault): nabung/deposit dana, bayar tagihan (dengan pembukuan otomatis), kunci/buka vault, atau periksa status vault.",
+        "description": "Kelola pos alokasi dana dan sinking fund (vault): nabung/deposit dana, bayar tagihan (dengan pembukuan otomatis), kunci/buka vault, periksa status vault, atau distribusi dana lump-sum ke banyak vault sekaligus.",
         "parameters": {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["deposit", "pay_bill", "toggle_lock", "check_status"],
-                    "description": "Aksi pada vault: 'deposit' (tambah saldo alokasi), 'pay_bill' (bayar tagihan & catat pengeluaran), 'toggle_lock' (kunci/buka kunci), atau 'check_status' (lihat progres vault).",
+                    "enum": ["deposit", "pay_bill", "toggle_lock", "check_status", "distribute"],
+                    "description": "Aksi pada vault: 'deposit' (tambah saldo alokasi), 'pay_bill' (bayar tagihan & catat pengeluaran), 'toggle_lock' (kunci/buka kunci), 'check_status' (lihat progres vault), atau 'distribute' (alokasi lump-sum otomatis ke banyak vault).",
                 },
                 "vault_name": {
                     "type": "string",
-                    "description": "Nama atau kata kunci nama vault/pos tabungan/tagihan (misal: 'Dana Darurat', 'Listrik PLN').",
+                    "description": "Nama atau kata kunci nama vault/pos tabungan/tagihan (misal: 'Dana Darurat', 'Listrik PLN'). Opsional untuk 'check_status' dan 'distribute'.",
                 },
                 "amount": {
                     "type": "number",
-                    "description": "Nominal uang dalam Rupiah untuk deposit atau pembayaran tagihan.",
+                    "description": "Nominal uang dalam Rupiah untuk deposit, pembayaran tagihan, atau total alokasi lump-sum pada 'distribute'.",
                 },
                 "account_name": {
                     "type": "string",
@@ -180,6 +184,11 @@ AGENT_TOOL_DEFINITIONS: List[Dict[str, Any]] = [
                 "lock_state": {
                     "type": "boolean",
                     "description": "Status kunci target (opsional, jika ingin mengunci/membuka eksplisit).",
+                },
+                "strategy": {
+                    "type": "string",
+                    "enum": ["priority_bills", "proportional"],
+                    "description": "Strategi pembagian untuk action='distribute' ('priority_bills' atau 'proportional'). Default: 'priority_bills'.",
                 },
             },
             "required": ["action"],
@@ -300,6 +309,7 @@ class ManageVaultArgs(BaseModel):
     amount: Optional[Decimal] = None
     account_name: Optional[str] = None
     lock_state: Optional[bool] = None
+    strategy: Optional[str] = "priority_bills"
 
     @model_validator(mode="before")
     @classmethod
@@ -308,6 +318,8 @@ class ManageVaultArgs(BaseModel):
             d = dict(data)
             if "action" in d and isinstance(d["action"], str):
                 d["action"] = d["action"].strip().lower()
+            if "strategy" in d and isinstance(d["strategy"], str):
+                d["strategy"] = d["strategy"].strip().lower()
             amt = d.get("amount")
             if isinstance(amt, str):
                 cleaned = amt.strip().replace("Rp", "").replace("rp", "").replace(" ", "")
@@ -348,9 +360,24 @@ class AgentToolDispatcher:
         self.runway_service = RunwayService(db)
         self.ledger_service = LedgerService(db, auto_commit=True)
 
-    def dispatch(self, user_id: UUID, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def dispatch(self, user_id: Any, tool_name: Any, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Dispatches tool call with strict argument validation and error containment."""
         try:
+            if isinstance(user_id, str) and user_id in {
+                "query_financial_ledger",
+                "get_runway_telemetry",
+                "simulate_purchase",
+                "record_transaction",
+                "manage_vault",
+            }:
+                user_id, tool_name = tool_name, user_id
+
+            if isinstance(user_id, str):
+                try:
+                    user_id = UUID(user_id)
+                except ValueError:
+                    pass
+
             if tool_name == "query_financial_ledger":
                 return self._dispatch_query_ledger(user_id, arguments)
             elif tool_name == "get_runway_telemetry":
@@ -671,6 +698,56 @@ class AgentToolDispatcher:
                     }
                     for v in all_vaults
                 ],
+            }
+
+        if action == "distribute":
+            if not validated.amount or validated.amount <= 0:
+                return {"status": "error", "message": "Nominal alokasi lump-sum (amount) harus lebih besar dari 0."}
+
+            user_vaults = self.db.query(Vault).filter(Vault.user_id == user_id).all()
+            if not user_vaults:
+                return {"status": "error", "message": "Anda belum memiliki vault/pos alokasi aktif."}
+
+            source_acc = None
+            if validated.account_name:
+                source_acc = (
+                    self.db.query(Account)
+                    .filter(Account.user_id == user_id, Account.name.ilike(f"%{validated.account_name.strip()}%"))
+                    .first()
+                )
+                if not source_acc:
+                    return {"status": "error", "message": f"Akun rekening '{validated.account_name}' tidak ditemukan."}
+                if source_acc.current_balance < validated.amount:
+                    return {
+                        "status": "error",
+                        "message": f"Saldo akun '{source_acc.name}' (Rp {source_acc.current_balance:,.0f}) tidak mencukupi untuk distribusi Rp {validated.amount:,.0f}.",
+                    }
+
+            strategy = validated.strategy or "priority_bills"
+            if strategy == "proportional":
+                alloc_tuples = calculate_proportional_distribution(user_vaults, validated.amount)
+            else:
+                alloc_tuples = calculate_priority_bills_distribution(user_vaults, validated.amount)
+
+            if not alloc_tuples:
+                return {"status": "error", "message": "Gagal menghitung alokasi distribusi dana."}
+
+            vault_map = {cast(UUID, v.id): v for v in user_vaults}
+            summary_parts = []
+            for vid, amt in alloc_tuples:
+                v = vault_map[vid]
+                v.allocated_amount += amt
+                v.is_locked = True
+                summary_parts.append(f"{v.name} (+Rp {amt:,.0f})")
+
+            self.db.commit()
+            RunwayService.clear_cache(user_id=user_id)
+
+            return {
+                "status": "success",
+                "message": f"Berhasil mendistribusikan Rp {validated.amount:,.0f} ke {len(alloc_tuples)} vault: {', '.join(summary_parts)}. Semua vault telah dikunci aman.",
+                "distributed_amount": validated.amount,
+                "vault_count": len(alloc_tuples),
             }
 
         if not validated.vault_name:

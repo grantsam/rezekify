@@ -9,6 +9,10 @@ from sqlalchemy.orm import Session
 from rezekify.agent.runtime import build_cognitive_system_prompt, parse_agent_turn
 from rezekify.agent.tools import AGENT_TOOL_DEFINITIONS, AgentToolDispatcher, ManageVaultArgs
 from rezekify.db.models import Account, AccountType, Category, CategoryType, User, Vault, VaultType
+from rezekify.services.vault_distribution import (
+    calculate_priority_bills_distribution,
+    calculate_proportional_distribution,
+)
 
 
 @pytest.fixture
@@ -57,6 +61,8 @@ def test_manage_vault_tool_definition_registered():
     assert "amount" in props
     assert "account_name" in props
     assert "lock_state" in props
+    assert "strategy" in props
+    assert "distribute" in props["action"]["enum"]
     assert "action" in tool["parameters"]["required"]
 
 
@@ -199,4 +205,123 @@ def test_manage_vault_deposit_unknown_account_error(db_session: Session, seeded_
     assert result["status"] == "error"
     assert "Bank Tidak Ada" in result["message"]
     assert "tidak ditemukan" in result["message"].lower()
+
+
+def test_calculate_priority_bills_distribution_logic(sample_user: User):
+    v_bill1 = Vault(
+        id=uuid.uuid4(),
+        user_id=sample_user.id,
+        name="Indihome",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("300000.00"),
+        allocated_amount=Decimal("0.00"),
+        target_date=date(2026, 11, 5),
+    )
+    v_bill2 = Vault(
+        id=uuid.uuid4(),
+        user_id=sample_user.id,
+        name="Kost",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("1500000.00"),
+        allocated_amount=Decimal("500000.00"),
+        target_date=date(2026, 11, 1),  # Earlier due date
+    )
+    v_sav = Vault(
+        id=uuid.uuid4(),
+        user_id=sample_user.id,
+        name="Dana Darurat",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("5000000.00"),
+        allocated_amount=Decimal("1000000.00"),
+    )
+    vaults = [v_bill1, v_bill2, v_sav]
+
+    # Distribute Rp 2.000.000:
+    # 1) v_bill2 deficit = 1.000.000 (due Nov 1) -> gets 1.000.000 (remaining: 1.000.000)
+    # 2) v_bill1 deficit = 300.000 (due Nov 5) -> gets 300.000 (remaining: 700.000)
+    # 3) Remainder 700.000 goes to v_sav
+    allocs = dict(calculate_priority_bills_distribution(vaults, Decimal("2000000.00")))
+    assert allocs[v_bill2.id] == Decimal("1000000.00")
+    assert allocs[v_bill1.id] == Decimal("300000.00")
+    assert allocs[v_sav.id] == Decimal("700000.00")
+    assert sum(allocs.values()) == Decimal("2000000.00")
+
+
+def test_calculate_distribution_rounding_remainder_assigned_to_largest_deficit(sample_user: User):
+    v1 = Vault(
+        id=uuid.uuid4(),
+        user_id=sample_user.id,
+        name="Goal A",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("1000000.00"),
+        allocated_amount=Decimal("0.00"),
+    )
+    v2 = Vault(
+        id=uuid.uuid4(),
+        user_id=sample_user.id,
+        name="Goal B",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("2000000.00"),
+        allocated_amount=Decimal("0.00"),
+    )
+    # Distribute Rp 100.000 across 1M deficit (33.33%) and 2M deficit (66.66%)
+    # Integer floor: 33.333 and 66.666 -> diff remainder of 1 is assigned to v2 (largest deficit)
+    allocs = dict(calculate_proportional_distribution([v1, v2], Decimal("100000.00")))
+    assert sum(allocs.values()) == Decimal("100000.00")
+
+
+def test_calculate_distribution_all_fulfilled_falls_back_equally(sample_user: User):
+    v1 = Vault(
+        id=uuid.uuid4(),
+        user_id=sample_user.id,
+        name="Goal A",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("1000000.00"),
+        allocated_amount=Decimal("1000000.00"),
+    )
+    v2 = Vault(
+        id=uuid.uuid4(),
+        user_id=sample_user.id,
+        name="Goal B",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("2000000.00"),
+        allocated_amount=Decimal("2000000.00"),
+    )
+    allocs = dict(calculate_proportional_distribution([v1, v2], Decimal("500000.00")))
+    assert sum(allocs.values()) == Decimal("500000.00")
+    assert allocs[v1.id] == Decimal("250000.00")
+    assert allocs[v2.id] == Decimal("250000.00")
+
+
+def test_agent_manage_vault_distribute_priority_bills(seeded_agent_vault_db: User, db_session: Session):
+    dispatcher = AgentToolDispatcher(db_session)
+    res = dispatcher.dispatch(
+        "manage_vault",
+        seeded_agent_vault_db.id,
+        {
+            "action": "distribute",
+            "amount": 1000000,
+            "account_name": "BCA",
+            "strategy": "priority_bills",
+        },
+    )
+    assert res["status"] == "success"
+    assert res["distributed_amount"] == 1000000
+    assert "Berhasil mendistribusikan" in res["message"]
+
+
+def test_agent_manage_vault_distribute_insufficient_balance(seeded_agent_vault_db: User, db_session: Session):
+    dispatcher = AgentToolDispatcher(db_session)
+    res = dispatcher.dispatch(
+        "manage_vault",
+        seeded_agent_vault_db.id,
+        {
+            "action": "distribute",
+            "amount": 999999999,  # Exceeds BCA balance of 5.000.000
+            "account_name": "BCA",
+        },
+    )
+    assert res["status"] == "error"
+    assert "tidak mencukupi" in res["message"]
+
 
