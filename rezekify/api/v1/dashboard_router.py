@@ -65,6 +65,7 @@ class DashboardSummaryResponse(BaseModel):
     health_status: str
     upcoming_bills: List[UpcomingBillResponse]
     today_spent: Decimal = Decimal("0.00")
+    safe_runway_threshold: Decimal = Decimal("30000.00")
 
 
 class ChatRequest(BaseModel):
@@ -154,6 +155,7 @@ def get_dashboard_summary(
             for b in report.upcoming_bills
         ],
         today_spent=report.today_spent,
+        safe_runway_threshold=report.safe_runway_threshold,
     )
 
 

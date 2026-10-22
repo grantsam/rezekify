@@ -110,6 +110,7 @@ export interface DashboardSummaryResponse {
   days_remaining: number;
   daily_safe_runway: number;
   today_spent?: number;
+  safe_runway_threshold?: number;
   health_status: HealthStatus;
   upcoming_bills: UpcomingBill[];
 }

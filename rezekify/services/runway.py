@@ -51,6 +51,7 @@ class RunwayReport(NamedTuple):
     health_status: str
     upcoming_bills: List[UpcomingBill]
     today_spent: Decimal = Decimal("0.00")
+    safe_runway_threshold: Decimal = Decimal("30000.00")
 
 
 class SimulationReport(NamedTuple):
@@ -230,6 +231,7 @@ class RunwayService:
             health_status=status,
             upcoming_bills=upcoming_bills,
             today_spent=today_spent,
+            safe_runway_threshold=threshold,
         )
         _runway_cache[(user_id, today)] = (report, time.time())
         return report

@@ -506,6 +506,14 @@ def test_calculate_runway_includes_today_spent(db_session, sample_user):
     assert report.today_spent == Decimal("45000.00")
 
 
+def test_runway_report_includes_safe_runway_threshold(db_session, sample_user):
+    sample_user.safe_runway_threshold = Decimal("50000.00")
+    db_session.commit()
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 18))
+    assert report.safe_runway_threshold == Decimal("50000.00")
+
+
 
 def test_runway_month_end_cycle_day_short_month(db_session, sample_user):
     """Verifies that monthly_cycle_day=31 on Feb 20 correctly caps at 28 days returning 8 days remaining."""

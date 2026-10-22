@@ -837,6 +837,36 @@ def test_settings_allowed_origins_parsing():
     assert cfg_list.ALLOWED_ORIGINS == ["http://foo.com"]
 
 
+def _get_auth_headers(email: str = "test@rezekify.id") -> dict:
+    res = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Password123!",
+            "full_name": "Test User",
+        },
+    )
+    if res.status_code == 200:
+        token = res.json()["access_token"]
+    else:
+        login_res = client.post(
+            "/api/v1/auth/login",
+            json={"email": email, "password": "Password123!"},
+        )
+        token = login_res.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_dashboard_summary_exposes_safe_runway_threshold():
+    # Register and login
+    auth_headers = _get_auth_headers("threshold_test@rezekify.id")
+    res = client.get("/api/v1/dashboard/summary", headers=auth_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert "safe_runway_threshold" in data
+    assert Decimal(str(data["safe_runway_threshold"])) == Decimal("30000.00")
+
+
 def test_cors_origin_matching_with_trailing_slash_normalized():
     from fastapi import FastAPI
     from fastapi.middleware.cors import CORSMiddleware
