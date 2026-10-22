@@ -38,27 +38,27 @@
   - `<Fuel className="w-3.5 h-3.5 text-emerald-500" /> Bensin 30rb`
   - `<Wifi className="w-3.5 h-3.5 text-emerald-500" /> Bayar wifi 350rb`
 
-- [ ] **Step 1: Write the failing tests in `frontend/src/__tests__/QuickCaptureBar.test.tsx`**
+- [x] **Step 1: Write the failing tests in `frontend/src/__tests__/QuickCaptureBar.test.tsx`**
 Add assertions checking:
 - Presence of badge with text `↵ Enter` (instead of `Ctrl ↵`).
 - Presence of suggestion chips (`Makan siang 25rb`, `Bensin 30rb`, `Bayar wifi 350rb`).
 - Clicking a suggestion chip sets the input value to the chip text.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `npm --prefix frontend test src/__tests__/QuickCaptureBar.test.tsx`
 Expected: FAIL due to missing chips and badge mismatch.
 
-- [ ] **Step 3: Implement changes in `frontend/src/components/QuickCaptureBar.tsx`**
+- [x] **Step 3: Implement changes in `frontend/src/components/QuickCaptureBar.tsx`**
 - Import `UtensilsCrossed`, `Fuel`, `Wifi` from `lucide-react`.
 - Update badge text from `Ctrl ↵` to `↵ Enter`.
 - Add a suggestion chips container below the input row with testid `quick-capture-suggestions`.
 - Clicking a chip calls `setText(chipText)` and focuses `inputRef`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 Run: `npm --prefix frontend test src/__tests__/QuickCaptureBar.test.tsx`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add frontend/src/components/QuickCaptureBar.tsx frontend/src/__tests__/QuickCaptureBar.test.tsx
 git commit -m "feat(cockpit): add suggestion chips and update Enter badge in QuickCaptureBar"
@@ -77,27 +77,27 @@ git commit -m "feat(cockpit): add suggestion chips and update Enter badge in Qui
 - Consumes: `QuickCaptureBar` with suggestion chips.
 - Produces: Distilled `OverviewView` without `AISpotlightHero`, flattened single-surface Hero Card, `<Sparkles />` What-If simulation toggle, and single simulation pathway.
 
-- [ ] **Step 1: Update tests in `frontend/src/__tests__/OverviewView.test.tsx` and `AllPhasesE2EIntegration.test.tsx`**
+- [x] **Step 1: Update tests in `frontend/src/__tests__/OverviewView.test.tsx` and `AllPhasesE2EIntegration.test.tsx`**
 - Verify that `AISpotlightHero` is NOT rendered in `OverviewView`.
 - Verify that the simulation drawer button uses text `Cek Dampak Belanja` / `Tutup Simulasi`.
 - Verify that the redundant `Simulasi Belanja` modal button in the Vaults priority card is absent.
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 Run: `npm --prefix frontend test src/__tests__/OverviewView.test.tsx`
 Expected: FAIL
 
-- [ ] **Step 3: Implement changes in `frontend/src/components/OverviewView.tsx`**
+- [x] **Step 3: Implement changes in `frontend/src/components/OverviewView.tsx`**
 - Remove `<AISpotlightHero />` import and JSX render.
 - Flatten Hero Card: remove `bg-slate-50/90 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl p-4 space-y-3.5` wrapper. Use subtle vertical spacing (`space-y-5`) directly within the main card body.
 - Update simulation trigger button to remove emoji `⚡`: use `<Sparkles className="w-3.5 h-3.5 text-emerald-500" />` with text `Cek Dampak Belanja` and `Tutup Simulasi`.
 - Update Contextual Survival Guidance trigger button from `⚡ Buka Simulasi Belanja` to `<Sparkles className="w-3.5 h-3.5 text-emerald-500" /> Buka Simulasi Belanja`.
 - Remove redundant `<Button onPress={onOpenSimulateModal}>Simulasi Belanja</Button>` from the Komitmen & Vaults card.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npm --prefix frontend test src/__tests__/OverviewView.test.tsx src/__tests__/AllPhasesE2EIntegration.test.tsx`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add frontend/src/components/OverviewView.tsx frontend/src/__tests__/OverviewView.test.tsx frontend/src/__tests__/AllPhasesE2EIntegration.test.tsx
 git commit -m "refactor(cockpit): distill OverviewView and flatten Hero Telemetry Card"
@@ -110,23 +110,23 @@ git commit -m "refactor(cockpit): distill OverviewView and flatten Hero Telemetr
 **Files:**
 - Entire frontend & backend test matrices.
 
-- [ ] **Step 1: Run full frontend Vitest test suite**
+- [x] **Step 1: Run full frontend Vitest test suite**
 Run: `npm --prefix frontend test`
 Expected: All suites PASS.
 
-- [ ] **Step 2: Run TypeScript strict check and production build**
+- [x] **Step 2: Run TypeScript strict check and production build**
 Run: `cd frontend && npx tsc --noEmit && npm run build`
 Expected: Clean build with 0 errors.
 
-- [ ] **Step 3: Run Impeccable static detector check**
+- [x] **Step 3: Run Impeccable static detector check**
 Run: `"C:/Users/grant/.claude/plugins/cache/impeccable/impeccable/4.3.1/skills/impeccable/scripts/impeccable.cmd" detect --json frontend/src`
 Expected: 0 findings.
 
-- [ ] **Step 4: Run backend pytest suite**
+- [x] **Step 4: Run backend pytest suite**
 Run: `pytest`
 Expected: 493/493 tests pass.
 
-- [ ] **Step 5: Commit final verification**
+- [x] **Step 5: Commit final verification**
 ```bash
 git commit --allow-empty -m "chore(audit): verify cockpit distillation and hero flattening test matrix"
 ```
