@@ -64,39 +64,50 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                 : 'Distribusi pengeluaran per kategori pada siklus berjalan'}
             </p>
           </div>
-          <div
-            role="tablist"
-            aria-label="Pilih rentang waktu analitik"
-            className="flex bg-slate-100 dark:bg-zinc-900/60 p-1 rounded-2xl text-xs self-start sm:self-auto border border-slate-200/80 dark:border-zinc-800/80"
-          >
-            <Button
-              size="sm"
-              variant="light"
-              role="tab"
-              aria-selected={period === 'daily'}
-              onPress={() => setPeriod('daily')}
-              className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
-                period === 'daily'
-                  ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
-              }`}
+          <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap sm:flex-nowrap">
+            {period === 'daily' && threshold > 0 && (
+              <div
+                data-testid="safe-runway-header-badge"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-mono font-extrabold shadow-xs select-none tabular-nums"
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                <span>Batas Aman: Rp {threshold.toLocaleString('id-ID')}/hari</span>
+              </div>
+            )}
+            <div
+              role="tablist"
+              aria-label="Pilih rentang waktu analitik"
+              className="flex bg-slate-100 dark:bg-zinc-900/60 p-1 rounded-2xl text-xs border border-slate-200/80 dark:border-zinc-800/80"
             >
-              Harian (Daily)
-            </Button>
-            <Button
-              size="sm"
-              variant="light"
-              role="tab"
-              aria-selected={period === 'monthly'}
-              onPress={() => setPeriod('monthly')}
-              className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
-                period === 'monthly'
-                  ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
-              }`}
-            >
-              Bulanan (Monthly)
-            </Button>
+              <Button
+                size="sm"
+                variant="light"
+                role="tab"
+                aria-selected={period === 'daily'}
+                onPress={() => setPeriod('daily')}
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
+                  period === 'daily'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
+                }`}
+              >
+                Harian (Daily)
+              </Button>
+              <Button
+                size="sm"
+                variant="light"
+                role="tab"
+                aria-selected={period === 'monthly'}
+                onPress={() => setPeriod('monthly')}
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
+                  period === 'monthly'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
+                }`}
+              >
+                Bulanan (Monthly)
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -153,13 +164,11 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
             <div className="h-36 relative flex items-end justify-between gap-2 sm:gap-3">
               {/* Safe Runway Threshold Baseline */}
               <div
-                className="absolute inset-x-0 pointer-events-none z-10 border-t-2 border-dashed border-amber-500/80 flex items-center justify-end"
+                data-testid="safe-runway-baseline-divider"
+                aria-hidden="true"
+                className="absolute inset-x-0 pointer-events-none z-10 border-t-2 border-dashed border-amber-500/50"
                 style={{ bottom: `${thresholdPct}%` }}
-              >
-                <span className="text-[10px] font-extrabold tracking-tight text-amber-700 dark:text-amber-300 bg-white/90 dark:bg-[#141417]/90 backdrop-blur-md px-2 py-0.5 rounded-lg border border-amber-400/40 dark:border-amber-500/40 shadow-sm -translate-y-1/2 select-none tabular-nums font-mono">
-                  Batas Aman: Rp {threshold.toLocaleString('id-ID')}
-                </span>
-              </div>
+              />
 
               {dailyData.items.map((item, idx) => {
                 const heightPct = item.amount > 0 ? Math.min(100, Math.max(6, (item.amount / maxDailyAmount) * 100)) : 0;
@@ -215,7 +224,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                           className={`w-full rounded-t-lg transition-colors ${
                             isOver
                               ? 'bg-gradient-to-t from-rose-600 to-rose-500'
-                              : 'bg-gradient-to-t from-[#0F766E] to-[#10B981]'
+                              : 'bg-gradient-to-t from-emerald-600 to-teal-500'
                           }`}
                         />
                       </div>
@@ -236,7 +245,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
 
             <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 font-bold px-2">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" /> Sesuai Jatah
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Sesuai Jatah
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Melebihi Jatah
@@ -261,7 +270,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   aria-label={`${item.category_name}: ${item.percentage}%`}
                   className="w-full"
                   classNames={{
-                    indicator: 'bg-gradient-to-r from-[#0F766E] to-[#10B981]',
+                    indicator: 'bg-gradient-to-r from-emerald-600 to-teal-500',
                   }}
                 />
               </div>

@@ -135,12 +135,88 @@ describe('ExpenseCharts Component', () => {
   it('enforces tabular-nums on safe runway threshold badge and tooltip', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
-    const { container } = render(<ExpenseCharts />);
+    render(<ExpenseCharts />);
 
     await waitFor(() => {
-      const badge = container.querySelector('.border-amber-400\\/40');
+      const badge = screen.getByTestId('safe-runway-header-badge');
       expect(badge).toBeInTheDocument();
-      expect(badge?.className).toContain('tabular-nums');
+      expect(badge.className).toContain('tabular-nums');
+    });
+  });
+
+  it('renders elevated Safe Runway threshold badge in card header and unobtrusive baseline divider in chart', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
+    render(<ExpenseCharts />);
+
+    await waitFor(() => {
+      const badge = screen.getByTestId('safe-runway-header-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveTextContent(/Batas Aman: Rp 70\.000\/hari/i);
+      expect(badge).toHaveClass('tabular-nums', 'font-mono');
+
+      const divider = screen.getByTestId('safe-runway-baseline-divider');
+      expect(divider).toBeInTheDocument();
+      expect(divider).toHaveAttribute('aria-hidden', 'true');
+      expect(divider).toHaveClass('border-amber-500/50', 'pointer-events-none');
+      expect(divider.textContent).toBe('');
+    });
+  });
+
+  it('hides safe runway header badge when period is switched to monthly or threshold is zero', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint.includes('period=monthly')) return mockMonthlyData;
+      return mockDailyData;
+    });
+
+    render(<ExpenseCharts />);
+    await waitFor(() => {
+      expect(screen.getByTestId('safe-runway-header-badge')).toBeInTheDocument();
+    });
+
+    const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
+    fireEvent.click(monthlyBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('safe-runway-header-badge')).not.toBeInTheDocument();
+    });
+  });
+
+  it('daily bars render tooltips without threshold badge DOM collision in chart area', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
+    render(<ExpenseCharts />);
+
+    await waitFor(() => {
+      const chartArea = screen.getByRole('region', { name: /Grafik pengeluaran 7 hari terakhir vs ambang batas aman runway/i });
+      expect(chartArea).toBeInTheDocument();
+      expect(chartArea.querySelector('[data-testid="safe-runway-header-badge"]')).toBeNull();
+
+      const baseline = chartArea.querySelector('[data-testid="safe-runway-baseline-divider"]');
+      expect(baseline).toHaveClass('pointer-events-none');
+      expect(baseline).not.toHaveTextContent(/Batas Aman/i);
+    });
+  });
+
+  it('renders monthly breakdown progress bars with emerald gradient tokens even for zero-percentage items', async () => {
+    const zeroMonthlyData = {
+      period: 'monthly' as const,
+      cycle_start_date: '2026-09-01',
+      cycle_end_date: '2026-09-19',
+      total_spent: 100000,
+      items: [
+        { category_id: 'cat-1', category_name: 'Makanan & Minuman', amount: 100000, percentage: 100.0, color: '#6366f1' },
+        { category_id: 'cat-2', category_name: 'Pendidikan', amount: 0, percentage: 0.0, color: '#0ea5e9' },
+      ],
+    };
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(zeroMonthlyData);
+
+    render(<ExpenseCharts />);
+    const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
+    fireEvent.click(monthlyBtn);
+
+    await waitFor(() => {
+      const zeroProgressBar = screen.getByRole('progressbar', { name: /Pendidikan: 0%/i });
+      expect(zeroProgressBar).toBeInTheDocument();
+      expect(zeroProgressBar).toHaveAttribute('aria-valuenow', '0');
     });
   });
 });
