@@ -94,6 +94,13 @@ def test_manage_vault_pay_bill_action(db_session: Session, seeded_agent_vault_db
     acc = db_session.query(Account).filter_by(user_id=seeded_agent_vault_db.id, name="BCA").one()
     assert acc.current_balance == Decimal("4500000.00")
 
+    from rezekify.db.models import EntryType, Transaction
+    tx_id = uuid.UUID(result["transaction_id"])
+    tx = db_session.query(Transaction).filter_by(id=tx_id).one()
+    debit_entry = next(e for e in tx.ledger_entries if e.entry_type == EntryType.DEBIT)
+    v_bill = db_session.query(Vault).filter_by(user_id=seeded_agent_vault_db.id, name="Listrik PLN").one()
+    assert debit_entry.vault_id == v_bill.id
+
 
 def test_manage_vault_toggle_lock_action(db_session: Session, seeded_agent_vault_db: User):
     dispatcher = AgentToolDispatcher(db_session)

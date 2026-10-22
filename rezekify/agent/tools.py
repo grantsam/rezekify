@@ -13,6 +13,7 @@ from rezekify.db.models import Account, Category, CategoryType, Vault, VaultType
 from rezekify.services.faceted_query import FacetedQueryEngine, FacetedQueryParams
 from rezekify.services.ledger import LedgerService
 from rezekify.services.runway import RunwayService
+from rezekify.services.vault_reconciliation import VaultReconciliationService
 
 
 AGENT_TOOL_DEFINITIONS: List[Dict[str, Any]] = [
@@ -499,7 +500,16 @@ class AgentToolDispatcher:
 
         action = validated.action.lower()
         category = None
+        recon_res = None
+        matched_vault = None
         if action == "expense":
+            # ponytail: heuristic fixed bill vault matching; upgrade to semantic embedding if alias ambiguity increases.
+            recon_service = VaultReconciliationService(self.db)
+            matched_vault = recon_service.find_matching_fixed_bill_vault(
+                user_id=user_id,
+                description=validated.description or "Transaksi",
+                amount=validated.amount,
+            )
             cat_name = validated.category_name or "Umum"
             category = (
                 self.db.query(Category)
@@ -521,7 +531,16 @@ class AgentToolDispatcher:
                 category_id=category.id,
                 amount=validated.amount,
                 description=validated.description,
+                vault_id=matched_vault.id if matched_vault else None,
             )
+            if matched_vault:
+                recon_res = recon_service.reconcile_fixed_bill_vault(
+                    user_id=user_id,
+                    vault=matched_vault,
+                    transaction=tx,
+                    amount=validated.amount,
+                )
+                self.db.commit()
         elif action == "income":
             cat_name = validated.category_name or "Pemasukan Lain"
             category = (
@@ -578,8 +597,10 @@ class AgentToolDispatcher:
 
         self.db.refresh(account)
         category_name = category.name if category else ("Transfer" if action == "transfer" else None)
-        return {
+        msg = f"Transaksi {action} berhasil dicatat."
+        res: Dict[str, Any] = {
             "status": "success",
+            "message": msg,
             "transaction": {
                 "id": str(tx.id),
                 "action": action,
@@ -591,6 +612,19 @@ class AgentToolDispatcher:
                 "account_balance_after": account.current_balance,
             },
         }
+
+        if matched_vault and recon_res:
+            reconciled_vault = {
+                "id": str(matched_vault.id),
+                "name": matched_vault.name,
+                "previous_due_date": str(recon_res.previous_due_date) if recon_res.previous_due_date else None,
+                "new_due_date": str(recon_res.new_due_date) if recon_res.new_due_date else None,
+                "settled_amount": float(recon_res.settled_amount or validated.amount),
+            }
+            res["transaction"]["reconciled_vault"] = reconciled_vault
+            res["message"] += f" Tagihan '{matched_vault.name}' otomatis diselesaikan & jatuh tempo bergulir ke {recon_res.new_due_date}."
+
+        return res
 
     def _dispatch_manage_vault(self, user_id: UUID, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Dispatches vault operations: deposit, pay_bill, toggle_lock, and check_status.
@@ -739,6 +773,7 @@ class AgentToolDispatcher:
                 amount=pay_amount,
                 description=f"Pembayaran tagihan: {vault.name}",
                 source_channel="AI_AGENT",
+                vault_id=vault.id,
             )
             vault.allocated_amount = Decimal("0.00")
             if vault.target_date:

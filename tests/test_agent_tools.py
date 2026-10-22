@@ -12,7 +12,7 @@ from rezekify.agent.tools import (
     FINANCIAL_TOOLS,
     execute_financial_tool,
 )
-from rezekify.db.models import Account, AccountType, Category, CategoryType, User
+from rezekify.db.models import Account, AccountType, Category, CategoryType, User, Vault, VaultType
 
 
 @pytest.fixture
@@ -409,5 +409,123 @@ def test_string_amount_and_null_stripping_validation(db_session: Session, seeded
     )
     assert rec_res["status"] == "success"
     assert rec_res["transaction"]["amount"] == Decimal("25000.00")
+
+
+def test_agent_expense_auto_reconciles_fixed_bill(db_session: Session, sample_user: User):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("2000000.00"),
+    )
+    v_bill = Vault(
+        user_id=sample_user.id,
+        name="Wifi Indihome",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("350000.00"),
+        allocated_amount=Decimal("350000.00"),
+        target_date=date(2026, 10, 20),
+        is_locked=True,
+    )
+    db_session.add_all([acc, v_bill])
+    db_session.commit()
+
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "expense",
+        "amount": 350000,
+        "account_name": "BCA",
+        "description": "Bayar tagihan wifi indihome",
+    }
+    result = dispatcher.dispatch(sample_user.id, "record_transaction", args)
+
+    assert result["status"] == "success"
+    assert "reconciled_vault" in result["transaction"]
+    assert result["transaction"]["reconciled_vault"]["name"] == "Wifi Indihome"
+    assert "Wifi Indihome" in result["message"]
+
+    db_session.refresh(v_bill)
+    assert v_bill.allocated_amount == Decimal("0.00")
+    assert v_bill.target_date == date(2026, 11, 20)
+
+
+def test_agent_expense_does_not_match_savings_vault(db_session: Session, sample_user: User):
+    # Review Focus 1
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("2000000.00"),
+    )
+    v_sav = Vault(
+        user_id=sample_user.id,
+        name="Dana Liburan",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("5000000.00"),
+        allocated_amount=Decimal("1000000.00"),
+        target_date=date(2026, 12, 1),
+    )
+    db_session.add_all([acc, v_sav])
+    db_session.commit()
+
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "expense",
+        "amount": 500000,
+        "account_name": "BCA",
+        "description": "Beli tiket dana liburan",
+    }
+    result = dispatcher.dispatch(sample_user.id, "record_transaction", args)
+
+    assert result["status"] == "success"
+    assert "reconciled_vault" not in result["transaction"]
+    db_session.refresh(v_sav)
+    assert v_sav.allocated_amount == Decimal("1000000.00")
+    assert v_sav.target_date == date(2026, 12, 1)
+
+
+def test_agent_ambiguous_bill_falls_back_to_unlinked_expense(db_session: Session, sample_user: User):
+    # Review Focus 2
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("2000000.00"),
+    )
+    v1 = Vault(
+        user_id=sample_user.id,
+        name="Listrik Rumah",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("500000.00"),
+        allocated_amount=Decimal("500000.00"),
+        target_date=date(2026, 10, 15),
+    )
+    v2 = Vault(
+        user_id=sample_user.id,
+        name="Listrik Toko",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("500000.00"),
+        allocated_amount=Decimal("500000.00"),
+        target_date=date(2026, 10, 15),
+    )
+    db_session.add_all([acc, v1, v2])
+    db_session.commit()
+
+    dispatcher = AgentToolDispatcher(db_session)
+    args = {
+        "action": "expense",
+        "amount": 250000,  # does not match either target_amount
+        "account_name": "BCA",
+        "description": "Bayar tagihan listrik",
+    }
+    result = dispatcher.dispatch(sample_user.id, "record_transaction", args)
+
+    assert result["status"] == "success"
+    assert "reconciled_vault" not in result["transaction"]
+    db_session.refresh(v1)
+    db_session.refresh(v2)
+    assert v1.allocated_amount == Decimal("500000.00")
+    assert v2.allocated_amount == Decimal("500000.00")
+
 
 
