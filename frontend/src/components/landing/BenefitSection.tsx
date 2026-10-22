@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Zap, ShieldCheck, TrendingUp, Target, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCountUp } from '../../hooks/useCountUp';
 
 export default function BenefitsSection() {
@@ -135,76 +136,85 @@ export default function BenefitsSection() {
           </div>
 
           <div className="lg:col-span-6 flex">
-            <div className="w-full bg-teal-600/10 dark:bg-[#141417] backdrop-blur-3xl border border-white/50 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/10 flex flex-col justify-between text-left transition-all duration-500 relative overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full bg-teal-600/10 dark:bg-[#141417] backdrop-blur-3xl border border-white/50 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/10 flex flex-col justify-between text-left transition-all duration-500 relative overflow-hidden"
+              >
 
-              <div className="absolute -top-16 -right-16 w-36 h-36 bg-gradient-to-br from-white/30 dark:from-emerald-500/20 to-transparent rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -top-16 -right-16 w-36 h-36 bg-gradient-to-br from-white/30 dark:from-emerald-500/20 to-transparent rounded-full blur-2xl pointer-events-none" />
 
-              <div className="space-y-6 relative z-10">
-                <div className="flex items-center justify-between border-b border-slate-900/10 dark:border-zinc-800/80 pb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                    <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
-                      Fokus Manfaat {current.number}
+                <div className="space-y-6 relative z-10">
+                  <div className="flex items-center justify-between border-b border-slate-900/10 dark:border-zinc-800/80 pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+                        Fokus Manfaat {current.number}
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/20">
+                      Analisis Rezekify
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/20">
-                    Analisis Rezekify
-                  </span>
-                </div>
 
-                <div className="space-y-3">
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                    {current.title}
-                  </h3>
+                  <div className="space-y-3">
+                    <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                      {current.title}
+                    </h3>
 
-                  <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                    {current.fullDesc}
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-zinc-800/80 flex items-center gap-4 shadow-sm">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-500 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
-                    {current.metricIcon}
-                  </div>
-                  <div>
-                    <p ref={current.highlightRef} className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
-                      {current.highlightVal}
-                    </p>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-                      {current.highlightLabel}
+                    <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                      {current.fullDesc}
                     </p>
                   </div>
-                </div>
-              </div>
 
-              <div className="mt-6 pt-4 p-4 rounded-2xl bg-emerald-500/10 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-zinc-800/80 space-y-3 relative z-10">
-                <div className="flex justify-between items-center text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>Proyeksi Dampak Keuangan</span>
-                  <span className="text-emerald-400">Terverifikasi AI</span>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    <span>Efisiensi Pengelolaan</span>
-                    <span className="font-bold text-emerald-400">+38%</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-900/10 dark:bg-slate-700/60 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-teal-600 to-emerald-500 rounded-full w-[82%] transition-all duration-700" />
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-zinc-800/80 flex items-center gap-4 shadow-sm">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-500 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+                      {current.metricIcon}
+                    </div>
+                    <div>
+                      <p ref={current.highlightRef} className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+                        {current.highlightVal}
+                      </p>
+                      <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
+                        {current.highlightLabel}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    <span>Konsistensi Tabungan</span>
-                    <span className="font-bold text-emerald-400">94%</span>
+                <div className="mt-6 pt-4 p-4 rounded-2xl bg-emerald-500/10 dark:bg-zinc-900/60 backdrop-blur-xl border border-white/40 dark:border-zinc-800/80 space-y-3 relative z-10">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <span>Proyeksi Dampak Keuangan</span>
+                    <span className="text-emerald-400">Terverifikasi AI</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-900/10 dark:bg-slate-700/60 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full w-[94%] transition-all duration-700" />
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 font-medium">
+                      <span>Efisiensi Pengelolaan</span>
+                      <span className="font-bold text-emerald-400">+38%</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-900/10 dark:bg-slate-700/60 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-teal-600 to-emerald-500 rounded-full w-[82%] transition-all duration-700" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 font-medium">
+                      <span>Konsistensi Tabungan</span>
+                      <span className="font-bold text-emerald-400">94%</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-900/10 dark:bg-slate-700/60 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full w-[94%] transition-all duration-700" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-            </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
         </div>

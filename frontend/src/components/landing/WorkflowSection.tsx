@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Laptop } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function HowItWorksSection() {
   const [activeStep, setActiveStep] = useState(0);
@@ -151,41 +152,48 @@ export default function HowItWorksSection() {
           </div>
         </div>
 
-        <div className="bg-white/60 dark:bg-[#141417] backdrop-blur-2xl border border-white/80 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-500">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center text-left">
+        <div className="bg-white/60 dark:bg-[#141417] backdrop-blur-2xl border border-white/80 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-500 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeStep}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center text-left"
+            >
+              <div className="lg:col-span-7 space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-[#10B981] text-white font-extrabold flex items-center justify-center text-xs shadow-md">
+                    {current.number}
+                  </span>
+                  <span className="text-xs font-bold text-[#10B981] bg-[#10B981]/15 px-3 py-1 rounded-full">
+                    Langkah {current.number} dari 5
+                  </span>
+                </div>
 
-            <div className="lg:col-span-7 space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-[#10B981] text-white font-extrabold flex items-center justify-center text-xs shadow-md">
-                  {current.number}
-                </span>
-                <span className="text-xs font-bold text-[#10B981] bg-[#10B981]/15 px-3 py-1 rounded-full">
-                  Langkah {current.number} dari 5
-                </span>
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                  {current.title}
+                </h3>
+
+                <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal max-w-xl">
+                  {current.fullDetail}
+                </p>
               </div>
 
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                {current.title}
-              </h3>
+              <div className="lg:col-span-5 bg-white/70 dark:bg-zinc-900/80 rounded-2xl p-5 border border-white/60 dark:border-zinc-800/80 shadow-inner flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-[#10B981]">Status Alur Kerja</p>
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">Kelola Keuangan Kapan Saja</p>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">Akses fleksibel dari Web & Mobile</p>
+                </div>
 
-              <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal max-w-xl">
-                {current.fullDetail}
-              </p>
-            </div>
-
-            <div className="lg:col-span-5 bg-white/70 dark:bg-zinc-900/80 rounded-2xl p-5 border border-white/60 dark:border-zinc-800/80 shadow-inner flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wider font-bold text-[#10B981]">Status Alur Kerja</p>
-                <p className="text-sm font-bold text-slate-800 dark:text-white">Kelola Keuangan Kapan Saja</p>
-                <p className="text-xs text-slate-500 dark:text-zinc-400">Akses fleksibel dari Web & Mobile</p>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 text-white flex items-center justify-center text-xl shadow-lg shrink-0 animate-pulse">
+                  <Laptop className="w-4 h-4 text-emerald-400" />
+                </div>
               </div>
-
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 text-white flex items-center justify-center text-xl shadow-lg shrink-0 animate-pulse">
-                <Laptop className="w-4 h-4 text-emerald-400" />
-              </div>
-            </div>
-
-          </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
       </div>

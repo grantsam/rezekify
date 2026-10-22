@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MessageCircle, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FaqSection() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
@@ -85,18 +86,29 @@ export default function FaqSection() {
                     className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-slate-900 dark:text-white"
                   >
                     <span>{faq.question}</span>
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-transform ${
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-transform duration-250 ease-out ${
                       isOpen ? 'bg-[#10B981] text-white rotate-45' : 'bg-[#10B981]/15 text-[#0F766E] dark:text-[#10B981]'
                     }`}>
                       +
                     </span>
                   </button>
 
-                  {isOpen && (
-                    <div className="px-4 pb-5 sm:px-5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-900/5 dark:border-white/5 pt-3">
-                      {faq.answer}
-                    </div>
-                  )}
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key="content"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-5 sm:px-5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-900/5 dark:border-white/5 pt-3">
+                          {faq.answer}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}

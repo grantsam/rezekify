@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles, Bot, Banknote, CheckCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function CtaSection() {
   const navigate = useNavigate();
@@ -33,19 +34,23 @@ export default function CtaSection() {
               </p>
 
               <div className="flex flex-wrap items-center gap-4 pt-2">
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => navigate('/register')}
-                  className="px-8 py-4 rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                  className="px-8 py-4 rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 shadow-lg hover:shadow-emerald-500/30 transition-all flex items-center gap-2"
                 >
                   Mulai Sekarang <ArrowRight className="w-4 h-4 ml-2 inline" />
-                </button>
+                </motion.button>
 
-                <a
+                <motion.a
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   href="#fitur"
                   className="px-8 py-4 rounded-full text-sm font-bold text-slate-700 dark:text-white bg-white/70 dark:bg-white/10 border border-[#10B981]/30 dark:border-white/20 hover:bg-white dark:hover:bg-white/20 backdrop-blur-md transition-all shadow-sm"
                 >
                   Lihat Fitur
-                </a>
+                </motion.a>
               </div>
             </div>
 
