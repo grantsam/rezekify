@@ -15,7 +15,22 @@ describe('QuickCaptureBar Component', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Pilih struk belanja/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Rekam pesan suara/i })).toBeInTheDocument();
-    expect(screen.getByText('Ctrl ↵')).toBeInTheDocument();
+    expect(screen.getByText('↵ Enter')).toBeInTheDocument();
+  });
+
+  it('renders suggestion chips and clicking a chip sets input value', () => {
+    render(<QuickCaptureBar onSubmit={vi.fn()} onVoiceSubmit={vi.fn()} />);
+
+    expect(screen.getByTestId('quick-capture-suggestions')).toBeInTheDocument();
+    expect(screen.getByText('Makan siang 25rb')).toBeInTheDocument();
+    expect(screen.getByText('Bensin 30rb')).toBeInTheDocument();
+    expect(screen.getByText('Bayar wifi 350rb')).toBeInTheDocument();
+
+    const input = screen.getByPlaceholderText(/Ketik mutasi/i) as HTMLInputElement;
+    const makanChip = screen.getByRole('button', { name: /Gunakan saran makan siang 25 ribu/i });
+    fireEvent.click(makanChip);
+
+    expect(input.value).toBe('Makan siang 25rb');
   });
 
   it('submits text mutasi on Enter', async () => {

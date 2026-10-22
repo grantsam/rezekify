@@ -9,6 +9,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  UtensilsCrossed,
+  Fuel,
+  Wifi,
 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { compressImage } from '../utils/imageCompression';
@@ -372,12 +375,42 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
                 <Loader2 className="w-4 h-4 text-emerald-500 animate-spin ml-1" />
               ) : (
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800/80 text-[10px] text-slate-500 dark:text-slate-400 font-mono font-bold ml-1">
-                  Ctrl ↵
+                  ↵ Enter
                 </span>
               )}
             </div>
           </>
         )}
+      </div>
+
+      {/* Suggestion Chips */}
+      <div data-testid="quick-capture-suggestions" className="flex items-center gap-2 flex-wrap pt-2 px-1 text-xs">
+        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500 select-none mr-0.5">
+          COBA:
+        </span>
+        {[
+          { label: 'Makan siang 25rb', icon: UtensilsCrossed, ariaLabel: 'Gunakan saran makan siang 25 ribu' },
+          { label: 'Bensin 30rb', icon: Fuel, ariaLabel: 'Gunakan saran bensin 30 ribu' },
+          { label: 'Bayar wifi 350rb', icon: Wifi, ariaLabel: 'Gunakan saran bayar wifi 350 ribu' },
+        ].map((chip) => {
+          const Icon = chip.icon;
+          return (
+            <button
+              key={chip.label}
+              type="button"
+              disabled={isLoading}
+              onClick={() => {
+                setText(chip.label);
+                textInputRef.current?.focus();
+              }}
+              aria-label={chip.ariaLabel}
+              className="flex items-center gap-1.5 px-3 py-1.5 min-h-[38px] rounded-xl bg-slate-100/90 dark:bg-zinc-900/70 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300 text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Icon className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>{chip.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Floating Notification Toast */}
