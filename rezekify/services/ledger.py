@@ -7,8 +7,12 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from rezekify.db.models import Account, Category, EntryType, LedgerEntry, Transaction
+from rezekify.db.models import Account, Category, EntryType, LedgerEntry, Transaction, Vault
 from rezekify.services.runway import RunwayService
+from rezekify.services.vault_reconciliation import (
+    VaultReconciliationResult,
+    VaultReconciliationService,
+)
 
 
 class LedgerService:
@@ -34,6 +38,7 @@ class LedgerService:
         raw_input_text: Optional[str] = None,
         receipt_image_url: Optional[str] = None,
         transaction_date: Optional[datetime] = None,
+        vault_id: Optional[UUID] = None,
     ) -> Transaction:
         """Records an expense transaction with balanced debit/credit entries."""
         if amount <= 0:
@@ -72,6 +77,7 @@ class LedgerService:
             transaction_id=tx.id,
             user_id=user_id,
             category_id=category_id,
+            vault_id=vault_id,
             entry_type=EntryType.DEBIT,
             amount=amount,
         )
@@ -321,6 +327,11 @@ class LedgerService:
                     category_id = entry.category_id
                     break
 
+        existing_vault_id = next(
+            (e.vault_id for e in tx.ledger_entries if e.entry_type == EntryType.DEBIT and e.vault_id is not None),
+            None,
+        )
+
         new_entries: list[LedgerEntry] = []
 
         if tt == "EXPENSE":
@@ -351,6 +362,7 @@ class LedgerService:
                     transaction_id=tx.id,
                     user_id=user_id,
                     category_id=category_id,
+                    vault_id=existing_vault_id,
                     entry_type=EntryType.DEBIT,
                     amount=amount,
                 ),
@@ -472,3 +484,20 @@ class LedgerService:
             self.db.refresh(tx)
         RunwayService.clear_cache(user_id=user_id)
         return tx
+
+    def reconcile_fixed_bill_vault(
+        self,
+        user_id: UUID,
+        vault: Vault,
+        transaction: Transaction,
+        amount: Decimal,
+    ) -> VaultReconciliationResult:
+        """Reconciles a FIXED_BILL vault against a transaction and settles commitment."""
+        result = VaultReconciliationService(self.db).reconcile_fixed_bill_vault(
+            user_id=user_id,
+            vault=vault,
+            transaction=transaction,
+            amount=amount,
+        )
+        self._maybe_commit()
+        return result

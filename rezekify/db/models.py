@@ -138,6 +138,7 @@ class Vault(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now)
 
     user = relationship("User", back_populates="vaults")
+    ledger_entries = relationship("LedgerEntry", back_populates="vault")
 
 
 class Category(Base):
@@ -185,6 +186,7 @@ class LedgerEntry(Base):
     amount = Column(Numeric(15, 2), nullable=False)
 
     transaction = relationship("Transaction", back_populates="ledger_entries")
+    vault = relationship("Vault", back_populates="ledger_entries")
 
 
 class UserSettings(Base):

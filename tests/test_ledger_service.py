@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.orm import Query
 
-from rezekify.db.models import Account, AccountType, Category, CategoryType, EntryType, Transaction, User
+from rezekify.db.models import Account, AccountType, Category, CategoryType, EntryType, Transaction, User, Vault, VaultType
 from rezekify.services.ledger import LedgerService
 
 
@@ -861,6 +861,74 @@ def test_record_income_with_foreign_category_rejected(db_session, sample_user):
             amount=Decimal("100000.00"),
             description="Illegal category income",
         )
+
+
+def test_record_expense_with_vault_id(db_session, sample_user):
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    vault = Vault(
+        user_id=sample_user.id,
+        name="Listrik PLN",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("200000.00"),
+    )
+    db_session.add_all([acc, vault])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("200000.00"),
+        description="Token Listrik",
+        vault_id=vault.id,
+    )
+    debit_entry = [e for e in tx.ledger_entries if e.entry_type == EntryType.DEBIT][0]
+    assert debit_entry.vault_id == vault.id
+
+
+def test_update_transaction_preserves_vault_id(db_session, sample_user):
+    # Review Focus 5: update_transaction preserves debit entry vault_id
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+    )
+    vault = Vault(
+        user_id=sample_user.id,
+        name="BPJS",
+        vault_type=VaultType.FIXED_BILL,
+        target_amount=Decimal("100000.00"),
+    )
+    db_session.add_all([acc, vault])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=None,
+        amount=Decimal("100000.00"),
+        description="BPJS Kesehatan",
+        vault_id=vault.id,
+    )
+
+    updated_tx = service.update_transaction(
+        user_id=sample_user.id,
+        transaction_id=tx.id,
+        amount=Decimal("105000.00"),
+        description="BPJS Kesehatan + Admin",
+        account_id=acc.id,
+    )
+    debit_entry = [e for e in updated_tx.ledger_entries if e.entry_type == EntryType.DEBIT][0]
+    assert debit_entry.vault_id == vault.id
+
 
 
 
