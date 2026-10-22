@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
-import { Plus, AlertCircle, PiggyBank, X } from 'lucide-react';
+import { Plus, AlertCircle, PiggyBank, X, Sparkles } from 'lucide-react';
 import { Account, Vault } from '../types/api';
 import { VaultCard } from './VaultCard';
 
 const DepositVaultModal = React.lazy(() => import('./DepositVaultModal').then(m => ({ default: m.DepositVaultModal })));
 const PayBillModal = React.lazy(() => import('./PayBillModal').then(m => ({ default: m.PayBillModal })));
+const LumpSumAllocationModal = React.lazy(() => import('./LumpSumAllocationModal').then(m => ({ default: m.LumpSumAllocationModal })));
 
 export interface VaultsViewProps {
   vaults: Vault[];
@@ -40,6 +41,7 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
   const [activeTab, setActiveTab] = useState<'ALL' | 'FIXED_BILL' | 'SAVINGS'>('ALL');
   const [localDepositVault, setLocalDepositVault] = useState<Vault | null>(null);
   const [localPayBillVault, setLocalPayBillVault] = useState<Vault | null>(null);
+  const [isLumpSumModalOpen, setIsLumpSumModalOpen] = useState(false);
 
   const handleDeposit = (vault: Vault) => {
     if (onDepositVault) {
@@ -85,15 +87,28 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onPress={onOpenCreateVault}
-          aria-label="+ Tambah Vault"
-          startContent={<Plus className="w-4 h-4" />}
-          className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold min-h-[40px] px-5 rounded-2xl text-xs shadow-lg shadow-emerald-900/20 transition-all"
-        >
-          + Tambah Vault
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="flat"
+            onPress={() => setIsLumpSumModalOpen(true)}
+            aria-label="⚡ Alokasikan Dana / Lump-Sum"
+            startContent={<Sparkles className="w-4 h-4 text-emerald-500" />}
+            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold min-h-[40px] px-4 rounded-2xl text-xs border border-emerald-500/30 transition-all"
+          >
+            ⚡ Alokasikan Dana / Lump-Sum
+          </Button>
+
+          <Button
+            size="sm"
+            onPress={onOpenCreateVault}
+            aria-label="+ Tambah Vault"
+            startContent={<Plus className="w-4 h-4" />}
+            className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold min-h-[40px] px-5 rounded-2xl text-xs shadow-lg shadow-emerald-900/20 transition-all"
+          >
+            + Tambah Vault
+          </Button>
+        </div>
       </div>
 
       {/* Error alert banner */}
@@ -240,6 +255,17 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
             accounts={accounts}
           />
         )}
+
+        <LumpSumAllocationModal
+          isOpen={isLumpSumModalOpen}
+          onClose={() => setIsLumpSumModalOpen(false)}
+          onSuccess={async () => {
+            setIsLumpSumModalOpen(false);
+            await onDataMutated?.();
+          }}
+          vaults={vaults}
+          accounts={accounts || []}
+        />
       </React.Suspense>
     </motion.div>
   );

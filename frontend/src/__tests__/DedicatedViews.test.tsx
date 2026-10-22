@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { LedgerView } from '../components/LedgerView';
 import { VaultsView } from '../components/VaultsView';
@@ -86,7 +86,7 @@ describe('Dedicated Ledger & Vaults Views', () => {
   });
 
   describe('VaultsView', () => {
-    it('renders title, filters tabs, and renders vault cards', () => {
+    it('renders title, filters tabs, and renders vault cards', async () => {
       const handleOpenCreateVault = vi.fn();
 
       render(
@@ -108,6 +108,13 @@ describe('Dedicated Ledger & Vaults Views', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /\+ Tambah Vault/i }));
       expect(handleOpenCreateVault).toHaveBeenCalledTimes(1);
+
+      const lumpSumBtn = screen.getByRole('button', { name: /Alokasikan Dana \/ Lump-Sum/i });
+      expect(lumpSumBtn).toBeInTheDocument();
+      fireEvent.click(lumpSumBtn);
+      await waitFor(() => {
+        expect(screen.getByText(/Alokasi Lump-Sum Multi-Vault/i)).toBeInTheDocument();
+      });
     });
 
     it('filters vaults by tab: Semua, Tagihan Tetap, Tabungan', () => {
