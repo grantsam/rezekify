@@ -37,25 +37,25 @@
 **Interfaces:**
 - Produces: `useCountUp(endValue: number, options?: { duration?: number; decimals?: number; suffix?: string; prefix?: string })` returning `{ count: string; ref: React.RefObject<any> }`.
 
-- [ ] **Step 1: Write failing unit test in `frontend/src/__tests__/useCountUp.test.ts`**
+- [x] **Step 1: Write failing unit test in `frontend/src/__tests__/useCountUp.test.ts`**
 Test that `useCountUp` initializes at start value (e.g. 0), animates smoothly to target value, and formats with prefix/suffix.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `npm --prefix frontend test src/__tests__/useCountUp.test.ts`
 Expected: FAIL (hook does not exist).
 
-- [ ] **Step 3: Implement `useCountUp.ts` in `frontend/src/hooks/useCountUp.ts`**
+- [x] **Step 3: Implement `useCountUp.ts` in `frontend/src/hooks/useCountUp.ts`**
 Implement hook using `framer-motion`'s `animate` and `useInView` to interpolate from 0 to target when visible, formatting with decimals, suffix, and prefix.
 
-- [ ] **Step 4: Integrate into `AboutSection.tsx` and `BenefitSection.tsx`**
+- [x] **Step 4: Integrate into `AboutSection.tsx` and `BenefitSection.tsx`**
 - In `AboutSection.tsx`: animate `100%` and `24/7` using `useCountUp`.
 - In `BenefitSection.tsx`: animate `85%`, `100%`, `3.5x`, `2x` using `useCountUp`.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 Run: `npm --prefix frontend test src/__tests__/useCountUp.test.ts`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add frontend/src/hooks/useCountUp.ts frontend/src/__tests__/useCountUp.test.ts frontend/src/components/landing/AboutSection.tsx frontend/src/components/landing/BenefitSection.tsx
 git commit -m "feat(landing): implement useCountUp hook and animate metric numbers on scroll"
@@ -75,28 +75,28 @@ git commit -m "feat(landing): implement useCountUp hook and animate metric numbe
 **Interfaces:**
 - Produces: Silky smooth accordion expansion, tab crossfades, and button springs.
 
-- [ ] **Step 1: Write failing test in `frontend/src/__tests__/LandingPageMotion.test.tsx`**
+- [x] **Step 1: Write failing test in `frontend/src/__tests__/LandingPageMotion.test.tsx`**
 Verify that FAQ item expands with `AnimatePresence` and proper aria attributes, and button has `whileTap` springs.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `npm --prefix frontend test src/__tests__/LandingPageMotion.test.tsx`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement smooth motion in `FaqSection.tsx`**
+- [x] **Step 3: Implement smooth motion in `FaqSection.tsx`**
 - Wrap answer in `<AnimatePresence initial={false}>` with `<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} className="overflow-hidden">`.
 - Smooth rotation on `+` icon (`transition-transform duration-200`).
 
-- [ ] **Step 4: Implement tab crossfades in `BenefitSection.tsx` and `WorkflowSection.tsx`**
+- [x] **Step 4: Implement tab crossfades in `BenefitSection.tsx` and `WorkflowSection.tsx`**
 - Wrap the active detail card in `<AnimatePresence mode="wait">` with `<motion.div key={activeStep} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>`.
 
-- [ ] **Step 5: Add tactile springs to `CtaSection.tsx`**
+- [x] **Step 5: Add tactile springs to `CtaSection.tsx`**
 - Add `whileHover={{ scale: 1.02 }}` and `whileTap={{ scale: 0.98 }}` to primary CTA buttons.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 Run: `npm --prefix frontend test src/__tests__/LandingPageMotion.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 ```bash
 git add frontend/src/components/landing/FaqSection.tsx frontend/src/components/landing/BenefitSection.tsx frontend/src/components/landing/WorkflowSection.tsx frontend/src/components/landing/CtaSection.tsx frontend/src/__tests__/LandingPageMotion.test.tsx
 git commit -m "feat(landing): implement smooth FAQ accordion expansion and tab crossfades"
@@ -113,16 +113,16 @@ git commit -m "feat(landing): implement smooth FAQ accordion expansion and tab c
 **Interfaces:**
 - Produces: Interactive "try-before-you-sign-up" runway simulator, animated border beam, rising chart bars, and 3D parallax tilt.
 
-- [ ] **Step 1: Write failing tests in `frontend/src/__tests__/HeroInteractiveDemo.test.tsx`**
+- [x] **Step 1: Write failing tests in `frontend/src/__tests__/HeroInteractiveDemo.test.tsx`**
 - Test that default simulated runway displays `Rp 45.000`.
 - Test that clicking nominal chip `+25rb Makan Siang` recalculates simulated runway to `Rp 43.611` (`(810.000 - 25.000) / 18`).
 - Test that clicking Reset restores `Rp 45.000`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `npm --prefix frontend test src/__tests__/HeroInteractiveDemo.test.tsx`
 Expected: FAIL (interactive controls do not exist).
 
-- [ ] **Step 3: Implement In-Hero Interactive Simulator & Living Effects in `HeroSection.tsx`**
+- [x] **Step 3: Implement In-Hero Interactive Simulator & Living Effects in `HeroSection.tsx`**
 - Add state: `simulatedExpense: number` (default 0).
 - Baseline: `totalLiquid: 810000`, `daysRemaining: 18`, `baselineRunway: 45000`.
 - Display live: `simulatedRunway = Math.max(0, Math.floor((totalLiquid - simulatedExpense) / daysRemaining))`.
@@ -131,11 +131,11 @@ Expected: FAIL (interactive controls do not exist).
 - Add rising telemetry bars using Framer Motion (`initial={{ height: 0 }} animate={{ height: barHeight }} transition={{ duration: 0.7, delay: i * 0.1 }}`).
 - Add subtle 3D mouse tilt parallax on desktop viewports.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npm --prefix frontend test src/__tests__/HeroInteractiveDemo.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add frontend/src/components/landing/HeroSection.tsx frontend/src/__tests__/HeroInteractiveDemo.test.tsx
 git commit -m "feat(landing): implement in-hero interactive runway simulator and living effects"
@@ -148,27 +148,27 @@ git commit -m "feat(landing): implement in-hero interactive runway simulator and
 **Files:**
 - Entire frontend & backend test matrices.
 
-- [ ] **Step 1: Run full frontend Vitest test suite**
+- [x] **Step 1: Run full frontend Vitest test suite**
 Run: `npm --prefix frontend test -- --run`
 Expected: All suites PASS.
 
-- [ ] **Step 2: Run TypeScript strict check and production build**
+- [x] **Step 2: Run TypeScript strict check and production build**
 Run: `cd frontend && npm run build`
 Expected: Clean build with 0 errors.
 
-- [ ] **Step 3: Run Impeccable static detector check**
+- [x] **Step 3: Run Impeccable static detector check**
 Run: `"C:/Users/grant/.claude/plugins/cache/impeccable/impeccable/4.3.1/skills/impeccable/scripts/impeccable.cmd" detect --json frontend/src`
 Expected: 0 findings.
 
-- [ ] **Step 4: Rebuild and restart Docker frontend container**
+- [x] **Step 4: Rebuild and restart Docker frontend container**
 Run: `docker compose build frontend && docker compose up -d frontend`
 Expected: Successfully updated and healthy.
 
-- [ ] **Step 5: Run backend pytest suite**
+- [x] **Step 5: Run backend pytest suite**
 Run: `pytest`
 Expected: 493/493 tests pass.
 
-- [ ] **Step 6: Commit final verification**
+- [x] **Step 6: Commit final verification**
 ```bash
 git commit --allow-empty -m "chore(audit): verify landing page living motion and interactive demo test matrix"
 ```
