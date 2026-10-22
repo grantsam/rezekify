@@ -9,8 +9,10 @@ import {
   Calculator,
   Wallet,
   Calendar,
+  Sparkles,
+  RotateCcw,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
 import { formatRupiah } from '../utils/formatters';
 import { ExpenseCharts } from './ExpenseCharts';
@@ -55,6 +57,73 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 }) => {
   const [isQuickCaptureLoading, setIsQuickCaptureLoading] = React.useState<boolean>(false);
   const [quickCaptureToast, setQuickCaptureToast] = React.useState<{ text: string; isError?: boolean } | null>(null);
+  const [isSimulationOpen, setIsSimulationOpen] = React.useState<boolean>(false);
+  const [simulationNominal, setSimulationNominal] = React.useState<number>(0);
+  const [simulationInputValue, setSimulationInputValue] = React.useState<string>('');
+  const [quickCaptureDraft, setQuickCaptureDraft] = React.useState<string | undefined>(undefined);
+
+  // ponytail: deterministic client-side simulation; upgrade to multi-cycle forecasting if cycle transitions require rolling bills
+  const simulationResults = React.useMemo(() => {
+    const operationalFree = Math.max(0, summary?.operational_free_cash ?? 0);
+    const daysRemaining = Math.max(1, summary?.days_remaining ?? 1);
+    const currentDailyRunway = summary?.daily_safe_runway ?? 0;
+    const safeThreshold = summary?.safe_runway_threshold ?? 30000;
+
+    const planned = Math.max(0, simulationNominal);
+    const isDeficit = planned > operationalFree;
+    const projectedFree = Math.max(0, operationalFree - planned);
+    const projectedDailyRunway = Math.floor(projectedFree / daysRemaining);
+    const dailyDrop = Math.max(0, currentDailyRunway - projectedDailyRunway);
+
+    let status: 'HEALTHY' | 'WARNING' | 'CRITICAL' = 'HEALTHY';
+    let statusCopy = `Belanja aman. Jatah harian Anda masih di atas batas aman operasional (${formatRupiah(safeThreshold)}/hari).`;
+
+    if (isDeficit || projectedDailyRunway <= 0) {
+      status = 'CRITICAL';
+      statusCopy = 'Peringatan Defisit: Nominal melebihi saldo bebas pakai saat ini!';
+    } else if (projectedDailyRunway < safeThreshold) {
+      status = 'WARNING';
+      statusCopy = `Waspada: Jatah belanja harian turun di bawah batas aman (${formatRupiah(safeThreshold)}/hari).`;
+    }
+
+    return {
+      operationalFree,
+      daysRemaining,
+      currentDailyRunway,
+      safeThreshold,
+      planned,
+      isDeficit,
+      projectedFree,
+      projectedFreeCash: projectedFree,
+      projectedDailyRunway,
+      dailyDrop,
+      status,
+      statusCopy,
+    };
+  }, [summary, simulationNominal]);
+
+  const handleNominalInputChange = (raw: string) => {
+    const cleaned = raw.replace(/\D/g, '');
+    if (!cleaned) {
+      setSimulationNominal(0);
+      setSimulationInputValue('');
+      return;
+    }
+    const parsed = parseInt(cleaned, 10);
+    setSimulationNominal(parsed);
+    setSimulationInputValue(new Intl.NumberFormat('id-ID').format(parsed));
+  };
+
+  const handleAddPreset = (amount: number) => {
+    const updated = simulationNominal + amount;
+    setSimulationNominal(updated);
+    setSimulationInputValue(new Intl.NumberFormat('id-ID').format(updated));
+  };
+
+  const handleResetSimulation = () => {
+    setSimulationNominal(0);
+    setSimulationInputValue('');
+  };
 
   const handleQuickCaptureSubmit = async (
     input: string | { text: string; file: File | null },
@@ -195,6 +264,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           isLoading={isQuickCaptureLoading}
           toastMessage={quickCaptureToast}
           onDismissToast={() => setQuickCaptureToast(null)}
+          draftText={quickCaptureDraft}
+          onDraftConsumed={() => setQuickCaptureDraft(undefined)}
         />
       </div>
 
@@ -233,7 +304,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <span className="text-slate-500 dark:text-zinc-400 text-sm sm:text-base font-bold">/ hari</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1.5 font-medium">
-                Batas belanja aman harian agar cadangan operasional bertahan hingga akhir siklus.
+                Batas pengeluaran harian agar cadangan operasional bertahan hingga akhir siklus.
               </p>
             </div>
           </div>
@@ -320,6 +391,257 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Simulation Trigger Bar */}
+            <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  Simulasi Pra-Belanja (What-If)
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant={isSimulationOpen ? 'flat' : 'bordered'}
+                onPress={() => setIsSimulationOpen(!isSimulationOpen)}
+                aria-expanded={isSimulationOpen}
+                aria-controls="runway-simulation-panel"
+                className={`min-h-[38px] text-xs font-extrabold rounded-xl transition-all ${
+                  isSimulationOpen
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                    : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-zinc-700/80'
+                }`}
+              >
+                {isSimulationOpen ? '✕ Tutup Simulasi' : '⚡ Cek Dampak Belanja'}
+              </Button>
+            </div>
+
+            {/* Expandable Simulation Drawer */}
+            <AnimatePresence>
+              {isSimulationOpen && (
+                <motion.div
+                  id="runway-simulation-panel"
+                  data-testid="runway-simulation-panel"
+                  role="region"
+                  aria-label="Simulasi Pengeluaran Hero"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="overflow-hidden pt-4 border-t border-slate-200/60 dark:border-zinc-800/80 space-y-4"
+                >
+                  {/* Currency Input & Quick Chips */}
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <label
+                        htmlFor="simulation-nominal-input"
+                        className="text-xs font-bold text-slate-700 dark:text-zinc-300"
+                      >
+                        Rencana Belanja (Pengeluaran Luar Rutinitas)
+                      </label>
+                      <Button
+                        size="sm"
+                        variant="light"
+                        onPress={handleResetSimulation}
+                        className="text-xs text-slate-500 dark:text-zinc-400 hover:text-rose-500 min-h-[38px] px-2.5 rounded-xl font-bold self-end sm:self-auto"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                        Reset
+                      </Button>
+                    </div>
+
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3.5 text-sm font-bold text-slate-400 dark:text-zinc-500 select-none">
+                        Rp
+                      </span>
+                      <input
+                        id="simulation-nominal-input"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Misal: 150.000"
+                        value={simulationInputValue}
+                        onChange={(e) => handleNominalInputChange(e.target.value)}
+                        className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-zinc-950/80 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl text-sm font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 mr-1 select-none">
+                        Tambah Cepat:
+                      </span>
+                      {[
+                        { label: '+50rb', amount: 50000 },
+                        { label: '+100rb', amount: 100000 },
+                        { label: '+250rb', amount: 250000 },
+                        { label: '+500rb', amount: 500000 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => handleAddPreset(preset.amount)}
+                          className="min-h-[38px] min-w-[38px] px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 transition-all cursor-pointer select-none active:scale-95"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Side-by-Side Comparison Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {/* Realita Saat Ini */}
+                    <div className="bg-white dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/60 pb-2.5">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                          Realita Saat Ini
+                        </span>
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-extrabold"
+                        >
+                          STATUS SAAT INI
+                        </Chip>
+                      </div>
+
+                      <div>
+                        <div className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+                          Jatah Harian Saat Ini
+                        </div>
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tabular-nums">
+                            {formatRupiah(summary?.daily_safe_runway ?? 0)}
+                          </span>
+                          <span className="text-slate-500 dark:text-zinc-400 text-xs font-bold">/ hari</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/60 text-xs">
+                        <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
+                          <span>Sisa Jatah Hari Ini:</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                            {formatRupiah(remainingBudget)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
+                          <span>Saldo Bebas Operasional:</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                            {formatRupiah(summary?.operational_free_cash ?? 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Jika Jadi Beli */}
+                    <div
+                      className={`bg-white dark:bg-zinc-950/60 border rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-colors ${
+                        simulationResults.status === 'CRITICAL'
+                          ? 'border-rose-500/40 bg-rose-500/[0.02]'
+                          : simulationResults.status === 'WARNING'
+                          ? 'border-amber-500/40 bg-amber-500/[0.02]'
+                          : 'border-emerald-500/40 bg-emerald-500/[0.02]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/60 pb-2.5">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+                          Jika Jadi Beli
+                        </span>
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          data-testid="simulation-status-badge"
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
+                            simulationResults.status === 'CRITICAL'
+                              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                              : simulationResults.status === 'WARNING'
+                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                              : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                          }`}
+                        >
+                          {simulationResults.status === 'CRITICAL'
+                            ? 'Defisit'
+                            : simulationResults.status === 'WARNING'
+                            ? 'Waspada'
+                            : 'Aman'}
+                        </Chip>
+                      </div>
+
+                      <div>
+                        <div className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+                          Proyeksi Jatah Harian
+                        </div>
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                          <span
+                            data-testid="projected-daily-runway"
+                            className={`text-xl sm:text-2xl font-mono font-black tabular-nums ${
+                              simulationResults.status === 'CRITICAL'
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : simulationResults.status === 'WARNING'
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-emerald-600 dark:text-emerald-400'
+                            }`}
+                          >
+                            {formatRupiah(simulationResults.projectedDailyRunway)}
+                          </span>
+                          <span className="text-slate-500 dark:text-zinc-400 text-xs font-bold">/ hari</span>
+                        </div>
+                        <div className="text-xs font-medium text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
+                          <span>Dampak:</span>
+                          <span
+                            data-testid="simulation-daily-drop"
+                            className="font-mono font-bold text-rose-500 dark:text-rose-400 tabular-nums"
+                          >
+                            -{formatRupiah(simulationResults.dailyDrop)}
+                          </span>
+                          <span>/ hari</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/60 text-xs">
+                        <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
+                          <span>Sisa Saldo Bebas:</span>
+                          <span
+                            data-testid="projected-free-cash"
+                            className="font-mono font-bold text-slate-900 dark:text-white tabular-nums"
+                          >
+                            {formatRupiah(simulationResults.projectedFreeCash)}
+                          </span>
+                        </div>
+                        <div className="text-[11px] leading-relaxed pt-1">
+                          <span
+                            className={
+                              simulationResults.status === 'CRITICAL'
+                                ? 'text-rose-600 dark:text-rose-400 font-semibold'
+                                : simulationResults.status === 'WARNING'
+                                ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                                : 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                            }
+                          >
+                            {simulationResults.statusCopy}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Footer Bridge */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Simulasi murni evaluasi visual & tidak mengubah saldo atau buku besar.
+                    </p>
+                    <Button
+                      onPress={() => {
+                        setQuickCaptureDraft(`Beli Rp ${new Intl.NumberFormat('id-ID').format(simulationNominal)}`);
+                        setIsSimulationOpen(false);
+                      }}
+                      className="min-h-[38px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all shrink-0 cursor-pointer"
+                    >
+                      Lanjut Catat Pengeluaran ➔
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </CardBody>
       </Card>

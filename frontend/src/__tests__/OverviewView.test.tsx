@@ -377,4 +377,200 @@ describe('OverviewView Component', () => {
     });
     expect(await screen.findByText('Tercatat: Makan siang Rp 25.000 (GoPay)')).toBeInTheDocument();
   });
+
+  describe('in-cockpit pre-purchase simulation drawer', () => {
+    it('expands and collapses in-cockpit pre-purchase simulation drawer on trigger button click', () => {
+      render(
+        <OverviewView
+          summary={mockSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      const toggleBtn = screen.getByRole('button', { name: /Cek Dampak Belanja/i });
+      expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByTestId('runway-simulation-panel')).not.toBeInTheDocument();
+
+      fireEvent.click(toggleBtn);
+      expect(screen.getByRole('button', { name: /Tutup Simulasi/i })).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByTestId('runway-simulation-panel')).toBeInTheDocument();
+
+      // Collapse again
+      fireEvent.click(screen.getByRole('button', { name: /Tutup Simulasi/i }));
+      expect(screen.queryByTestId('runway-simulation-panel')).not.toBeInTheDocument();
+    });
+
+    it('calculates projected runway and delta deterministically on client without API calls', () => {
+      render(
+        <OverviewView
+          summary={mockSummary} // operational_free_cash: 2,000,000, days_remaining: 15, daily_safe_runway: 133,333
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
+
+      // Type planned amount: 500,000 -> projected free cash = 1,500,000 -> projected daily = 100,000 -> delta = 33,333
+      fireEvent.change(input, { target: { value: '500000' } });
+
+      expect(screen.getByTestId('projected-daily-runway')).toHaveTextContent('Rp 100.000');
+      expect(screen.getByTestId('simulation-daily-drop')).toHaveTextContent('-Rp 33.333');
+      expect(screen.getByTestId('projected-free-cash')).toHaveTextContent('Rp 1.500.000');
+      expect(screen.getByText(/Belanja aman/i)).toBeInTheDocument();
+    });
+
+    it('increments planned nominal cumulatively when quick chips are clicked and resets nominal on reset button click', () => {
+      render(
+        <OverviewView
+          summary={mockSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      const input = screen.getByPlaceholderText(/Misal: 150\.000/i) as HTMLInputElement;
+
+      fireEvent.click(screen.getByRole('button', { name: /\+50rb/i }));
+      expect(input.value).toBe('50.000');
+
+      fireEvent.click(screen.getByRole('button', { name: /\+100rb/i }));
+      expect(input.value).toBe('150.000');
+
+      // Reset button clears nominal
+      fireEvent.click(screen.getByRole('button', { name: /Reset/i }));
+      expect(input.value).toBe('');
+    });
+
+    it('aligns status with dynamic safe_runway_threshold (50k vs default 30k) (Review Focus 4)', () => {
+      const customSummary = {
+        ...mockSummary,
+        operational_free_cash: 600000,
+        days_remaining: 15,
+        daily_safe_runway: 40000,
+        safe_runway_threshold: 50000,
+      };
+
+      render(
+        <OverviewView
+          summary={customSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
+
+      // Projected runway: (600,000 - 150,000) / 15 = 30,000.
+      // With safe_runway_threshold = 50,000, 30,000 is WARNING (Waspada)
+      fireEvent.change(input, { target: { value: '150000' } });
+      expect(screen.getByTestId('simulation-status-badge')).toHaveTextContent(/Waspada/i);
+    });
+
+    it('handles deficit when planned amount exceeds operational free cash and guards against zero days remaining (Review Focus 1, 2)', () => {
+      const zeroDaysSummary = {
+        ...mockSummary,
+        operational_free_cash: 100000,
+        days_remaining: 0,
+        daily_safe_runway: 100000,
+      };
+
+      render(
+        <OverviewView
+          summary={zeroDaysSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
+
+      // Amount exceeds free cash (200,000 > 100,000)
+      fireEvent.change(input, { target: { value: '200000' } });
+
+      expect(screen.getByTestId('simulation-status-badge')).toHaveTextContent(/Defisit/i);
+      expect(screen.getByText(/Nominal melebihi saldo bebas pakai saat ini/i)).toBeInTheDocument();
+      expect(screen.getByTestId('projected-free-cash')).toHaveTextContent('Rp 0');
+    });
+
+    it('sanitizes invalid or negative input strings without NaN (Review Focus 3)', () => {
+      render(
+        <OverviewView
+          summary={mockSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
+
+      fireEvent.change(input, { target: { value: 'abc-50.000xyz' } });
+      expect(screen.getByTestId('projected-daily-runway')).not.toHaveTextContent('NaN');
+    });
+
+    it('bridges planned amount into QuickCaptureBar via draftText and closes simulation drawer (Review Focus 5)', () => {
+      render(
+        <OverviewView
+          summary={mockSummary}
+          vaults={mockVaults}
+          accounts={mockAccounts}
+          isLoading={false}
+          refreshTrigger={0}
+          onNavigateToVaults={vi.fn()}
+          onOpenCreateAccount={vi.fn()}
+          onOpenSimulateModal={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
+      fireEvent.change(input, { target: { value: '150000' } });
+
+      const bridgeBtn = screen.getByRole('button', { name: /Lanjut Catat Pengeluaran/i });
+      fireEvent.click(bridgeBtn);
+
+      // Drawer closed
+      expect(screen.queryByTestId('runway-simulation-panel')).not.toBeInTheDocument();
+
+      // QuickCaptureBar command input populated
+      const commandInput = screen.getByPlaceholderText(/Ketik mutasi/i) as HTMLInputElement;
+      expect(commandInput.value).toBe('Beli Rp 150.000');
+    });
+  });
 });
