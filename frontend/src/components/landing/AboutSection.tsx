@@ -1,6 +1,10 @@
 import { Zap, Bot } from 'lucide-react';
+import { useCountUp } from '../../hooks/useCountUp';
 
 export default function AboutSection() {
+  const { count: countAuto, ref: refAuto } = useCountUp(100, { suffix: '%' });
+  const { count: count247, ref: ref247 } = useCountUp(24, { suffix: '/7' });
+
   const capabilities = [
     {
       title: 'Catat Transaksi Manual & Scan Struk',
@@ -102,7 +106,7 @@ export default function AboutSection() {
                   <Zap className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">100%</p>
+                  <p ref={refAuto} className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{countAuto}</p>
                   <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium leading-tight">Otomatis & Terintegrasi</p>
                 </div>
               </div>
@@ -112,7 +116,7 @@ export default function AboutSection() {
                   <Bot className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">24/7</p>
+                  <p ref={ref247} className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{count247}</p>
                   <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium leading-tight">Monitoring AI Realtime</p>
                 </div>
               </div>

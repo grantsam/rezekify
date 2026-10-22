@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import { Zap, ShieldCheck, TrendingUp, Target, Clock } from 'lucide-react';
+import { useCountUp } from '../../hooks/useCountUp';
 
 export default function BenefitsSection() {
   const [activeTab, setActiveTab] = useState(0);
+
+  const countHemat = useCountUp(85, { suffix: '%' });
+  const countKontrol = useCountUp(100, { suffix: '%' });
+  const countKeputusan = useCountUp(3.5, { decimals: 1, suffix: 'x' });
+  const countTujuan = useCountUp(2, { suffix: 'x Lipat' });
 
   const benefits = [
     {
@@ -11,7 +17,8 @@ export default function BenefitsSection() {
       title: 'Hemat Waktu',
       shortDesc: 'Pencatatan otomatis & terstruktur dalam hitungan detik.',
       fullDesc: 'Tidak perlu lagi mencatat transaksi manual satu per satu. Teknologi AI OCR akan memproses foto struk belanja dan memindahkan data transaksi secara otomatis.',
-      highlightVal: '85%',
+      highlightVal: countHemat.count,
+      highlightRef: countHemat.ref,
       highlightLabel: 'Waktu Pencatatan Terhemat',
       metricIcon: <Zap className="w-6 h-6 text-white" />,
       icon: <Clock className="w-5 h-5" />,
@@ -22,7 +29,8 @@ export default function BenefitsSection() {
       title: 'Kontrol Penuh',
       shortDesc: 'Atur keuangan sesuai tujuan dan batasan anggaranmu.',
       fullDesc: 'Kuasai alur pengeluaran dengan batasan budget bulanan yang fleksibel serta notifikasi peringatan otomatis sebelum anggaran kamu membengkak.',
-      highlightVal: '100%',
+      highlightVal: countKontrol.count,
+      highlightRef: countKontrol.ref,
       highlightLabel: 'Transparansi Cashflow',
       metricIcon: <ShieldCheck className="w-6 h-6 text-white" />,
       icon: <ShieldCheck className="w-5 h-5" />,
@@ -33,7 +41,8 @@ export default function BenefitsSection() {
       title: 'Keputusan Lebih Baik',
       shortDesc: 'Berdasarkan data histori & insight AI yang akurat.',
       fullDesc: 'Ambil langkah finansial yang bijak berdasarkan analisa kebiasaan belanja dan proyeksi rasio kecukupan tabungan dari asisten kecerdasan buatan.',
-      highlightVal: '3.5x',
+      highlightVal: countKeputusan.count,
+      highlightRef: countKeputusan.ref,
       highlightLabel: 'Keputusan Lebih Terarah',
       metricIcon: <TrendingUp className="w-6 h-6 text-white" />,
       icon: <TrendingUp className="w-5 h-5" />,
@@ -44,7 +53,8 @@ export default function BenefitsSection() {
       title: 'Raih Tujuan Finansial',
       shortDesc: 'Wujudkan tabungan, investasi, dan mimpi masa depan.',
       fullDesc: 'Capai target impian seperti liburan, pembelian kendaraan, hingga dana darurat dengan tracker progress tabungan interaktif yang konsisten.',
-      highlightVal: '2x Lipat',
+      highlightVal: countTujuan.count,
+      highlightRef: countTujuan.ref,
       highlightLabel: 'Target Finansial Lebih Cepat',
       metricIcon: <Target className="w-6 h-6 text-white" />,
       icon: <Target className="w-5 h-5" />,
@@ -157,7 +167,7 @@ export default function BenefitsSection() {
                     {current.metricIcon}
                   </div>
                   <div>
-                    <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+                    <p ref={current.highlightRef} className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
                       {current.highlightVal}
                     </p>
                     <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
