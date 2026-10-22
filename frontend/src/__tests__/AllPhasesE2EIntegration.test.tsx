@@ -114,11 +114,11 @@ describe('All Phases (6, 7, 8, 9, 10) End-to-End Frontend Integration', () => {
       'Pertahankan ritme harian agar cadangan tetap terjaga menuju akhir siklus.'
     );
 
-    const simulationActionBtn = screen.getByRole('button', { name: /⚡ Buka Simulasi Belanja/i });
+    const simulationActionBtn = screen.getByRole('button', { name: /Buka Simulasi Belanja/i });
     expect(simulationActionBtn).toBeInTheDocument();
 
     // 3. Phase 6 Test: Expand simulation panel, type planned amount, verify projection and quick-capture prefill
-    const expandSimBtn = screen.getByRole('button', { name: /⚡ Cek Dampak Belanja/i });
+    const expandSimBtn = screen.getByRole('button', { name: /Cek Dampak Belanja/i });
     fireEvent.click(expandSimBtn);
 
     const simPanel = await screen.findByTestId('runway-simulation-panel');

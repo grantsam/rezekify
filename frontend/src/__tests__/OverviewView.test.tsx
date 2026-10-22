@@ -210,10 +210,8 @@ describe('OverviewView Component', () => {
     expect(vaultProgress).toBeInTheDocument();
     expect(vaultProgress).toHaveAttribute('aria-valuenow', '67');
 
-    // Simulate button in vaults card
-    const simBtn = screen.getByRole('button', { name: /^Simulasi Belanja$/i });
-    fireEvent.click(simBtn);
-    expect(handleOpenSimulate).toHaveBeenCalledTimes(1);
+    // Redundant simulate button in vaults card is removed
+    expect(screen.queryByRole('button', { name: /^Simulasi Belanja$/i })).not.toBeInTheDocument();
 
     // View all vaults button
     const viewAllVaultsBtn = screen.getByRole('button', { name: /Lihat Semua Vault/i });
@@ -263,8 +261,7 @@ describe('OverviewView Component', () => {
     expect(handleOpenCreateAccount).toHaveBeenCalledTimes(1);
   });
 
-  it('renders AISpotlightHero and invokes onOpenChat when prompt chips or copilot button clicked', () => {
-    const handleOpenChat = vi.fn();
+  it('does NOT render AISpotlightHero in OverviewView', () => {
     render(
       <OverviewView
         summary={mockSummary}
@@ -276,18 +273,11 @@ describe('OverviewView Component', () => {
         onNavigateToVaults={vi.fn()}
         onOpenCreateAccount={vi.fn()}
         onOpenSimulateModal={vi.fn()}
-        onOpenChat={handleOpenChat}
       />
     );
 
-    expect(screen.getByText('Asisten AI Rezekify')).toBeInTheDocument();
-    const promptBtn = screen.getByRole('button', { name: /Makan siang 35rb Gopay/i });
-    fireEvent.click(promptBtn);
-    expect(handleOpenChat).toHaveBeenCalledWith('Makan siang 35rb Gopay');
-
-    const openCopilotBtn = screen.getByRole('button', { name: /Buka AI Copilot/i });
-    fireEvent.click(openCopilotBtn);
-    expect(handleOpenChat).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Asisten AI Rezekify')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Buka AI Copilot/i })).not.toBeInTheDocument();
   });
 
   it('renders serene empty state directly via UpcomingBillsCard when upcoming_bills is empty', () => {

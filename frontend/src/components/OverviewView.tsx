@@ -8,7 +8,6 @@ import {
   ArrowRight,
   Lock,
   Unlock,
-  Calculator,
   Wallet,
   Calendar,
   Sparkles,
@@ -21,7 +20,6 @@ import { generateSurvivalGuidance, SurvivalGuidance } from '../utils/survivalGui
 import { ExpenseCharts } from './ExpenseCharts';
 import { UpcomingBillsCard } from './UpcomingBillsCard';
 import { RecentTransactionsCard } from './RecentTransactionsCard';
-import { AISpotlightHero } from './AISpotlightHero';
 import { QuickCaptureBar } from './QuickCaptureBar';
 import * as apiClient from '../services/apiClient';
 
@@ -35,7 +33,7 @@ export interface OverviewViewProps {
   onNavigateToLedger?: () => void;
   onNavigateToVaults: () => void;
   onOpenCreateAccount: () => void;
-  onOpenSimulateModal: () => void;
+  onOpenSimulateModal?: () => void;
   onOpenChat?: (prompt?: string) => void;
   onDepositVault?: (vault: Vault) => void;
   onPayBillVault?: (vault: Vault) => void;
@@ -52,8 +50,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onNavigateToLedger,
   onNavigateToVaults,
   onOpenCreateAccount,
-  onOpenSimulateModal,
-  onOpenChat,
   onDepositVault,
   onPayBillVault,
   onRefreshData,
@@ -309,11 +305,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         />
       </div>
 
-      <AISpotlightHero onOpenChat={onOpenChat ?? (() => {})} />
-
       {/* 2. TIER 1: HERO TELEMETRY (JATAH BELANJA HARI INI) */}
       <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 overflow-hidden relative">
-        <CardBody className="p-6 sm:p-8 relative z-10 flex flex-col gap-6">
+        {/* ponytail: single-surface telemetry card; upgrade to customizable widget grid if users require card reordering */}
+        <CardBody className="p-6 sm:p-8 relative z-10 space-y-5">
           {/* Top Bar: Title & Health Status Badge */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-zinc-800/80 pb-4">
             <div>
@@ -350,62 +345,61 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </div>
 
           {/* Sub-bar: Pengeluaran Hari Ini, Sisa Jatah, Progress Bar */}
-          <div className="bg-slate-50/90 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl p-4 space-y-3.5 shadow-inner">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500 dark:text-zinc-400 font-bold">Pengeluaran Hari Ini:</span>
-                <span className="text-slate-900 dark:text-white font-mono font-bold tabular-nums">
-                  {formatRupiah(todaySpent)}
-                </span>
-              </div>
-
-              <div>
-                {isOverspent ? (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                      Jatah hari ini terlampaui ({formatRupiah(Math.abs(remainingBudget))})
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-zinc-400 hidden sm:inline">
-                      · Sisa siklus disesuaikan otomatis
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 dark:text-zinc-400 font-bold">Sisa Jatah Hari Ini:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black font-mono tabular-nums">
-                      {formatRupiah(remainingBudget)}
-                    </span>
-                  </div>
-                )}
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500 dark:text-zinc-400 font-bold">Pengeluaran Hari Ini:</span>
+              <span className="text-slate-900 dark:text-white font-mono font-bold tabular-nums">
+                {formatRupiah(todaySpent)}
+              </span>
             </div>
 
-            {/* Spending Progress Bar */}
-            <Progress
-              size="sm"
-              radius="full"
-              value={spentPercentage}
-              color={isOverspent ? 'warning' : statusConfig.progressColor}
-              aria-label="Progres Pengeluaran Hari Ini"
-              className="h-2.5"
-            />
-
-            {/* Bottom Meta in Sub-bar: Saldo Bebas Pakai & Sisa Hari */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 text-xs">
-              <div className="flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span className="text-slate-500 dark:text-zinc-400 font-medium">Saldo Bebas Pakai:</span>
-                <span className="text-slate-900 dark:text-white font-mono font-bold tabular-nums">
-                  {formatRupiah(summary?.operational_free_cash ?? 0)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 sm:justify-end">
-                <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span className="text-slate-700 dark:text-zinc-300 font-bold">
-                  {summary?.days_remaining ?? 0} hari lagi menuju siklus baru
-                </span>
-              </div>
+            <div>
+              {isOverspent ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    Jatah hari ini terlampaui ({formatRupiah(Math.abs(remainingBudget))})
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400 hidden sm:inline">
+                    · Sisa siklus disesuaikan otomatis
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 dark:text-zinc-400 font-bold">Sisa Jatah Hari Ini:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black font-mono tabular-nums">
+                    {formatRupiah(remainingBudget)}
+                  </span>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Spending Progress Bar */}
+          <Progress
+            size="sm"
+            radius="full"
+            value={spentPercentage}
+            color={isOverspent ? 'warning' : statusConfig.progressColor}
+            aria-label="Progres Pengeluaran Hari Ini"
+            className="h-2.5"
+          />
+
+          {/* Bottom Meta in Sub-bar: Saldo Bebas Pakai & Sisa Hari */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 text-xs">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span className="text-slate-500 dark:text-zinc-400 font-medium">Saldo Bebas Pakai:</span>
+              <span className="text-slate-900 dark:text-white font-mono font-bold tabular-nums">
+                {formatRupiah(summary?.operational_free_cash ?? 0)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 sm:justify-end">
+              <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span className="text-slate-700 dark:text-zinc-300 font-bold">
+                {summary?.days_remaining ?? 0} hari lagi menuju siklus baru
+              </span>
+            </div>
+          </div>
 
             {/* CONTEXTUAL SURVIVAL GUIDANCE BANNER */}
             <div
@@ -446,9 +440,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                           size="sm"
                           variant="flat"
                           onPress={() => setIsSimulationOpen(true)}
+                          startContent={<Sparkles className="w-3.5 h-3.5 text-emerald-500" />}
                           className="min-h-[38px] text-xs font-extrabold rounded-xl bg-slate-900/10 dark:bg-white/10 hover:bg-slate-900/20 dark:hover:bg-white/20 transition-all"
                         >
-                          ⚡ Buka Simulasi Belanja
+                          Buka Simulasi Belanja
                         </Button>
                         {survivalGuidance.tone !== 'HEALTHY' && (
                           <Button
@@ -507,13 +502,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 onPress={() => setIsSimulationOpen(!isSimulationOpen)}
                 aria-expanded={isSimulationOpen}
                 aria-controls="runway-simulation-panel"
+                startContent={!isSimulationOpen ? <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> : undefined}
                 className={`min-h-[38px] text-xs font-extrabold rounded-xl transition-all ${
                   isSimulationOpen
                     ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                     : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-zinc-700/80'
                 }`}
               >
-                {isSimulationOpen ? '✕ Tutup Simulasi' : '⚡ Cek Dampak Belanja'}
+                {isSimulationOpen ? '✕ Tutup Simulasi' : 'Cek Dampak Belanja'}
               </Button>
             </div>
 
@@ -748,7 +744,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
         </CardBody>
       </Card>
 
@@ -790,15 +785,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Komitmen & Vaults Prioritas</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onPress={onOpenSimulateModal}
-                    startContent={<Calculator className="w-3.5 h-3.5 text-emerald-500" />}
-                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold min-h-[32px] rounded-xl text-xs"
-                  >
-                    Simulasi Belanja
-                  </Button>
                   <Button
                     size="sm"
                     variant="light"
