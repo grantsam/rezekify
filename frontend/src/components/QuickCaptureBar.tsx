@@ -19,6 +19,8 @@ export interface QuickCaptureBarProps {
   isLoading?: boolean;
   toastMessage?: { text: string; isError?: boolean } | null;
   onDismissToast?: () => void;
+  draftText?: string;
+  onDraftConsumed?: () => void;
 }
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -29,6 +31,8 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
   isLoading = false,
   toastMessage = null,
   onDismissToast,
+  draftText,
+  onDraftConsumed,
 }) => {
   const [text, setText] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
@@ -37,11 +41,20 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
   const shouldReduceMotion = useReducedMotion();
 
+  const textInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (draftText) {
+      setText(draftText);
+      textInputRef.current?.focus();
+      onDraftConsumed?.();
+    }
+  }, [draftText, onDraftConsumed]);
 
   // Auto-dismiss toast after 4 seconds
   useEffect(() => {
@@ -312,6 +325,7 @@ export const QuickCaptureBar: React.FC<QuickCaptureBarProps> = ({
             )}
 
             <input
+              ref={textInputRef}
               type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}

@@ -170,4 +170,38 @@ describe('QuickCaptureBar Component', () => {
 
     expect(handleDismissToast).toHaveBeenCalledTimes(1);
   });
+
+  it('populates text input, focuses input, and calls onDraftConsumed when draftText is provided', () => {
+    const handleDraftConsumed = vi.fn();
+    render(
+      <QuickCaptureBar
+        onSubmit={vi.fn()}
+        onVoiceSubmit={vi.fn()}
+        draftText="Beli Rp 150.000"
+        onDraftConsumed={handleDraftConsumed}
+      />
+    );
+
+    const input = screen.getByPlaceholderText(/Ketik mutasi/i) as HTMLInputElement;
+    expect(input.value).toBe('Beli Rp 150.000');
+    expect(handleDraftConsumed).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('does not overwrite text or call onDraftConsumed when draftText is undefined or empty (Review Focus 5)', () => {
+    const handleDraftConsumed = vi.fn();
+    render(
+      <QuickCaptureBar
+        onSubmit={vi.fn()}
+        onVoiceSubmit={vi.fn()}
+        draftText={undefined}
+        onDraftConsumed={handleDraftConsumed}
+      />
+    );
+
+    const input = screen.getByPlaceholderText(/Ketik mutasi/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Manual typing text' } });
+    expect(input.value).toBe('Manual typing text');
+    expect(handleDraftConsumed).not.toHaveBeenCalled();
+  });
 });
