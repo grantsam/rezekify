@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowRight, Laptop } from 'lucide-react';
 
 export default function HowItWorksSection() {
   const [activeStep, setActiveStep] = useState(0);
@@ -149,8 +150,8 @@ export default function HowItWorksSection() {
                   </div>
 
                   {idx < steps.length - 1 && (
-                    <div className="hidden lg:block absolute -right-3 top-[38px] z-20 text-[#10B981] opacity-70">
-                      ➔
+                    <div className="hidden lg:block absolute -right-3 top-[38px] z-20 text-emerald-400 opacity-70">
+                      <ArrowRight className="w-4 h-4 ml-1.5 inline" />
                     </div>
                   )}
                 </div>
@@ -188,8 +189,8 @@ export default function HowItWorksSection() {
                 <p className="text-xs text-slate-500 dark:text-zinc-400">Akses fleksibel dari Web & Mobile</p>
               </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-xl shadow-lg shrink-0 animate-pulse">
-                💻
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 text-white flex items-center justify-center text-xl shadow-lg shrink-0 animate-pulse">
+                <Laptop className="w-4 h-4 text-emerald-400" />
               </div>
             </div>
 

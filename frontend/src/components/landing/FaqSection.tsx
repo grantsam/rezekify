@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MessageCircle, ArrowRight } from 'lucide-react';
 
 export default function FaqSection() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
@@ -52,7 +53,7 @@ export default function FaqSection() {
             <div className="bg-[#0F766E]/10 dark:bg-[#141417] backdrop-blur-3xl border border-white/50 dark:border-zinc-800/80 rounded-3xl p-6 shadow-xl space-y-5 text-center relative overflow-hidden">
 
               <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-[#0F766E] to-[#10B981] text-white flex items-center justify-center text-3xl shadow-lg">
-                💬
+                <MessageCircle className="w-4 h-4 text-emerald-400" />
               </div>
 
               <div className="space-y-1">
@@ -61,7 +62,7 @@ export default function FaqSection() {
               </div>
 
               <button className="w-full py-3 rounded-full text-xs font-bold text-white bg-gradient-to-r from-[#0F766E] to-[#10B981] shadow-lg hover:shadow-xl hover:shadow-[#10B981]/30 transition-all flex items-center justify-center gap-2">
-                Hubungi Kami ➔
+                Hubungi Kami <ArrowRight className="w-4 h-4 ml-1.5 inline" />
               </button>
             </div>
 

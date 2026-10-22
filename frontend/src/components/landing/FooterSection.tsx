@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MapPin, Mail, Phone, CheckCircle2 } from 'lucide-react';
 // @ts-ignore
 import rezekifyLogo from '../../assets/icon_text_rezekify.png';
 // @ts-ignore
@@ -146,18 +147,18 @@ export default function FooterSection() {
             </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-normal">
               <li className="flex items-start gap-2">
-                <span className="text-[#10B981] shrink-0">📍</span>
+                <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span>Surabaya, Jawa Timur, Indonesia</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-[#10B981] shrink-0">✉️</span>
-                <a href="mailto:contact@vigrislabs.com" className="hover:text-[#10B981] transition-colors break-all">
+                <Mail className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <a href="mailto:contact@vigrislabs.com" className="hover:text-emerald-400 transition-colors break-all">
                   contact@vigrislabs.com
                 </a>
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-[#10B981] shrink-0">📞</span>
-                <a href="tel:+6281234567890" className="hover:text-[#10B981] transition-colors">
+                <Phone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <a href="tel:+6281234567890" className="hover:text-emerald-400 transition-colors">
                   +62 812-3456-7890
                 </a>
               </li>
@@ -184,15 +185,16 @@ export default function FooterSection() {
                 />
                 <button
                   type="submit"
-                  className="absolute right-1 top-1 bottom-1 px-4 rounded-full bg-[#10B981] hover:bg-[#0F766E] text-white font-bold text-xs transition-all"
+                  className="absolute right-1 top-1 bottom-1 px-4 rounded-full bg-emerald-500 hover:bg-teal-600 text-white font-bold text-xs transition-all"
                 >
                   Kirim
                 </button>
               </div>
 
               {subscribed && (
-                <p className="text-[11px] font-bold text-[#10B981] animate-fade-in">
-                  ✓ Terima kasih! Email kamu telah terdaftar.
+                <p className="text-[11px] font-bold text-emerald-400 animate-fade-in flex items-center">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mr-1.5 inline" />
+                  Terima kasih! Email kamu telah terdaftar.
                 </p>
               )}
             </form>

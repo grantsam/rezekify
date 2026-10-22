@@ -1,3 +1,5 @@
+import { Zap, Bot } from 'lucide-react';
+
 export default function AboutSection() {
   const capabilities = [
     {
@@ -68,17 +70,17 @@ export default function AboutSection() {
   return (
     <section id="tentang" className="relative py-16 lg:py-24 overflow-hidden select-none transition-colors duration-300">
       
-      <div className="absolute top-1/2 left-[-5%] -translate-y-1/2 w-[600px] h-[600px] bg-radial from-[#10B981]/20 via-[#0F766E]/10 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute top-1/2 right-[-5%] -translate-y-1/2 w-[600px] h-[600px] bg-radial from-[#34D399]/15 via-[#0F766E]/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-[-5%] -translate-y-1/2 w-[600px] h-[600px] bg-radial from-emerald-500/20 via-teal-600/10 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-1/2 right-[-5%] -translate-y-1/2 w-[600px] h-[600px] bg-radial from-emerald-400/15 via-teal-600/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-          
+
           <div className="lg:col-span-5 space-y-7 text-left">
-            
+
             <div>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#10B981]/15 dark:bg-[#10B981]/20 border border-[#10B981]/30 text-[#0F766E] dark:text-[#10B981] text-xs font-bold tracking-wide backdrop-blur-md shadow-sm">
-                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-ping" />
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 text-teal-700 dark:text-emerald-400 text-xs font-bold tracking-wide backdrop-blur-md shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                 Kenapa Rezekify?
               </div>
             </div>
@@ -96,8 +98,8 @@ export default function AboutSection() {
             <div className="pt-2 grid grid-cols-2 gap-3 sm:gap-4 max-w-lg">
 
               <div className="p-3.5 sm:p-4 rounded-2xl bg-white/50 dark:bg-[#141417] backdrop-blur-xl border border-white/80 dark:border-zinc-800/80 shadow-md shadow-black/5 flex items-center gap-3 group hover:border-zinc-700/60 transition-all duration-300">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0F766E] to-[#10B981] text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
-                  ⚡
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-500 text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
+                  <Zap className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
                   <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">100%</p>
@@ -106,8 +108,8 @@ export default function AboutSection() {
               </div>
 
               <div className="p-3.5 sm:p-4 rounded-2xl bg-white/50 dark:bg-[#141417] backdrop-blur-xl border border-white/80 dark:border-zinc-800/80 shadow-md shadow-black/5 flex items-center gap-3 group hover:border-zinc-700/60 transition-all duration-300">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#10B981] to-[#34D399] text-slate-900 flex items-center justify-center font-bold text-sm shadow-md shrink-0">
-                  🤖
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-400 text-slate-900 flex items-center justify-center font-bold text-sm shadow-md shrink-0">
+                  <Bot className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
                   <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">24/7</p>
@@ -126,14 +128,14 @@ export default function AboutSection() {
                   key={idx}
                   className="group relative bg-white/50 dark:bg-[#141417] backdrop-blur-2xl border border-white/80 dark:border-zinc-800/80 p-6 rounded-3xl shadow-lg shadow-black/5 hover:shadow-2xl hover:shadow-black/20 hover:border-zinc-700/60 hover:-translate-y-1.5 transition-all duration-300 text-left flex flex-col justify-between overflow-hidden"
                 >
-                  <div className="absolute -top-12 -right-12 w-28 h-28 bg-[#10B981]/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
+                  <div className="absolute -top-12 -right-12 w-28 h-28 bg-emerald-500/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
 
                   <div className="space-y-4 relative z-10">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#10B981]/20 to-[#0F766E]/10 dark:from-[#10B981]/30 dark:to-[#34D399]/10 text-[#0F766E] dark:text-[#10B981] border border-[#10B981]/20 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-gradient-to-r group-hover:from-[#0F766E] group-hover:to-[#10B981] group-hover:text-white group-hover:shadow-lg group-hover:shadow-[#10B981]/30">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-600/10 dark:from-emerald-500/30 dark:to-emerald-400/10 text-teal-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-gradient-to-r group-hover:from-teal-600 group-hover:to-emerald-500 group-hover:text-white group-hover:shadow-lg group-hover:shadow-emerald-500/30">
                       {item.icon}
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-[#0F766E] dark:group-hover:text-[#10B981] transition-colors leading-snug">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-emerald-400 transition-colors leading-snug">
                       {item.title}
                     </h3>
 

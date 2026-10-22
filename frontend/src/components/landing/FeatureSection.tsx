@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { Camera } from 'lucide-react';
 
 export default function FeaturesSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -133,8 +134,8 @@ export default function FeaturesSection() {
 
                 <div className="p-3.5 rounded-2xl bg-white/60 dark:bg-[#141417]/80 border border-white/80 dark:border-zinc-800/80 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[#10B981]/20 text-[#10B981] flex items-center justify-center font-bold text-xs">
-                      📷
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                      <Camera className="w-4 h-4 text-emerald-400" />
                     </div>
                     <div className="text-left">
                       <p className="text-xs font-bold text-slate-800 dark:text-white">AI OCR Scanner Active</p>
