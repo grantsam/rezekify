@@ -10,7 +10,7 @@ export interface UseCountUpOptions {
   startOnView?: boolean;
 }
 
-export function useCountUp(
+export function useCountUp<T extends HTMLElement = any>(
   endValue: number,
   options: UseCountUpOptions = {}
 ) {
@@ -22,16 +22,16 @@ export function useCountUp(
     startOnView = true,
   } = options;
 
-  const [node, setNode] = useState<any>(null);
-  const elementRef = useRef<any>(null);
+  const [node, setNode] = useState<T | null>(null);
+  const elementRef = useRef<T | null>(null);
 
-  const ref = useMemo<RefObject<any>>(() => {
+  const ref = useMemo<RefObject<T>>(() => {
     const r = { current: null };
     Object.defineProperty(r, 'current', {
       get() {
         return elementRef.current;
       },
-      set(val: any) {
+      set(val: T | null) {
         if (elementRef.current !== val) {
           elementRef.current = val;
           setNode(val);
@@ -40,7 +40,7 @@ export function useCountUp(
       configurable: true,
       enumerable: true,
     });
-    return r as RefObject<any>;
+    return r as RefObject<T>;
   }, [node]);
 
   const isInView = useInView(ref, { once: true });

@@ -19,10 +19,10 @@ describe('Landing Page Motion & Interactivity', () => {
       const motionWrapper = defaultAnswer.closest('.overflow-hidden');
       expect(motionWrapper).not.toBeNull();
 
-      // Icon should have 250ms ease-out rotation transition class
+      // Icon should have 300ms ease-out rotation transition class
       const iconSpans = screen.getAllByText('+');
       const openIcon = iconSpans[0];
-      expect(openIcon).toHaveClass('duration-250');
+      expect(openIcon).toHaveClass('duration-300');
       expect(openIcon).toHaveClass('ease-out');
       expect(openIcon).toHaveClass('rotate-45');
 

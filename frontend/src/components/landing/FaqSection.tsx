@@ -86,7 +86,7 @@ export default function FaqSection() {
                     className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-slate-900 dark:text-white"
                   >
                     <span>{faq.question}</span>
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-transform duration-250 ease-out ${
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-transform duration-300 ease-out ${
                       isOpen ? 'bg-[#10B981] text-white rotate-45' : 'bg-[#10B981]/15 text-[#0F766E] dark:text-[#10B981]'
                     }`}>
                       +
