@@ -22,11 +22,11 @@ export default function LandingPage() {
           <AboutSection />
         </ScrollReveal>
 
-        <ScrollReveal direction="left" delay={0.1}>
+        <ScrollReveal direction="up" delay={0.1}>
           <FeaturesSection />
         </ScrollReveal>
 
-        <ScrollReveal direction="right" delay={0.1}>
+        <ScrollReveal direction="up" delay={0.1}>
           <BenefitsSection />
         </ScrollReveal>
 
@@ -34,7 +34,7 @@ export default function LandingPage() {
           <HowItWorksSection />
         </ScrollReveal>
 
-        <ScrollReveal direction="left" delay={0.1}>
+        <ScrollReveal direction="up" delay={0.1}>
           <FaqSection />
         </ScrollReveal>
 

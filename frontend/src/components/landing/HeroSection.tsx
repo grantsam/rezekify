@@ -132,13 +132,13 @@ export default function HeroSection() {
                 </svg>
               </div>
 
-              <div className="absolute -bottom-6 left-2 text-emerald-400 animate-pulse duration-[2200ms] pointer-events-none z-30">
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <div className="absolute -bottom-6 left-2 text-emerald-400/40 pointer-events-none z-30">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
                 </svg>
               </div>
 
-              <div className="absolute -bottom-6 right-0 text-cyan-300 animate-pulse duration-[1600ms] pointer-events-none z-30">
+              <div className="absolute -bottom-6 right-0 text-teal-400/30 pointer-events-none z-30">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
                 </svg>
@@ -161,7 +161,10 @@ export default function HeroSection() {
               <div className="w-full bg-white/80 dark:bg-[#141417] backdrop-blur-xl border border-white/60 dark:border-zinc-800/80 rounded-3xl p-6 shadow-2xl transition-all duration-500 hover:border-zinc-700/60">
                 <div className="flex items-center justify-between border-b border-slate-200/50 dark:border-zinc-800/80 pb-3.5 mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+                    </span>
                     <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">Live AI Telemetry</span>
                   </div>
                   <span className="text-[10px] bg-emerald-500/15 text-teal-700 dark:text-emerald-400 font-bold px-2.5 py-0.5 rounded-full">
