@@ -22,6 +22,7 @@ const PayBillModal = React.lazy(() => import('../components/PayBillModal').then(
 const SettingsModal = React.lazy(() => import('../components/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const CategoryManagerModal = React.lazy(() => import('../components/CategoryManagerModal').then(m => ({ default: m.CategoryManagerModal })));
 const ProfileModal = React.lazy(() => import('../components/ProfileModal').then(m => ({ default: m.ProfileModal })));
+const LumpSumAllocationModal = React.lazy(() => import('../components/LumpSumAllocationModal').then(m => ({ default: m.LumpSumAllocationModal })));
 
 type ActiveViewType = 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings';
 
@@ -36,6 +37,7 @@ export const DashboardPage = () => {
   const [chatPrompt, setChatPrompt] = useState<string>('');
   const [txErrorMessage, setTxErrorMessage] = useState<string | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
+  const [isLumpSumModalOpen, setIsLumpSumModalOpen] = useState<boolean>(false);
 
   // Inisialisasi state mode gelap berdasarkan kelas elemen root <html>
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -160,6 +162,8 @@ export const DashboardPage = () => {
               onNavigateToVaults={() => setActiveView('vaults')}
               onOpenCreateAccount={modals.openCreateAccount}
               onOpenSimulateModal={modals.openSimulateModal}
+              onOpenManualModal={modals.onOpenManualModal}
+              onOpenLumpSumModal={() => setIsLumpSumModalOpen(true)}
               onOpenChat={(prompt) => {
                 if (prompt) setChatPrompt(prompt);
                 setActiveView('chat');
@@ -353,6 +357,19 @@ export const DashboardPage = () => {
               onUpdateProfile={async () => {
                 await refreshAllData();
               }}
+            />
+          )}
+
+          {isLumpSumModalOpen && (
+            <LumpSumAllocationModal
+              isOpen={isLumpSumModalOpen}
+              onClose={() => setIsLumpSumModalOpen(false)}
+              onSuccess={async () => {
+                setIsLumpSumModalOpen(false);
+                await refreshAllData();
+              }}
+              vaults={dashboard.vaults}
+              accounts={dashboard.accounts}
             />
           )}
         </React.Suspense>

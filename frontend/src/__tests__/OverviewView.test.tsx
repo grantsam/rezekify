@@ -76,7 +76,10 @@ describe('OverviewView Component', () => {
     });
   });
 
-  it('renders Tier 1 Status Keuangan Hari Ini hero card with correct telemetry', async () => {
+  it('renders 3-Card Bento KPI Header with correct telemetry and action triggers', async () => {
+    const handleOpenManualModal = vi.fn();
+    const handleOpenLumpSumModal = vi.fn();
+
     render(
       <OverviewView
         summary={mockSummary}
@@ -88,40 +91,51 @@ describe('OverviewView Component', () => {
         onNavigateToVaults={vi.fn()}
         onOpenCreateAccount={vi.fn()}
         onOpenSimulateModal={vi.fn()}
+        onOpenManualModal={handleOpenManualModal}
+        onOpenLumpSumModal={handleOpenLumpSumModal}
       />
     );
 
-    // Health badge
-    expect(screen.getByText('Aman Terkendali')).toBeInTheDocument();
-
-    const statusTitle = screen.getByText('STATUS KEUANGAN HARI INI');
+    // Card 1: Jatah Belanja Hari Ini
+    const statusTitle = screen.getByText(/STATUS:\s*Aman Terkendali/i);
     expect(statusTitle).toHaveClass('text-emerald-600');
-
-    // Jatah Belanja Hari Ini
     expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
     expect(screen.getAllByText(/Rp\s*133\.333/)[0]).toBeInTheDocument();
-
-    // Pengeluaran Hari Ini & Sisa Jatah Hari Ini
-    expect(screen.getByText(/Pengeluaran Hari Ini/i)).toBeInTheDocument();
+    expect(screen.getByText('Terpakai:')).toBeInTheDocument();
     expect(screen.getAllByText(/Rp\s*35\.000/)[0]).toBeInTheDocument();
-    expect(screen.getByText(/Sisa Jatah Hari Ini/i)).toBeInTheDocument();
-    // 133333 - 35000 = 98333
-    expect(screen.getByText(/Rp\s*98\.333/)).toBeInTheDocument();
+    expect(screen.getByText(/Sisa Rp\s*98\.333/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Cek Dampak Belanja/i })).toBeInTheDocument();
 
-    // Saldo Bebas Pakai
-    expect(screen.getByText(/Saldo Bebas Pakai/i)).toBeInTheDocument();
+    // Card 2: Kas Bebas Operasional
+    expect(screen.getByText('LIKUIDITAS BERSIH')).toBeInTheDocument();
+    expect(screen.getByText('Kas Bebas Operasional')).toBeInTheDocument();
     expect(screen.getAllByText(/Rp\s*2\.000\.000/)[0]).toBeInTheDocument();
-
-    // Sisa hari siklus
-    expect(screen.getByText(/15 hari lagi menuju siklus baru/i)).toBeInTheDocument();
-
-    // Mathematical Reconciliation Strip
     expect(screen.getByText('Total Kas:')).toBeInTheDocument();
-    expect(screen.getByText('Terkunci di Pos/Tagihan:')).toBeInTheDocument();
-    expect(screen.getByText('Bebas Pakai:')).toBeInTheDocument();
+    expect(screen.getByText(/15 hari lagi/i)).toBeInTheDocument();
+
+    const manualBtn = screen.getByRole('button', { name: /Catat Manual/i });
+    expect(manualBtn).toBeInTheDocument();
+    fireEvent.click(manualBtn);
+    expect(handleOpenManualModal).toHaveBeenCalledTimes(1);
+
+    // Card 3: Dana Terkunci di Pos
+    expect(screen.getByText('DANA TERKUNCI & POS')).toBeInTheDocument();
+    expect(screen.getByText('Dana Terkunci di Pos')).toBeInTheDocument();
+    expect(screen.getAllByText(/Rp\s*1\.000\.000/)[0]).toBeInTheDocument();
+    expect(screen.getByText('2 Pos Aktif')).toBeInTheDocument();
+    expect(screen.getByText('H-7 Bersih')).toBeInTheDocument();
+
+    const lumpSumBtn = screen.getByRole('button', { name: /Alokasikan Dana \(Lump-Sum\)/i });
+    expect(lumpSumBtn).toBeInTheDocument();
+    fireEvent.click(lumpSumBtn);
+    expect(handleOpenLumpSumModal).toHaveBeenCalledTimes(1);
+
+    // Mathematical Reconciliation Strip is absent
+    expect(screen.queryByText('Terkunci di Pos/Tagihan:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bebas Pakai:')).not.toBeInTheDocument();
   });
 
-  it('renders negative remaining budget correctly when today_spent exceeds daily runway', () => {
+  it('renders negative remaining budget correctly when today_spent exceeds daily runway in 3-Card Bento layout', () => {
     const overspentSummary: DashboardSummaryResponse = {
       ...mockSummary,
       daily_safe_runway: 100000,
@@ -143,12 +157,11 @@ describe('OverviewView Component', () => {
       />
     );
 
-    expect(screen.getByText('Waspada')).toBeInTheDocument();
-    expect(screen.getByText('STATUS KEUANGAN HARI INI')).toHaveClass('text-amber-600');
-    expect(screen.getByText(/Jatah hari ini terlampaui/i)).toBeInTheDocument();
-    expect(screen.getByText('Total Kas:')).toBeInTheDocument();
-    expect(screen.getByText('Terkunci di Pos/Tagihan:')).toBeInTheDocument();
-    expect(screen.getByText('Bebas Pakai:')).toBeInTheDocument();
+    const statusTitle = screen.getByText(/STATUS:\s*Waspada/i);
+    expect(statusTitle).toHaveClass('text-amber-600');
+    expect(screen.getByText(/\+Rp\s*50\.000/)).toBeInTheDocument();
+    expect(screen.queryByText('Terkunci di Pos/Tagihan:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bebas Pakai:')).not.toBeInTheDocument();
   });
 
   it('renders Tier 2 side-by-side: ExpenseCharts and RecentTransactionsCard and handles navigation to ledger', () => {

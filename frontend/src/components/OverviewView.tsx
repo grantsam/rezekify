@@ -9,10 +9,10 @@ import {
   Lock,
   Unlock,
   Wallet,
-  Calendar,
   Sparkles,
+  PlusCircle,
+  Layers,
   RotateCcw,
-  X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
@@ -35,6 +35,8 @@ export interface OverviewViewProps {
   onNavigateToVaults: () => void;
   onOpenCreateAccount: () => void;
   onOpenSimulateModal?: () => void;
+  onOpenManualModal?: () => void;
+  onOpenLumpSumModal?: () => void;
   onOpenChat?: (prompt?: string) => void;
   onDepositVault?: (vault: Vault) => void;
   onPayBillVault?: (vault: Vault) => void;
@@ -51,6 +53,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onNavigateToLedger,
   onNavigateToVaults,
   onOpenCreateAccount,
+  onOpenManualModal,
+  onOpenLumpSumModal,
   onDepositVault,
   onPayBillVault,
   onRefreshData,
@@ -226,6 +230,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           color: 'success' as const,
           chipClass: 'bg-emerald-500/15 text-[#0F766E] dark:text-[#10B981] border border-[#10B981]/30 font-extrabold',
           titleColor: 'text-emerald-600 dark:text-emerald-400',
+          dotColor: 'bg-emerald-500',
           progressColor: 'success' as const,
         };
       case 'WARNING':
@@ -234,6 +239,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           color: 'warning' as const,
           chipClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-extrabold',
           titleColor: 'text-amber-600 dark:text-amber-400',
+          dotColor: 'bg-amber-500',
           progressColor: 'warning' as const,
         };
       case 'CRITICAL':
@@ -242,6 +248,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           color: 'danger' as const,
           chipClass: 'bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30 font-extrabold',
           titleColor: 'text-rose-600 dark:text-rose-400',
+          dotColor: 'bg-rose-500',
           progressColor: 'danger' as const,
         };
       default:
@@ -250,6 +257,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           color: 'default' as const,
           chipClass: 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700',
           titleColor: 'text-zinc-500 dark:text-zinc-400',
+          dotColor: 'bg-zinc-500',
           progressColor: 'default' as const,
         };
     }
@@ -306,453 +314,444 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         />
       </div>
 
-      {/* 2. TIER 1: HERO TELEMETRY (JATAH BELANJA HARI INI) */}
-      <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 overflow-hidden relative">
-        {/* ponytail: single-surface telemetry card; upgrade to customizable widget grid if users require card reordering */}
-        <CardBody className="p-6 sm:p-8 relative z-10 space-y-5">
-          {/* Top Bar: Title & Health Status Badge */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-zinc-800/80 pb-4">
+      {/* 3-CARD BENTO KPI HEADER */}
+      {/* ponytail: 3-card bento KPI header; upgrade to customizable widget grid if users require card reordering */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+        {/* Card 1: Jatah Belanja Hari Ini */}
+        <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 p-6 flex flex-col justify-between">
+          <CardBody className="p-0 flex flex-col justify-between h-full space-y-4">
             <div>
-              <span className={`text-[10px] font-extrabold uppercase tracking-wider ${statusConfig.titleColor} block mb-1`}>
-                STATUS KEUANGAN HARI INI
-              </span>
-              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                Jatah Belanja Hari Ini
-              </h2>
-            </div>
-            <Chip
-              size="sm"
-              variant="flat"
-              color={statusConfig.color}
-              className={`text-xs px-3 py-1 rounded-full ${statusConfig.chipClass}`}
-            >
-              {statusConfig.label}
-            </Chip>
-          </div>
-
-          {/* Core Daily Safe Runway Number */}
-          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl md:text-5xl font-mono font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-zinc-800/60 pb-3 mb-3">
+                <span className={`text-[10px] font-extrabold uppercase tracking-wider ${statusConfig.titleColor}`}>
+                  STATUS: {statusConfig.label}
+                </span>
+                <span className={`w-2 h-2 rounded-full ${statusConfig.dotColor || 'bg-emerald-500'}`} />
+              </div>
+              <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">Jatah Belanja Hari Ini</p>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl sm:text-3xl font-mono font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
                   {formatRupiah(dailyRunway)}
                 </span>
-                <span className="text-slate-500 dark:text-zinc-400 text-sm sm:text-base font-bold">/ hari</span>
+                <span className="text-slate-500 dark:text-zinc-400 text-xs font-bold">/ hari</span>
               </div>
-              <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1.5 font-medium">
-                Batas pengeluaran harian agar cadangan operasional bertahan hingga akhir siklus.
-              </p>
-            </div>
-          </div>
 
-          {/* Sub-bar: Pengeluaran Hari Ini, Sisa Jatah, Progress Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500 dark:text-zinc-400 font-bold">Pengeluaran Hari Ini:</span>
-              <span className="text-slate-900 dark:text-white font-mono font-bold tabular-nums">
-                {formatRupiah(todaySpent)}
-              </span>
-            </div>
-
-            <div>
-              {isOverspent ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                    Jatah hari ini terlampaui ({formatRupiah(Math.abs(remainingBudget))})
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-zinc-400 hidden sm:inline">
-                    · Sisa siklus disesuaikan otomatis
+              {/* Progress bar */}
+              <div className="mt-3.5 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
+                  <span>Terpakai: <strong className="text-slate-900 dark:text-white font-mono">{formatRupiah(todaySpent)}</strong></span>
+                  <span className={isOverspent ? 'text-amber-500 font-bold' : 'text-emerald-500 font-bold font-mono'}>
+                    {isOverspent ? `+${formatRupiah(Math.abs(remainingBudget))}` : `Sisa ${formatRupiah(remainingBudget)}`}
                   </span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500 dark:text-zinc-400 font-bold">Sisa Jatah Hari Ini:</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-black font-mono tabular-nums">
-                    {formatRupiah(remainingBudget)}
-                  </span>
-                </div>
-              )}
+                <Progress
+                  size="sm"
+                  radius="full"
+                  value={spentPercentage}
+                  color={isOverspent ? 'warning' : statusConfig.progressColor}
+                  aria-label="Progres Pengeluaran Hari Ini"
+                  className="h-2"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Spending Progress Bar */}
-          <Progress
-            size="sm"
-            radius="full"
-            value={spentPercentage}
-            color={isOverspent ? 'warning' : statusConfig.progressColor}
-            aria-label="Progres Pengeluaran Hari Ini"
-            className="h-2.5"
-          />
-
-          {/* Bottom Meta in Sub-bar: Saldo Bebas Pakai & Sisa Hari */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 text-xs">
-            <div className="flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span className="text-slate-500 dark:text-zinc-400 font-medium">Saldo Bebas Pakai:</span>
-              <span className="text-slate-900 dark:text-white font-mono font-bold tabular-nums">
-                {formatRupiah(summary?.operational_free_cash ?? 0)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 sm:justify-end">
-              <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span className="text-slate-700 dark:text-zinc-300 font-bold">
-                {summary?.days_remaining ?? 0} hari lagi menuju siklus baru
-              </span>
-            </div>
-          </div>
-
-            {/* CONTEXTUAL SURVIVAL GUIDANCE BANNER */}
-            <div
-              data-testid="survival-guidance-banner"
-              className={`rounded-2xl p-4 border transition-all ${guidanceTheme.containerClass}`}
+            <Button
+              size="sm"
+              variant={isSimulationOpen ? 'flat' : 'bordered'}
+              onPress={() => setIsSimulationOpen(!isSimulationOpen)}
+              aria-expanded={isSimulationOpen}
+              aria-controls="runway-simulation-panel"
+              className={`w-full min-h-[38px] text-xs font-extrabold rounded-2xl transition-all ${
+                isSimulationOpen
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                  : 'bg-slate-100 dark:bg-zinc-900/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800/80'
+              }`}
+              startContent={<Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
             >
-              <div className="flex items-start gap-3">
-                {guidanceTheme.icon}
-                <div className="flex-1 space-y-1.5 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs font-black tracking-wide uppercase px-2 py-0.5 rounded-md bg-white/40 dark:bg-black/20 ${guidanceTheme.badgeClass}`}>
-                      {survivalGuidance.headline}
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-sm font-medium leading-relaxed opacity-95">
-                    {survivalGuidance.message}
-                  </p>
-                  <div className="pt-1 text-[11px] sm:text-xs font-semibold opacity-90">
-                    <span className="font-bold">Langkah Praktis: </span>
-                    {survivalGuidance.tactical_action}
-                  </div>
+              {isSimulationOpen ? 'Tutup Simulasi' : 'Cek Dampak Belanja'}
+            </Button>
+          </CardBody>
+        </Card>
 
-                  {/* Tactical Action Buttons */}
-                  <div className="flex flex-wrap items-center gap-2 pt-2">
-                    {survivalGuidance.tone === 'CRITICAL' && (summary?.operational_free_cash ?? 0) <= 0 ? (
-                      <Button
-                        size="sm"
-                        variant="flat"
-                        onPress={onNavigateToVaults}
-                        className="min-h-[38px] text-xs font-extrabold rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-sm"
-                        endContent={<ArrowRight className="w-3.5 h-3.5" />}
-                      >
-                        Lihat Pos Simpanan
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          onPress={() => setIsSimulationOpen(true)}
-                          startContent={<Sparkles className="w-3.5 h-3.5 text-emerald-500" />}
-                          className="min-h-[38px] text-xs font-extrabold rounded-xl bg-slate-900/10 dark:bg-white/10 hover:bg-slate-900/20 dark:hover:bg-white/20 transition-all"
-                        >
-                          Buka Simulasi Belanja
-                        </Button>
-                        {survivalGuidance.tone !== 'HEALTHY' && (
-                          <Button
-                            size="sm"
-                            variant="light"
-                            onPress={onNavigateToVaults}
-                            className="min-h-[38px] text-xs font-bold rounded-xl text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white"
-                            endContent={<ArrowRight className="w-3.5 h-3.5" />}
-                          >
-                            Lihat Pos Pengeluaran
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
+        {/* Card 2: Kas Bebas Operasional */}
+        <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 p-6 flex flex-col justify-between">
+          <CardBody className="p-0 flex flex-col justify-between h-full space-y-4">
+            <div>
+              <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-zinc-800/60 pb-3 mb-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500">
+                  LIKUIDITAS BERSIH
+                </span>
+                <Wallet className="w-3.5 h-3.5 text-emerald-500" />
               </div>
-            </div>
-
-            {/* Mathematical Reconciliation Strip */}
-            <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800/80">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <span className="font-medium text-slate-600 dark:text-zinc-300">Total Kas:</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
-                    {formatRupiah(summary?.total_liquid_cash ?? 0)}
-                  </span>
-                  <span className="text-slate-400 dark:text-zinc-500 font-mono font-bold">−</span>
-                  <span className="font-medium text-amber-700 dark:text-amber-400">Terkunci di Pos/Tagihan:</span>
-                  <span className="font-mono font-bold text-amber-700 dark:text-amber-400 tabular-nums">
-                    {formatRupiah(summary?.vault_locked_cash ?? 0)}
-                  </span>
-                  <span className="text-slate-400 dark:text-zinc-500 font-mono font-bold">=</span>
-                  <span className="font-medium text-emerald-600 dark:text-emerald-400">Bebas Pakai:</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    {formatRupiah(summary?.operational_free_cash ?? 0)}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
-                  ÷ {summary?.days_remaining ?? 0} hari = <strong className="font-mono text-slate-700 dark:text-zinc-200">{formatRupiah(dailyRunway)} / hari</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Simulation Trigger Bar */}
-            <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                  Simulasi Pra-Belanja (What-If)
+              <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">Kas Bebas Operasional</p>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl sm:text-3xl font-mono font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+                  {formatRupiah(summary?.operational_free_cash ?? 0)}
                 </span>
               </div>
-              <Button
-                size="sm"
-                variant={isSimulationOpen ? 'flat' : 'bordered'}
-                onPress={() => setIsSimulationOpen(!isSimulationOpen)}
-                aria-expanded={isSimulationOpen}
-                aria-controls="runway-simulation-panel"
-                startContent={
-                  !isSimulationOpen ? (
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                  ) : (
-                    <X className="w-3.5 h-3.5 text-emerald-500" />
-                  )
-                }
-                className={`min-h-[38px] text-xs font-extrabold rounded-xl transition-all ${
-                  isSimulationOpen
-                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-zinc-700/80'
-                }`}
-              >
-                {isSimulationOpen ? 'Tutup Simulasi' : 'Cek Dampak Belanja'}
-              </Button>
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
+                Saldo kas setelah dipotong seluruh komitmen tagihan dan pos simpanan.
+              </p>
+              <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-zinc-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
+                <span>Total Kas: <strong className="font-mono text-slate-700 dark:text-zinc-200">{formatRupiah(summary?.total_liquid_cash ?? 0)}</strong></span>
+                <span>{summary?.days_remaining ?? 0} hari lagi</span>
+              </div>
             </div>
 
-            {/* Expandable Simulation Drawer */}
-            <AnimatePresence>
-              {isSimulationOpen && (
-                <motion.div
-                  id="runway-simulation-panel"
-                  data-testid="runway-simulation-panel"
-                  role="region"
-                  aria-label="Simulasi Pengeluaran Hero"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                  className="overflow-hidden pt-4 border-t border-slate-200/60 dark:border-zinc-800/80 space-y-4"
-                >
-                  {/* Currency Input & Quick Chips */}
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <label
-                        htmlFor="simulation-nominal-input"
-                        className="text-xs font-bold text-slate-700 dark:text-zinc-300"
+            <Button
+              size="sm"
+              variant="bordered"
+              onPress={onOpenManualModal}
+              className="w-full min-h-[38px] text-xs font-extrabold rounded-2xl bg-slate-100 dark:bg-zinc-900/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800/80 transition-all"
+              startContent={<PlusCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+            >
+              Catat Manual
+            </Button>
+          </CardBody>
+        </Card>
+
+        {/* Card 3: Dana Terkunci di Pos */}
+        <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 p-6 flex flex-col justify-between">
+          <CardBody className="p-0 flex flex-col justify-between h-full space-y-4">
+            <div>
+              <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-zinc-800/60 pb-3 mb-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-500 dark:text-amber-400">
+                  DANA TERKUNCI & POS
+                </span>
+                <Lock className="w-3.5 h-3.5 text-amber-500" />
+              </div>
+              <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">Dana Terkunci di Pos</p>
+              <div className="flex items-baseline gap-1.5 mt-1">
+                <span className="text-2xl sm:text-3xl font-mono font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+                  {formatRupiah(summary?.vault_locked_cash ?? 0)}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
+                Dana yang diamankan di rekening untuk melunasi tagihan dan target tabungan.
+              </p>
+              <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-zinc-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
+                <span>{vaults.length} Pos Aktif</span>
+                <span className="text-emerald-500 font-bold">H-7 Bersih</span>
+              </div>
+            </div>
+
+            <Button
+              size="sm"
+              variant="bordered"
+              onPress={onOpenLumpSumModal}
+              className="w-full min-h-[38px] text-xs font-extrabold rounded-2xl bg-slate-100 dark:bg-zinc-900/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800/80 transition-all"
+              startContent={<Layers className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+            >
+              Alokasikan Dana (Lump-Sum)
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* IN-PLACE WHAT-IF SIMULATION DRAWER */}
+      <AnimatePresence>
+        {isSimulationOpen && (
+          <motion.div
+            id="runway-simulation-panel"
+            data-testid="runway-simulation-panel"
+            role="region"
+            aria-label="Simulasi Pengeluaran Hero"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-emerald-500/30 dark:border-emerald-500/20 rounded-[28px] shadow-xl p-6 sm:p-8">
+              <CardBody className="p-0 space-y-4">
+                {/* Header with Title and Reset */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/60 dark:border-zinc-800/80">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      Simulasi Pra-Belanja (What-If)
+                    </h3>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    onPress={handleResetSimulation}
+                    className="text-xs text-slate-500 dark:text-zinc-400 hover:text-rose-500 min-h-[38px] px-2.5 rounded-xl font-bold self-end sm:self-auto"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                    Reset
+                  </Button>
+                </div>
+
+                {/* Currency Input & Quick Chips */}
+                <div className="space-y-3">
+                  <label
+                    htmlFor="simulation-nominal-input"
+                    className="text-xs font-bold text-slate-700 dark:text-zinc-300 block"
+                  >
+                    Rencana Belanja (Pengeluaran Luar Rutinitas)
+                  </label>
+
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3.5 text-sm font-bold text-slate-400 dark:text-zinc-500 select-none">
+                      Rp
+                    </span>
+                    <input
+                      id="simulation-nominal-input"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Misal: 150.000"
+                      value={simulationInputValue}
+                      onChange={(e) => handleNominalInputChange(e.target.value)}
+                      className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-zinc-950/80 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl text-sm font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 mr-1 select-none">
+                      Tambah Cepat:
+                    </span>
+                    {[
+                      { label: '+50rb', amount: 50000, ariaLabel: 'Tambah 50 ribu rupiah' },
+                      { label: '+100rb', amount: 100000, ariaLabel: 'Tambah 100 ribu rupiah' },
+                      { label: '+250rb', amount: 250000, ariaLabel: 'Tambah 250 ribu rupiah' },
+                      { label: '+500rb', amount: 500000, ariaLabel: 'Tambah 500 ribu rupiah' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        aria-label={preset.ariaLabel}
+                        onClick={() => handleAddPreset(preset.amount)}
+                        className="min-h-[38px] min-w-[38px] px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 transition-all cursor-pointer select-none active:scale-95"
                       >
-                        Rencana Belanja (Pengeluaran Luar Rutinitas)
-                      </label>
-                      <Button
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Side-by-Side Comparison Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Realita Saat Ini */}
+                  <div className="bg-white dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/60 pb-2.5">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                        Realita Saat Ini
+                      </span>
+                      <Chip
                         size="sm"
-                        variant="light"
-                        onPress={handleResetSimulation}
-                        className="text-xs text-slate-500 dark:text-zinc-400 hover:text-rose-500 min-h-[38px] px-2.5 rounded-xl font-bold self-end sm:self-auto"
+                        variant="flat"
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-extrabold"
                       >
-                        <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                        Reset
-                      </Button>
+                        STATUS SAAT INI
+                      </Chip>
                     </div>
 
-                    <div className="relative flex items-center">
-                      <span className="absolute left-3.5 text-sm font-bold text-slate-400 dark:text-zinc-500 select-none">
-                        Rp
-                      </span>
-                      <input
-                        id="simulation-nominal-input"
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="Misal: 150.000"
-                        value={simulationInputValue}
-                        onChange={(e) => handleNominalInputChange(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2.5 bg-white dark:bg-zinc-950/80 border border-slate-200/80 dark:border-zinc-700/80 rounded-2xl text-sm font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
-                      />
+                    <div>
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+                        Jatah Harian Saat Ini
+                      </div>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tabular-nums">
+                          {formatRupiah(summary?.daily_safe_runway ?? 0)}
+                        </span>
+                        <span className="text-slate-500 dark:text-zinc-400 text-xs font-bold">/ hari</span>
+                      </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 mr-1 select-none">
-                        Tambah Cepat:
-                      </span>
-                      {[
-                        { label: '+50rb', amount: 50000, ariaLabel: 'Tambah 50 ribu rupiah' },
-                        { label: '+100rb', amount: 100000, ariaLabel: 'Tambah 100 ribu rupiah' },
-                        { label: '+250rb', amount: 250000, ariaLabel: 'Tambah 250 ribu rupiah' },
-                        { label: '+500rb', amount: 500000, ariaLabel: 'Tambah 500 ribu rupiah' },
-                      ].map((preset) => (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          aria-label={preset.ariaLabel}
-                          onClick={() => handleAddPreset(preset.amount)}
-                          className="min-h-[38px] min-w-[38px] px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-700/80 transition-all cursor-pointer select-none active:scale-95"
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/60 text-xs">
+                      <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
+                        <span>Sisa Jatah Hari Ini:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                          {formatRupiah(remainingBudget)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
+                        <span>Saldo Bebas Operasional:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                          {formatRupiah(summary?.operational_free_cash ?? 0)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Side-by-Side Comparison Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    {/* Realita Saat Ini */}
-                    <div className="bg-white dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between space-y-3">
-                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/60 pb-2.5">
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                          Realita Saat Ini
-                        </span>
-                        <Chip
-                          size="sm"
-                          variant="flat"
-                          className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-extrabold"
-                        >
-                          STATUS SAAT INI
-                        </Chip>
-                      </div>
-
-                      <div>
-                        <div className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
-                          Jatah Harian Saat Ini
-                        </div>
-                        <div className="flex items-baseline gap-1.5 mt-0.5">
-                          <span className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tabular-nums">
-                            {formatRupiah(summary?.daily_safe_runway ?? 0)}
-                          </span>
-                          <span className="text-slate-500 dark:text-zinc-400 text-xs font-bold">/ hari</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/60 text-xs">
-                        <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
-                          <span>Sisa Jatah Hari Ini:</span>
-                          <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
-                            {formatRupiah(remainingBudget)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
-                          <span>Saldo Bebas Operasional:</span>
-                          <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
-                            {formatRupiah(summary?.operational_free_cash ?? 0)}
-                          </span>
-                        </div>
-                      </div>
+                  {/* Jika Jadi Beli */}
+                  <div
+                    data-testid="projected-card"
+                    aria-live="polite"
+                    className={`bg-white dark:bg-zinc-950/60 border rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-colors ${
+                      simulationResults.status === 'CRITICAL'
+                        ? 'border-rose-500/40 bg-rose-500/[0.02]'
+                        : simulationResults.status === 'WARNING'
+                        ? 'border-amber-500/40 bg-amber-500/[0.02]'
+                        : 'border-emerald-500/40 bg-emerald-500/[0.02]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/60 pb-2.5">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
+                        Jika Jadi Beli
+                      </span>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        data-testid="simulation-status-badge"
+                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
+                          simulationResults.status === 'CRITICAL'
+                            ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                            : simulationResults.status === 'WARNING'
+                            ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                            : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                        }`}
+                      >
+                        {simulationResults.status === 'CRITICAL'
+                          ? 'Defisit'
+                          : simulationResults.status === 'WARNING'
+                          ? 'Waspada'
+                          : 'Aman'}
+                      </Chip>
                     </div>
 
-                    {/* Jika Jadi Beli */}
-                    <div
-                      data-testid="projected-card"
-                      aria-live="polite"
-                      className={`bg-white dark:bg-zinc-950/60 border rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-colors ${
-                        simulationResults.status === 'CRITICAL'
-                          ? 'border-rose-500/40 bg-rose-500/[0.02]'
-                          : simulationResults.status === 'WARNING'
-                          ? 'border-amber-500/40 bg-amber-500/[0.02]'
-                          : 'border-emerald-500/40 bg-emerald-500/[0.02]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/60 pb-2.5">
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">
-                          Jika Jadi Beli
-                        </span>
-                        <Chip
-                          size="sm"
-                          variant="flat"
-                          data-testid="simulation-status-badge"
-                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-black ${
+                    <div>
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+                        Proyeksi Jatah Harian
+                      </div>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span
+                          data-testid="projected-daily-runway"
+                          className={`text-xl sm:text-2xl font-mono font-black tabular-nums ${
                             simulationResults.status === 'CRITICAL'
-                              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                              ? 'text-rose-600 dark:text-rose-400'
                               : simulationResults.status === 'WARNING'
-                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                              : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-emerald-600 dark:text-emerald-400'
                           }`}
                         >
-                          {simulationResults.status === 'CRITICAL'
-                            ? 'Defisit'
-                            : simulationResults.status === 'WARNING'
-                            ? 'Waspada'
-                            : 'Aman'}
-                        </Chip>
+                          {formatRupiah(simulationResults.projectedDailyRunway)}
+                        </span>
+                        <span className="text-slate-500 dark:text-zinc-400 text-xs font-bold">/ hari</span>
                       </div>
-
-                      <div>
-                        <div className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
-                          Proyeksi Jatah Harian
-                        </div>
-                        <div className="flex items-baseline gap-1.5 mt-0.5">
-                          <span
-                            data-testid="projected-daily-runway"
-                            className={`text-xl sm:text-2xl font-mono font-black tabular-nums ${
-                              simulationResults.status === 'CRITICAL'
-                                ? 'text-rose-600 dark:text-rose-400'
-                                : simulationResults.status === 'WARNING'
-                                ? 'text-amber-600 dark:text-amber-400'
-                                : 'text-emerald-600 dark:text-emerald-400'
-                            }`}
-                          >
-                            {formatRupiah(simulationResults.projectedDailyRunway)}
-                          </span>
-                          <span className="text-slate-500 dark:text-zinc-400 text-xs font-bold">/ hari</span>
-                        </div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
-                          <span>Dampak:</span>
-                          <span
-                            data-testid="simulation-daily-drop"
-                            className="font-mono font-bold text-rose-500 dark:text-rose-400 tabular-nums"
-                          >
-                            -{formatRupiah(simulationResults.dailyDrop)}
-                          </span>
-                          <span>/ hari</span>
-                        </div>
+                      <div className="text-xs font-medium text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
+                        <span>Dampak:</span>
+                        <span
+                          data-testid="simulation-daily-drop"
+                          className="font-mono font-bold text-rose-500 dark:text-rose-400 tabular-nums"
+                        >
+                          -{formatRupiah(simulationResults.dailyDrop)}
+                        </span>
+                        <span>/ hari</span>
                       </div>
+                    </div>
 
-                      <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/60 text-xs">
-                        <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
-                          <span>Sisa Saldo Bebas:</span>
-                          <span
-                            data-testid="projected-free-cash"
-                            className="font-mono font-bold text-slate-900 dark:text-white tabular-nums"
-                          >
-                            {formatRupiah(simulationResults.projectedFreeCash)}
-                          </span>
-                        </div>
-                        <div className="text-[11px] leading-relaxed pt-1">
-                          <span
-                            className={
-                              simulationResults.status === 'CRITICAL'
-                                ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                                : simulationResults.status === 'WARNING'
-                                ? 'text-amber-600 dark:text-amber-400 font-semibold'
-                                : 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                            }
-                          >
-                            {simulationResults.statusCopy}
-                          </span>
-                        </div>
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/60 text-xs">
+                      <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
+                        <span>Sisa Saldo Bebas:</span>
+                        <span
+                          data-testid="projected-free-cash"
+                          className="font-mono font-bold text-slate-900 dark:text-white tabular-nums"
+                        >
+                          {formatRupiah(simulationResults.projectedFreeCash)}
+                        </span>
+                      </div>
+                      <div className="text-[11px] leading-relaxed pt-1">
+                        <span
+                          className={
+                            simulationResults.status === 'CRITICAL'
+                              ? 'text-rose-600 dark:text-rose-400 font-semibold'
+                              : simulationResults.status === 'WARNING'
+                              ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                              : 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                          }
+                        >
+                          {simulationResults.statusCopy}
+                        </span>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Action Footer Bridge */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                      Simulasi murni evaluasi visual & tidak mengubah saldo atau buku besar.
-                    </p>
+                {/* Action Footer Bridge */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Simulasi murni evaluasi visual & tidak mengubah saldo atau buku besar.
+                  </p>
+                  <Button
+                    onPress={() => {
+                      setQuickCaptureDraft(`Beli Rp ${new Intl.NumberFormat('id-ID').format(simulationNominal)}`);
+                      setIsSimulationOpen(false);
+                    }}
+                    isDisabled={simulationNominal <= 0}
+                    disabled={simulationNominal <= 0}
+                    className="min-h-[38px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Lanjut Catat Pengeluaran <ArrowRight className="w-3.5 h-3.5 ml-1 inline" />
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* CONTEXTUAL SURVIVAL GUIDANCE BANNER */}
+      {survivalGuidance.tone !== 'HEALTHY' && (
+        <div
+          data-testid="survival-guidance-banner"
+          className={`rounded-2xl p-4 border transition-all ${guidanceTheme.containerClass}`}
+        >
+          <div className="flex items-start gap-3">
+            {guidanceTheme.icon}
+            <div className="flex-1 space-y-1.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-xs font-black tracking-wide uppercase px-2 py-0.5 rounded-md bg-white/40 dark:bg-black/20 ${guidanceTheme.badgeClass}`}>
+                  {survivalGuidance.headline}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-medium leading-relaxed opacity-95">
+                {survivalGuidance.message}
+              </p>
+              <div className="pt-1 text-[11px] sm:text-xs font-semibold opacity-90">
+                <span className="font-bold">Langkah Praktis: </span>
+                {survivalGuidance.tactical_action}
+              </div>
+
+              {/* Tactical Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                {survivalGuidance.tone === 'CRITICAL' && (summary?.operational_free_cash ?? 0) <= 0 ? (
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={onNavigateToVaults}
+                    className="min-h-[38px] text-xs font-extrabold rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-sm"
+                    endContent={<ArrowRight className="w-3.5 h-3.5" />}
+                  >
+                    Lihat Pos Simpanan
+                  </Button>
+                ) : (
+                  <>
                     <Button
-                      onPress={() => {
-                        setQuickCaptureDraft(`Beli Rp ${new Intl.NumberFormat('id-ID').format(simulationNominal)}`);
-                        setIsSimulationOpen(false);
-                      }}
-                      isDisabled={simulationNominal <= 0}
-                      disabled={simulationNominal <= 0}
-                      className="min-h-[38px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      size="sm"
+                      variant="flat"
+                      onPress={() => setIsSimulationOpen(true)}
+                      startContent={<Sparkles className="w-3.5 h-3.5 text-emerald-500" />}
+                      className="min-h-[38px] text-xs font-extrabold rounded-xl bg-slate-900/10 dark:bg-white/10 hover:bg-slate-900/20 dark:hover:bg-white/20 transition-all"
                     >
-                      Lanjut Catat Pengeluaran <ArrowRight className="w-3.5 h-3.5 ml-1 inline" />
+                      Buka Simulasi Belanja
                     </Button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-        </CardBody>
-      </Card>
+                    <Button
+                      size="sm"
+                      variant="light"
+                      onPress={onNavigateToVaults}
+                      className="min-h-[38px] text-xs font-bold rounded-xl text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white"
+                      endContent={<ArrowRight className="w-3.5 h-3.5" />}
+                    >
+                      Lihat Pos Pengeluaran
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3. TIER 2: BENTO GRID ANALITIK & TRANSAKSI TERAKHIR (SPAN 7:5) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">

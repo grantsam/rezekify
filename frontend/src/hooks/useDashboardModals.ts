@@ -151,6 +151,7 @@ export function useDashboardModals() {
 
     isManualModalOpen,
     openManualModal,
+    onOpenManualModal: openManualModal,
     closeManualModal,
 
     isEditTxModalOpen,
