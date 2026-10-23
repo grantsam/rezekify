@@ -35,7 +35,7 @@ def test_migration_008_upgrade_downgrade(tmp_path: Path):
     cfg = Config("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", db_url)
 
-    command.upgrade(cfg, "head")
+    command.upgrade(cfg, "008")
 
     eng = sa.create_engine(db_url)
     try:
@@ -46,7 +46,7 @@ def test_migration_008_upgrade_downgrade(tmp_path: Path):
         eng.dispose()
 
     # Downgrade 1 revision back
-    command.downgrade(cfg, "-1")
+    command.downgrade(cfg, "007")
 
     eng = sa.create_engine(db_url)
     try:
