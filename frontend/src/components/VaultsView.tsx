@@ -104,7 +104,7 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
             onPress={onOpenCreateVault}
             aria-label="+ Tambah Vault"
             startContent={<Plus className="w-4 h-4" />}
-            className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold min-h-[40px] px-5 rounded-2xl text-xs shadow-lg shadow-emerald-900/20 transition-all"
+            className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold min-h-[40px] px-5 rounded-2xl text-xs shadow-lg shadow-emerald-900/20 transition-all"
           >
             + Tambah Vault
           </Button>
@@ -146,8 +146,8 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           onPress={() => setActiveTab('ALL')}
           className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-extrabold transition-all min-h-[38px] h-auto ${
             activeTab === 'ALL'
-              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
-              : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 bg-transparent'
+              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-900/20'
+              : 'text-slate-600 dark:text-zinc-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-zinc-800/50 bg-transparent'
           }`}
         >
           <span>Semua</span>
@@ -164,8 +164,8 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           onPress={() => setActiveTab('FIXED_BILL')}
           className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-extrabold transition-all min-h-[38px] h-auto ${
             activeTab === 'FIXED_BILL'
-              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
-              : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 bg-transparent'
+              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-900/20'
+              : 'text-slate-600 dark:text-zinc-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-zinc-800/50 bg-transparent'
           }`}
         >
           <span>Tagihan Tetap</span>
@@ -182,8 +182,8 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           onPress={() => setActiveTab('SAVINGS')}
           className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-extrabold transition-all min-h-[38px] h-auto ${
             activeTab === 'SAVINGS'
-              ? 'bg-gradient-to-r from-[#0F766E] to-[#10B981] text-white shadow-md shadow-emerald-900/20'
-              : 'text-slate-600 dark:text-slate-300 hover:text-emerald-500 bg-transparent'
+              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-900/20'
+              : 'text-slate-600 dark:text-zinc-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-zinc-800/50 bg-transparent'
           }`}
         >
           <span>Tabungan</span>
@@ -208,7 +208,7 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
           <Button
             size="sm"
             onPress={onOpenCreateVault}
-            className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold rounded-2xl text-xs min-h-[40px] px-5 shadow-lg shadow-emerald-900/20"
+            className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold rounded-2xl text-xs min-h-[40px] px-5 shadow-lg shadow-emerald-900/20"
           >
             Buat Vault Pertama
           </Button>

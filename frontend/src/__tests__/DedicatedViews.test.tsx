@@ -77,8 +77,7 @@ describe('Dedicated Ledger & Vaults Views', () => {
       fireEvent.click(screen.getByRole('button', { name: /\+ Catat Manual/i }));
       expect(handleOpenManual).toHaveBeenCalledTimes(1);
 
-      fireEvent.click(screen.getByRole('button', { name: /Simulasi Belanja/i }));
-      expect(handleOpenSimulate).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('button', { name: /Simulasi Belanja/i })).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: /\+ Kategori/i }));
       expect(handleOpenCategory).toHaveBeenCalledTimes(1);

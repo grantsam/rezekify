@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@heroui/react';
-import { PlusCircle, Calculator, Tag, Download } from 'lucide-react';
+import { PlusCircle, Tag, Download } from 'lucide-react';
 import { Transaction, Account, Category, TransactionFilterParams, Vault } from '../types/api';
 import { downloadTransactionsCSV } from '../services/apiClient';
 import { TransactionsTable } from './TransactionsTable';
@@ -22,7 +22,7 @@ export interface LedgerViewProps {
   onDeleteTransaction: (id: string) => Promise<void> | void;
   onEditTransaction: (tx: Transaction) => void;
   onOpenManualModal: () => void;
-  onOpenSimulateModal: () => void;
+  onOpenSimulateModal?: () => void;
   onOpenCategoryModal: () => void;
   isLoading?: boolean;
 }
@@ -43,7 +43,7 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
   onDeleteTransaction,
   onEditTransaction,
   onOpenManualModal,
-  onOpenSimulateModal,
+  onOpenSimulateModal: _onOpenSimulateModal,
   onOpenCategoryModal,
   isLoading = false,
 }) => {
@@ -108,20 +108,10 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
 
           <Button
             size="sm"
-            variant="flat"
-            onPress={onOpenSimulateModal}
-            startContent={<Calculator className="w-3.5 h-3.5 text-emerald-500" />}
-            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold min-h-[40px] rounded-2xl text-xs border border-emerald-500/20 transition-all"
-          >
-            Simulasi Belanja
-          </Button>
-
-          <Button
-            size="sm"
             onPress={onOpenManualModal}
             aria-label="+ Catat Manual"
             startContent={<PlusCircle className="w-4 h-4" />}
-            className="bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold min-h-[40px] rounded-2xl text-xs shadow-lg shadow-emerald-900/20 transition-all"
+            className="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold min-h-[40px] rounded-2xl text-xs shadow-lg shadow-emerald-900/20 transition-all"
           >
             + Catat Manual
           </Button>

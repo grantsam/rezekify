@@ -79,4 +79,21 @@ describe('LedgerView CSV Export Integration', () => {
       expect(customExportMock).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('renders "+ Catat Manual" button and triggers callback', () => {
+    const handleManual = vi.fn();
+    render(<LedgerView {...defaultProps} onOpenManualModal={handleManual} />);
+
+    const manualBtn = screen.getByRole('button', { name: /\+ Catat Manual/i });
+    expect(manualBtn).toBeInTheDocument();
+    expect(manualBtn).toHaveClass('bg-emerald-500');
+
+    fireEvent.click(manualBtn);
+    expect(handleManual).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render redundant "Simulasi Belanja" button', () => {
+    render(<LedgerView {...defaultProps} />);
+    expect(screen.queryByRole('button', { name: /Simulasi Belanja/i })).not.toBeInTheDocument();
+  });
 });
