@@ -801,11 +801,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       {/* 3. TIER 2: BENTO GRID ANALITIK & TRANSAKSI TERAKHIR (SPAN 7:5) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        <div className="lg:col-span-7 w-full flex flex-col h-full">
+        <div className="lg:col-span-7 w-full flex flex-col min-h-[380px] h-full">
           <ExpenseCharts refreshTrigger={refreshTrigger} />
         </div>
 
-        <div className="lg:col-span-5 w-full flex flex-col h-full">
+        <div className="lg:col-span-5 w-full flex flex-col min-h-[380px] h-full">
           <RecentTransactionsCard
             transactions={transactions ?? []}
             isLoading={isLoading}
@@ -817,7 +817,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       {/* 5. TIER 4: BENTO GRID TAGIHAN & VAULTS PRIORITAS (SIMETRIS 50:50) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Col 1: Upcoming Bills Card */}
-        <div className="w-full flex flex-col h-full">
+        <div className="w-full flex flex-col min-h-[340px] h-full">
           <UpcomingBillsCard
             bills={summary?.upcoming_bills}
             isLoading={isLoading}
@@ -828,7 +828,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
 
         {/* Col 2: Komitmen & Vaults Prioritas */}
-        <div className="w-full flex flex-col h-full">
+        <div className="w-full flex flex-col min-h-[340px] h-full">
           <Card className="w-full h-full bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 flex flex-col justify-between">
             <CardBody className="p-6 flex flex-col justify-between h-full">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200/60 dark:border-zinc-800/80">

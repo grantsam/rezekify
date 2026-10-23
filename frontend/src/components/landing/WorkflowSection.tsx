@@ -152,7 +152,7 @@ export default function HowItWorksSection() {
           </div>
         </div>
 
-        <div className="bg-white/60 dark:bg-[#141417] backdrop-blur-2xl border border-white/80 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-500 overflow-hidden">
+        <div className="bg-white/60 dark:bg-[#141417] backdrop-blur-2xl border border-white/80 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl transition-all duration-500 overflow-hidden min-h-[260px] sm:min-h-[220px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeStep}

@@ -143,7 +143,7 @@ export default function BenefitsSection() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full bg-teal-600/10 dark:bg-[#141417] backdrop-blur-3xl border border-white/50 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/10 flex flex-col justify-between text-left transition-all duration-500 relative overflow-hidden"
+                className="w-full min-h-[380px] bg-teal-600/10 dark:bg-[#141417] backdrop-blur-3xl border border-white/50 dark:border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/10 flex flex-col justify-between text-left transition-all duration-500 relative overflow-hidden"
               >
 
                 <div className="absolute -top-16 -right-16 w-36 h-36 bg-gradient-to-br from-white/30 dark:from-emerald-500/20 to-transparent rounded-full blur-2xl pointer-events-none" />
