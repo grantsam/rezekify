@@ -632,7 +632,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               </div>
             </div>
           ) : period === 'cashflow' && cashflowData ? (
-            <div data-testid="cashflow-canvas-container" className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center py-2 flex-1 min-h-[224px]">
+            <div data-testid="cashflow-canvas-container" className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center py-0 flex-1 min-h-[224px]">
               {/* Left Column (md:col-span-5): SVG Bi-Directional Donut Gauge */}
               <div className="md:col-span-5 flex items-center justify-center relative">
                 {(() => {
@@ -702,10 +702,10 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               </div>
 
               {/* Right Column (md:col-span-7): Telemetry Cards */}
-              <div className="md:col-span-7 flex flex-col justify-center space-y-3.5">
+              <div className="md:col-span-7 flex flex-col justify-center space-y-2.5">
                 {/* Telemetry Cards in 2-col layout */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80">
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80">
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 font-semibold mb-1">
                       <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-500">
                         <TrendingUp className="w-3.5 h-3.5" />
@@ -717,7 +717,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80">
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80">
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 font-semibold mb-1">
                       <div className="p-1 rounded-md bg-rose-500/10 text-rose-500">
                         <TrendingDown className="w-3.5 h-3.5" />
@@ -731,13 +731,15 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                 </div>
 
                 {/* Net Cashflow row */}
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between gap-2">
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between gap-2">
                   <div>
                     <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">Arus Kas Bersih</span>
                     <span className={`text-sm sm:text-base font-black font-mono tabular-nums ${
                       cashflowData.net_cashflow >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                     }`}>
-                      {cashflowData.net_cashflow >= 0 ? '+' : ''}Rp {cashflowData.net_cashflow.toLocaleString('id-ID')}
+                      {cashflowData.net_cashflow < 0
+                        ? `-Rp ${Math.abs(cashflowData.net_cashflow).toLocaleString('id-ID')}`
+                        : `+Rp ${cashflowData.net_cashflow.toLocaleString('id-ID')}`}
                     </span>
                   </div>
                   <div>
