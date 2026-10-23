@@ -3,10 +3,10 @@
 from datetime import date
 from decimal import Decimal
 import json
-from typing import List, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PlainSerializer
 from sqlalchemy.orm import Session, selectinload
 
 from rezekify.agent.key_pool import RotaryKeyPool
@@ -139,14 +139,17 @@ class MonthlySpendingResponse(BaseModel):
     items: List[CategorySpendingItemModel]
 
 
+DecimalFloat = Annotated[Decimal, PlainSerializer(lambda x: float(x) if x is not None else 0.0, return_type=float)]
+
+
 class CashflowSummaryResponse(BaseModel):
     period: Literal["cashflow"] = "cashflow"
     cycle_start_date: date
     cycle_end_date: date
-    total_income: Decimal
-    total_expense: Decimal
-    net_cashflow: Decimal
-    savings_rate: Decimal
+    total_income: DecimalFloat
+    total_expense: DecimalFloat
+    net_cashflow: DecimalFloat
+    savings_rate: DecimalFloat
     status: Literal["HEALTHY", "WARNING", "CRITICAL"]
 
 
@@ -160,7 +163,7 @@ def get_dashboard_summary(
 ):
     """Calculates deterministic liquid free cash and dynamic daily safe runway."""
     service = RunwayService(db)
-    report = service.calculate_runway(user_id=current_user.id)
+    report = service.calculate_runway(user_id=current_user.id, use_cache=False)
     guidance = report.survival_guidance or RunwayService._build_survival_guidance(
         operational_free=report.operational_free_cash,
         daily_safe=report.daily_safe_runway,
