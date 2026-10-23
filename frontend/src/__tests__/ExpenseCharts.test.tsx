@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { ExpenseCharts } from '../components/ExpenseCharts';
 import * as apiClient from '../services/apiClient';
 
@@ -34,10 +35,14 @@ describe('ExpenseCharts Component', () => {
     vi.restoreAllMocks();
   });
 
+  const renderExpenseCharts = (ui = <ExpenseCharts />) => {
+    return render(<MemoryRouter>{ui}</MemoryRouter>);
+  };
+
   it('fetches and renders daily spending breakdown with animated bars', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
 
     await waitFor(() => {
       expect(screen.getByText('Min')).toBeInTheDocument();
@@ -49,7 +54,7 @@ describe('ExpenseCharts Component', () => {
   it('renders Safe Runway Threshold Baseline and interactive tooltip data correctly', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
 
     await waitFor(() => {
       expect(screen.getByText(/Batas Aman: Rp 70\.000/i)).toBeInTheDocument();
@@ -65,7 +70,7 @@ describe('ExpenseCharts Component', () => {
       return mockDailyData;
     });
 
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
 
     const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
     fireEvent.click(monthlyBtn);
@@ -88,7 +93,7 @@ describe('ExpenseCharts Component', () => {
       items: [],
     });
 
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
     const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
     fireEvent.click(monthlyBtn);
 
@@ -100,12 +105,20 @@ describe('ExpenseCharts Component', () => {
   it('re-fetches analytics data when refreshTrigger prop updates', async () => {
     const fetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
-    const { rerender } = render(<ExpenseCharts refreshTrigger={0} />);
+    const { rerender } = render(
+      <MemoryRouter>
+        <ExpenseCharts refreshTrigger={0} />
+      </MemoryRouter>
+    );
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 
-    rerender(<ExpenseCharts refreshTrigger={1} />);
+    rerender(
+      <MemoryRouter>
+        <ExpenseCharts refreshTrigger={1} />
+      </MemoryRouter>
+    );
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
@@ -113,7 +126,7 @@ describe('ExpenseCharts Component', () => {
 
   it('renders zero-layout-shift skeleton loader with aria-busy while loading', () => {
     vi.spyOn(apiClient, 'apiFetch').mockImplementation(() => new Promise(() => {}));
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
     const skeleton = screen.getByTestId('expense-charts-skeleton');
     expect(skeleton).toBeInTheDocument();
     expect(skeleton).toHaveAttribute('aria-busy', 'true');
@@ -121,7 +134,7 @@ describe('ExpenseCharts Component', () => {
 
   it('enforces WCAG AA minimum 38px touch targets on period tab buttons', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
 
     await waitFor(() => {
       const dailyBtn = screen.getByRole('tab', { name: /Harian \(Daily\)/i });
@@ -135,7 +148,7 @@ describe('ExpenseCharts Component', () => {
   it('enforces tabular-nums on safe runway threshold badge and tooltip', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
 
     await waitFor(() => {
       const badge = screen.getByTestId('safe-runway-header-badge');
@@ -146,7 +159,7 @@ describe('ExpenseCharts Component', () => {
 
   it('renders elevated Safe Runway threshold badge in card header and unobtrusive baseline divider in chart', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
 
     await waitFor(() => {
       const badge = screen.getByTestId('safe-runway-header-badge');
@@ -168,7 +181,7 @@ describe('ExpenseCharts Component', () => {
       return mockDailyData;
     });
 
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
     await waitFor(() => {
       expect(screen.getByTestId('safe-runway-header-badge')).toBeInTheDocument();
     });
@@ -183,7 +196,7 @@ describe('ExpenseCharts Component', () => {
 
   it('daily bars render tooltips without threshold badge DOM collision in chart area', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
 
     await waitFor(() => {
       const chartArea = screen.getByRole('region', { name: /Grafik pengeluaran 7 hari terakhir vs ambang batas aman runway/i });
@@ -209,7 +222,7 @@ describe('ExpenseCharts Component', () => {
     };
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(zeroMonthlyData);
 
-    render(<ExpenseCharts />);
+    renderExpenseCharts();
     const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
     fireEvent.click(monthlyBtn);
 
@@ -217,6 +230,58 @@ describe('ExpenseCharts Component', () => {
       const zeroProgressBar = screen.getByRole('progressbar', { name: /Pendidikan: 0%/i });
       expect(zeroProgressBar).toBeInTheDocument();
       expect(zeroProgressBar).toHaveAttribute('aria-valuenow', '0');
+    });
+  });
+
+  it('mounts Monthly Donut chart on initial load when ?period=monthly is present in URL', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint.includes('period=monthly')) return mockMonthlyData;
+      return mockDailyData;
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/?period=monthly']}>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Makanan & Minuman')).toBeInTheDocument();
+      expect(screen.getByText(/Rp 300\.000/i)).toBeInTheDocument();
+      expect(screen.getByText(/75%/i)).toBeInTheDocument();
+    });
+  });
+
+  it('updates period search param while preserving existing view search param', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint.includes('period=monthly')) return mockMonthlyData;
+      return mockDailyData;
+    });
+
+    function LocationProbe() {
+      const location = useLocation();
+      return <span data-testid="url-search-probe">{location.search}</span>;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/?view=overview']}>
+        <ExpenseCharts />
+        <LocationProbe />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Min')).toBeInTheDocument();
+    });
+
+    const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
+    fireEvent.click(monthlyBtn);
+
+    await waitFor(() => {
+      const search = screen.getByTestId('url-search-probe').textContent;
+      const params = new URLSearchParams(search || '');
+      expect(params.get('period')).toBe('monthly');
+      expect(params.get('view')).toBe('overview');
     });
   });
 });

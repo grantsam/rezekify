@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { DashboardPage } from '../pages/DashboardPage';
 import { App } from '../App';
 import * as apiClient from '../services/apiClient';
@@ -103,7 +104,11 @@ describe('DashboardPage Component', () => {
       return null;
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
 
     expect(screen.getAllByText(/Rezekify/i)[0]).toBeInTheDocument();
 
@@ -126,7 +131,11 @@ describe('DashboardPage Component', () => {
       return null;
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
@@ -169,7 +178,11 @@ describe('DashboardPage Component', () => {
       return null;
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
@@ -203,7 +216,11 @@ describe('DashboardPage Component', () => {
       return null;
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
@@ -247,13 +264,82 @@ describe('DashboardPage Component', () => {
       return {};
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
 
     const settingsBtn = screen.getAllByRole('button', { name: /Pengaturan/i })[0];
     fireEvent.click(settingsBtn);
 
     await waitFor(() => {
       expect(screen.getByText('Pengaturan Akun & Sistem')).toBeInTheDocument();
+    });
+  });
+
+  it('mounts Ledger view on initial load when ?view=ledger is present in URL', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint === '/dashboard/summary') return mockSummary;
+      if (endpoint.startsWith('/transactions')) return mockTransactions;
+      if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint === '/categories') return [];
+      if (endpoint === '/vaults') return [];
+      if (endpoint.includes('/analytics/spending-breakdown')) {
+        return { period: 'daily', daily_safe_runway: 100000, total_spent_in_period: 0, items: [] };
+      }
+      return null;
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard?view=ledger']}>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Buku Besar (Ledger)')).toBeInTheDocument();
+      expect(screen.getAllByText(/Makan Siang Soto Ayam/i)[0]).toBeInTheDocument();
+    });
+  });
+
+  it('updates URL search params when switching view while preserving existing params like period', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint === '/dashboard/summary') return mockSummary;
+      if (endpoint.startsWith('/transactions')) return mockTransactions;
+      if (endpoint === '/accounts') return mockAccounts;
+      if (endpoint === '/categories') return [];
+      if (endpoint === '/vaults') return [];
+      if (endpoint.includes('/analytics/spending-breakdown')) {
+        return { period: 'monthly', total_spent: 0, items: [] };
+      }
+      return null;
+    });
+
+    function LocationProbe() {
+      const location = useLocation();
+      return <span data-testid="url-search-probe">{location.search}</span>;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard?period=monthly']}>
+        <DashboardPage />
+        <LocationProbe />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('url-search-probe')).toHaveTextContent('?period=monthly');
+    });
+
+    const ledgerNavBtn = screen.getAllByRole('button', { name: /Buku Besar/i })[0];
+    fireEvent.click(ledgerNavBtn);
+
+    await waitFor(() => {
+      const search = screen.getByTestId('url-search-probe').textContent;
+      const params = new URLSearchParams(search || '');
+      expect(params.get('view')).toBe('ledger');
+      expect(params.get('period')).toBe('monthly');
     });
   });
 });

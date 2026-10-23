@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { ExpenseCharts, PALETTE, resolveCategoryColor } from '../components/ExpenseCharts';
 import * as apiClient from '../services/apiClient';
 
@@ -37,7 +38,11 @@ describe('ExpenseCharts Living SVG & Stability', () => {
   it('locks container height at min-h-[380px] with flex flex-col justify-between', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
-    const { container } = render(<ExpenseCharts />);
+    const { container } = render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
     await waitFor(() => {
       expect(screen.getByText('Min')).toBeInTheDocument();
     });
@@ -52,7 +57,11 @@ describe('ExpenseCharts Living SVG & Stability', () => {
   it('renders Daily View with SVG curved area wave, dailyAreaGradient, Y-axis gridlines, and baseline divider', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
-    const { container } = render(<ExpenseCharts />);
+    const { container } = render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Min')).toBeInTheDocument();
@@ -89,7 +98,11 @@ describe('ExpenseCharts Living SVG & Stability', () => {
   it('renders interactive hover beacon and floating details when hovering daily data points', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
-    const { container } = render(<ExpenseCharts />);
+    const { container } = render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Min')).toBeInTheDocument();
@@ -115,7 +128,11 @@ describe('ExpenseCharts Living SVG & Stability', () => {
   it('renders Monthly View with SVG Donut Ring and category ribbons breakdown', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockMonthlyData);
 
-    const { container } = render(<ExpenseCharts />);
+    const { container } = render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
     const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
     fireEvent.click(monthlyBtn);
 
@@ -145,7 +162,11 @@ describe('ExpenseCharts Living SVG & Stability', () => {
       return mockDailyData;
     });
 
-    const { container } = render(<ExpenseCharts />);
+    const { container } = render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
     await waitFor(() => {
       expect(screen.getByText('Min')).toBeInTheDocument();
     });
@@ -184,7 +205,11 @@ describe('ExpenseCharts Living SVG & Stability', () => {
 
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockSlateData);
 
-    const { container } = render(<ExpenseCharts />);
+    const { container } = render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
     const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
     fireEvent.click(monthlyBtn);
 
@@ -220,7 +245,11 @@ describe('ExpenseCharts Living SVG & Stability', () => {
 
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(singleItemDaily);
 
-    const { container } = render(<ExpenseCharts />);
+    const { container } = render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Sab')).toBeInTheDocument();

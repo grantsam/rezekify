@@ -1,6 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { OverviewView } from '../components/OverviewView';
+
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
 import { LumpSumAllocationModal } from '../components/LumpSumAllocationModal';
 import { DashboardSummaryResponse, Vault, Account } from '../types/api';
 import * as apiClient from '../services/apiClient';

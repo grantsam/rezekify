@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@heroui/react';
 import { AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -28,12 +29,35 @@ type ActiveViewType = 'overview' | 'ledger' | 'vaults' | 'chat' | 'settings';
 
 export const DashboardPage = () => {
   const { user, logout } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const modals = useDashboardModals();
   const ledger = useTransactionsLedger();
   const dashboard = useDashboardData();
 
-  const [activeView, setActiveView] = useState<ActiveViewType>('overview');
+  const rawView = searchParams.get('view');
+  // ponytail: url view router; upgrade to react-router nested routes if views require individual code-splitting or deep sub-paths.
+  const activeView: ActiveViewType =
+    rawView === 'ledger' || rawView === 'vaults' || rawView === 'chat'
+      ? rawView
+      : 'overview';
+
+  const handleViewChange = (newView: ActiveViewType) => {
+    if (newView === 'settings') {
+      modals.openSettingsModal();
+      return;
+    }
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newView === 'overview') {
+        next.delete('view');
+      } else {
+        next.set('view', newView);
+      }
+      return next;
+    }, { replace: true });
+  };
+
   const [chatPrompt, setChatPrompt] = useState<string>('');
   const [txErrorMessage, setTxErrorMessage] = useState<string | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
@@ -88,13 +112,7 @@ export const DashboardPage = () => {
     <div className="relative min-h-screen bg-slate-50 dark:bg-[#0c0c0e] text-slate-900 dark:text-slate-100 transition-colors duration-300 overflow-hidden">
       <AppLayout
         activeView={activeView}
-        onViewChange={(view: ActiveViewType) => {
-          if (view === 'settings') {
-            modals.openSettingsModal();
-          } else {
-            setActiveView(view);
-          }
-        }}
+        onViewChange={handleViewChange}
         accounts={dashboard.accounts}
         transactionCount={ledger.pagination.total}
         upcomingBills={dashboard.summary?.upcoming_bills}
@@ -104,7 +122,7 @@ export const DashboardPage = () => {
         onOpenSettings={modals.openSettingsModal}
         onQuickCapturePress={() => {
           setChatPrompt('');
-          setActiveView('chat');
+          handleViewChange('chat');
         }}
         isDarkMode={isDarkMode}
         onToggleTheme={handleToggleTheme}
@@ -158,15 +176,15 @@ export const DashboardPage = () => {
               transactions={ledger.transactions}
               isLoading={dashboard.isLoading}
               refreshTrigger={dashboard.refreshTrigger}
-              onNavigateToLedger={() => setActiveView('ledger')}
-              onNavigateToVaults={() => setActiveView('vaults')}
+              onNavigateToLedger={() => handleViewChange('ledger')}
+              onNavigateToVaults={() => handleViewChange('vaults')}
               onOpenCreateAccount={modals.openCreateAccount}
               onOpenSimulateModal={modals.openSimulateModal}
               onOpenManualModal={modals.onOpenManualModal}
               onOpenLumpSumModal={() => setIsLumpSumModalOpen(true)}
               onOpenChat={(prompt) => {
                 if (prompt) setChatPrompt(prompt);
-                setActiveView('chat');
+                handleViewChange('chat');
               }}
               onDepositVault={modals.openDepositModal}
               onPayBillVault={modals.openPayBillModal}
@@ -187,7 +205,7 @@ export const DashboardPage = () => {
                   : null
               }
               initialPrompt={chatPrompt}
-              onNavigateToLedger={() => setActiveView('ledger')}
+              onNavigateToLedger={() => handleViewChange('ledger')}
               onDataMutated={refreshAllData}
             />
           )}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Card, CardBody } from '@heroui/react';
 import { BarChart3, AlertCircle } from 'lucide-react';
 import { apiFetch } from '../services/apiClient';
@@ -32,7 +33,23 @@ function formatCompactRupiah(amount: number): string {
 }
 
 export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
-  const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // ponytail: url period toggle; upgrade to custom date ranges if datepicker filter is added.
+  const period: 'daily' | 'monthly' = searchParams.get('period') === 'monthly' ? 'monthly' : 'daily';
+
+  const handlePeriodChange = (newPeriod: 'daily' | 'monthly') => {
+    if (newPeriod === period) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newPeriod === 'monthly') {
+        next.set('period', 'monthly');
+      } else {
+        next.delete('period');
+      }
+      return next;
+    }, { replace: true });
+  };
+
   const [data, setData] = useState<SpendingBreakdownResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,7 +165,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   variant="light"
                   role="tab"
                   aria-selected={period === 'daily'}
-                  onPress={() => setPeriod('daily')}
+                  onPress={() => handlePeriodChange('daily')}
                   className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
                     period === 'daily'
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
@@ -162,7 +179,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   variant="light"
                   role="tab"
                   aria-selected={period === 'monthly'}
-                  onPress={() => setPeriod('monthly')}
+                  onPress={() => handlePeriodChange('monthly')}
                   className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
                     period === 'monthly'
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
