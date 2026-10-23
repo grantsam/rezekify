@@ -38,16 +38,16 @@
 **Interfaces:**
 - Produces: 100% emoji-free codebase across all application components.
 
-- [ ] **Step 1: Write the failing test in `frontend/src/__tests__/ZeroEmojiAudit.test.ts`**
+- [x] **Step 1: Write the failing test in `frontend/src/__tests__/ZeroEmojiAudit.test.ts`**
 Write a Vitest test that scans all `.tsx` and `.ts` files in `frontend/src/` (excluding test files) with an emoji regex pattern:
 `const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/u;`
 Assert that 0 lines contain emoji matches.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 Run: `npm --prefix frontend test src/__tests__/ZeroEmojiAudit.test.ts`
 Expected: FAIL (detects remaining emojis in AuthPage, VaultsView, etc.).
 
-- [ ] **Step 3: Replace emojis with semantic Lucide SVG icons**
+- [x] **Step 3: Replace emojis with semantic Lucide SVG icons**
 - `AuthPage.tsx`:
   - Import `Coffee` from `lucide-react`.
   - Line 187: replace `✨` with `<Sparkles className="w-3.5 h-3.5 text-emerald-400 inline ml-1" />`.
@@ -62,11 +62,11 @@ Expected: FAIL (detects remaining emojis in AuthPage, VaultsView, etc.).
   - Line 512: replace `'✕ Tutup Simulasi'` with `'Tutup Simulasi'`.
   - Line 741: replace `'Lanjut Catat Pengeluaran ➔'` with `'Lanjut Catat Pengeluaran'`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 Run: `npm --prefix frontend test src/__tests__/ZeroEmojiAudit.test.ts`
 Expected: PASS (0 emojis detected).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add frontend/src/pages/AuthPage.tsx frontend/src/components/VaultsView.tsx frontend/src/components/ChatMessageList.tsx frontend/src/components/SettingsModal.tsx frontend/src/components/OverviewView.tsx frontend/src/__tests__/ZeroEmojiAudit.test.ts
 git commit -m "feat(craft): eradicate all raw unicode emojis across frontend with Lucide icons"
@@ -85,24 +85,24 @@ git commit -m "feat(craft): eradicate all raw unicode emojis across frontend wit
 **Interfaces:**
 - Produces: Harmonized Modern Zinc/Emerald tokens and consolidated single simulation pathway.
 
-- [ ] **Step 1: Update tests in `LedgerView.test.tsx` and `VaultsView.test.tsx`**
+- [x] **Step 1: Update tests in `LedgerView.test.tsx` and `VaultsView.test.tsx`**
 - In `LedgerView.test.tsx`: remove assertions expecting the duplicate `Simulasi Belanja` button.
 - In `VaultsView.test.tsx`: verify updated button text and active tab styling.
 
-- [ ] **Step 2: Implement changes in `VaultsView.tsx`**
+- [x] **Step 2: Implement changes in `VaultsView.tsx`**
 - Replace all legacy `bg-gradient-to-r from-[#0F766E] to-[#10B981]` with `bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20`.
 - Update tab filter pills to use standard emerald active states:
   `activeTab === ... ? 'bg-emerald-500 text-white shadow-md shadow-emerald-900/20' : 'text-slate-600 dark:text-zinc-300 hover:text-emerald-500 hover:bg-zinc-800/40'`.
 
-- [ ] **Step 3: Implement changes in `LedgerView.tsx`**
+- [x] **Step 3: Implement changes in `LedgerView.tsx`**
 - Replace `+ Catat Manual` legacy gradient with `bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20`.
 - Remove redundant `<Button onPress={onOpenSimulateModal}>Simulasi Belanja</Button>` from the header action cluster.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npm --prefix frontend test src/__tests__/VaultsView.test.tsx src/__tests__/LedgerView.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add frontend/src/components/VaultsView.tsx frontend/src/components/LedgerView.tsx frontend/src/__tests__/VaultsView.test.tsx frontend/src/__tests__/LedgerView.test.tsx
 git commit -m "style(views): harmonize design tokens and consolidate simulation in Vaults and Ledger"
@@ -119,16 +119,16 @@ git commit -m "style(views): harmonize design tokens and consolidate simulation 
 **Interfaces:**
 - Produces: Butter-smooth form transitions when switching between login, register, forgot password, and reset password.
 
-- [ ] **Step 1: Update `AuthPage.tsx` with `AnimatePresence`**
+- [x] **Step 1: Update `AuthPage.tsx` with `AnimatePresence`**
 - Import `AnimatePresence` from `framer-motion`.
 - Wrap the form render block in `<AnimatePresence mode="wait">` with `<motion.form key={mode} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} ...>`.
 - Add tactile `whileTap={{ scale: 0.98 }}` to primary submit buttons.
 
-- [ ] **Step 2: Run AuthPage tests**
+- [x] **Step 2: Run AuthPage tests**
 Run: `npm --prefix frontend test src/__tests__/AuthPage.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 ```bash
 git add frontend/src/pages/AuthPage.tsx frontend/src/__tests__/AuthPage.test.tsx
 git commit -m "feat(auth): implement smooth mode crossfades with AnimatePresence"
@@ -141,27 +141,27 @@ git commit -m "feat(auth): implement smooth mode crossfades with AnimatePresence
 **Files:**
 - Entire frontend & backend matrices.
 
-- [ ] **Step 1: Run full frontend Vitest test suite**
+- [x] **Step 1: Run full frontend Vitest test suite**
 Run: `npm --prefix frontend test -- --run`
 Expected: All suites PASS.
 
-- [ ] **Step 2: Run TypeScript strict check and production build**
+- [x] **Step 2: Run TypeScript strict check and production build**
 Run: `cd frontend && npm run build`
 Expected: Clean build with 0 errors.
 
-- [ ] **Step 3: Run Impeccable static detector check**
+- [x] **Step 3: Run Impeccable static detector check**
 Run: `"C:/Users/grant/.claude/plugins/cache/impeccable/impeccable/4.3.1/skills/impeccable/scripts/impeccable.cmd" detect --json frontend/src`
 Expected: 0 findings.
 
-- [ ] **Step 4: Rebuild and restart Docker frontend container**
+- [x] **Step 4: Rebuild and restart Docker frontend container**
 Run: `docker compose build frontend && docker compose up -d frontend`
 Expected: Container rebuilt and healthy.
 
-- [ ] **Step 5: Run backend pytest suite**
+- [x] **Step 5: Run backend pytest suite**
 Run: `pytest tests/test_all_phases_e2e_lifecycle.py`
 Expected: 1/1 passed.
 
-- [ ] **Step 6: Commit final verification**
+- [x] **Step 6: Commit final verification**
 ```bash
 git commit --allow-empty -m "chore(audit): verify app-wide craft polish and zero-emoji test matrix"
 ```
