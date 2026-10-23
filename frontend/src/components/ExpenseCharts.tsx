@@ -128,37 +128,24 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
   }, [dailyData, maxDailyAmount]);
 
   return (
-    <Card className="min-h-[380px] flex flex-col justify-between bg-white/85 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl shadow-lg shadow-black/5 text-slate-900 dark:text-white select-none text-left">
+    <Card
+      data-testid="expense-charts-card"
+      className="min-h-[380px] flex flex-col justify-between bg-white/85 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl shadow-lg shadow-black/5 text-slate-900 dark:text-white select-none text-left"
+    >
       <CardBody className="p-5 sm:p-6 flex flex-col justify-between flex-1">
         <div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
+          <div className="mb-6 space-y-2">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 shadow-xs">
                   <BarChart3 className="w-5 h-5" />
                 </div>
                 <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">Analitik Pengeluaran Terarah</h3>
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-1">
-                {period === 'daily'
-                  ? 'Tren belanja 7 hari terakhir vs ambang batas Daily Safe Runway'
-                  : 'Distribusi pengeluaran per kategori pada siklus berjalan'}
-              </p>
-            </div>
-            <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap sm:flex-nowrap">
-              {period === 'daily' && threshold > 0 && (
-                <div
-                  data-testid="safe-runway-header-badge"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-mono font-extrabold shadow-xs select-none tabular-nums"
-                >
-                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                  <span>Batas Aman: Rp {threshold.toLocaleString('id-ID')}/hari</span>
-                </div>
-              )}
               <div
                 role="tablist"
                 aria-label="Pilih rentang waktu analitik"
-                className="flex bg-slate-100 dark:bg-zinc-900/60 p-1 rounded-2xl text-xs border border-slate-200/80 dark:border-zinc-800/80"
+                className="flex bg-slate-100 dark:bg-zinc-900/60 p-1 rounded-2xl text-xs border border-slate-200/80 dark:border-zinc-800/80 shrink-0 w-[240px]"
               >
                 <Button
                   size="sm"
@@ -166,7 +153,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   role="tab"
                   aria-selected={period === 'daily'}
                   onPress={() => handlePeriodChange('daily')}
-                  className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
+                  className={`flex-1 min-h-[38px] px-2 py-1 rounded-xl font-extrabold transition-all text-xs ${
                     period === 'daily'
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
                       : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
@@ -180,7 +167,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   role="tab"
                   aria-selected={period === 'monthly'}
                   onPress={() => handlePeriodChange('monthly')}
-                  className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-extrabold transition-all ${
+                  className={`flex-1 min-h-[38px] px-2 py-1 rounded-xl font-extrabold transition-all text-xs ${
                     period === 'monthly'
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
                       : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
@@ -189,6 +176,22 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   Bulanan (Monthly)
                 </Button>
               </div>
+            </div>
+            <div className="flex items-center justify-between gap-2 min-h-[28px]">
+              <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium truncate">
+                {period === 'daily'
+                  ? 'Tren belanja 7 hari terakhir vs ambang batas Daily Safe Runway'
+                  : 'Distribusi pengeluaran per kategori pada siklus berjalan'}
+              </p>
+              {period === 'daily' && threshold > 0 && (
+                <div
+                  data-testid="safe-runway-header-badge"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-mono font-extrabold shadow-xs select-none tabular-nums shrink-0"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                  <span>Batas Aman: Rp {threshold.toLocaleString('id-ID')}/hari</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -270,7 +273,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
 
                 <svg
                   viewBox="0 0 560 160"
-                  className="w-full h-44 overflow-visible"
+                  className="w-full h-40 overflow-visible"
                   preserveAspectRatio="none"
                 >
                   <defs>
@@ -538,9 +541,9 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           ) : null}
         </div>
 
-        {/* Legend Row for Daily */}
-        {period === 'daily' && dailyData && hasExpenses && (
-          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 font-bold px-2 pt-3">
+        {/* Legend / Status Footer Row */}
+        {period === 'daily' && dailyData && hasExpenses ? (
+          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 font-bold px-2 pt-3 min-h-[32px]">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Sesuai Jatah
             </span>
@@ -548,7 +551,12 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Melebihi Jatah
             </span>
           </div>
-        )}
+        ) : period === 'monthly' && monthlyData && hasExpenses ? (
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold px-2 pt-3 min-h-[32px]">
+            <span>{monthlyData.items.length} Kategori Pengeluaran Terdata</span>
+            <span>Distribusi Siklus Berjalan</span>
+          </div>
+        ) : null}
       </CardBody>
     </Card>
   );

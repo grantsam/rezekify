@@ -42,11 +42,12 @@ export function setAuthToken(token: string): void {
 }
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('auth_token');
 }
 
 export function clearAuthToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('auth_token');
 }
 
 export function getAuthHeader(): Record<string, string> {
