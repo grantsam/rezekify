@@ -124,6 +124,9 @@ class CategorySpendingItemModel(BaseModel):
     amount: Decimal
     percentage: Decimal = Field(..., description="Percentage of total cycle spending, e.g. 42.5")
     color: str
+    budget_limit: Optional[Decimal] = None
+    budget_spent_pct: Optional[Decimal] = None
+    budget_status: Optional[str] = None
 
 
 class MonthlySpendingResponse(BaseModel):
@@ -606,6 +609,9 @@ def get_spending_breakdown(
                 amount=item.amount,
                 percentage=item.percentage,
                 color=item.color,
+                budget_limit=item.budget_limit,
+                budget_spent_pct=item.budget_spent_pct,
+                budget_status=item.budget_status,
             )
             for item in monthly_report.items
         ],

@@ -91,6 +91,9 @@ class CategoryBreakdownItem(NamedTuple):
     amount: Decimal
     percentage: Decimal
     color: str
+    budget_limit: Optional[Decimal] = None
+    budget_spent_pct: Optional[Decimal] = None
+    budget_status: Optional[str] = None  # "HEALTHY" | "WARNING" | "OVER_BUDGET" | None
 
 
 class CategorySpendingBreakdownReport(NamedTuple):
@@ -450,6 +453,7 @@ class RunwayService:
                 Category.id.label("category_id"),
                 Category.name.label("category_name"),
                 Category.color.label("category_color"),
+                Category.monthly_budget.label("monthly_budget"),
                 func.coalesce(func.sum(LedgerEntry.amount), Decimal("0.00")).label("total_amount"),
             )
             .select_from(LedgerEntry)
@@ -462,7 +466,7 @@ class RunwayService:
                 func.date(Transaction.transaction_date) >= cycle_start.isoformat(),
                 func.date(Transaction.transaction_date) <= cycle_end.isoformat(),
             )
-            .group_by(Category.id, Category.name, Category.color)
+            .group_by(Category.id, Category.name, Category.color, Category.monthly_budget)
             .order_by(func.sum(LedgerEntry.amount).desc())
             .all()
         )
@@ -476,6 +480,20 @@ class RunwayService:
                 pct = ((amt / total_spent) * Decimal("100")).quantize(Decimal("0.1"))
                 cat_name = r.category_name if r.category_name is not None else "Lainnya / Tanpa Kategori"
                 cat_color = r.category_color or "#64748b"
+
+                budget = Decimal(str(r.monthly_budget)) if r.monthly_budget is not None else None
+                budget_spent_pct: Optional[Decimal] = None
+                budget_status: Optional[str] = None
+
+                if budget is not None and budget > Decimal("0.00"):
+                    budget_spent_pct = ((amt / budget) * Decimal("100")).quantize(Decimal("0.1"))
+                    if amt > budget:
+                        budget_status = "OVER_BUDGET"
+                    elif amt >= (budget * Decimal("0.80")):
+                        budget_status = "WARNING"
+                    else:
+                        budget_status = "HEALTHY"
+
                 items.append(
                     CategoryBreakdownItem(
                         category_id=r.category_id,
@@ -483,6 +501,9 @@ class RunwayService:
                         amount=amt,
                         percentage=pct,
                         color=cat_color,
+                        budget_limit=budget,
+                        budget_spent_pct=budget_spent_pct,
+                        budget_status=budget_status,
                     )
                 )
 

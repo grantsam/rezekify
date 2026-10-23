@@ -864,5 +864,125 @@ def test_survival_guidance_zero_days_remaining_clamped():
     assert "selama 1 hari ke depan" in guidance.tactical_action
 
 
+def test_category_breakdown_with_budgets_and_edge_cases(db_session, sample_user):
+    sample_user.monthly_cycle_day = 1
+    acc = Account(
+        user_id=sample_user.id,
+        name="Main Account",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("2000000.00"),
+    )
+    db_session.add(acc)
+
+    cat_healthy = Category(
+        user_id=sample_user.id,
+        name="Kategori Healthy",
+        category_type=CategoryType.EXPENSE,
+        monthly_budget=Decimal("100000.00"),
+    )
+    cat_warning_min = Category(
+        user_id=sample_user.id,
+        name="Kategori Warning Min",
+        category_type=CategoryType.EXPENSE,
+        monthly_budget=Decimal("100000.00"),
+    )
+    cat_warning_max = Category(
+        user_id=sample_user.id,
+        name="Kategori Warning Max",
+        category_type=CategoryType.EXPENSE,
+        monthly_budget=Decimal("100000.00"),
+    )
+    cat_over = Category(
+        user_id=sample_user.id,
+        name="Kategori Over",
+        category_type=CategoryType.EXPENSE,
+        monthly_budget=Decimal("100000.00"),
+    )
+    cat_no_budget = Category(
+        user_id=sample_user.id,
+        name="Kategori Tanpa Budget",
+        category_type=CategoryType.EXPENSE,
+        monthly_budget=None,
+    )
+    cat_zero_budget = Category(
+        user_id=sample_user.id,
+        name="Kategori Nol Budget",
+        category_type=CategoryType.EXPENSE,
+        monthly_budget=Decimal("0.00"),
+    )
+    db_session.add_all([cat_healthy, cat_warning_min, cat_warning_max, cat_over, cat_no_budget, cat_zero_budget])
+    db_session.flush()
+
+    cases = [
+        (cat_healthy, Decimal("50000.00")),
+        (cat_warning_min, Decimal("80000.00")),
+        (cat_warning_max, Decimal("100000.00")),
+        (cat_over, Decimal("120000.00")),
+        (cat_no_budget, Decimal("10000.00")),
+        (cat_zero_budget, Decimal("10000.00")),
+    ]
+
+    for cat, amount in cases:
+        tx = Transaction(
+            user_id=sample_user.id,
+            description=f"Spend for {cat.name}",
+            transaction_date=datetime(2026, 9, 10, 12, 0, tzinfo=timezone.utc),
+        )
+        db_session.add(tx)
+        db_session.flush()
+        entry = LedgerEntry(
+            transaction_id=tx.id,
+            user_id=sample_user.id,
+            category_id=cat.id,
+            account_id=acc.id,
+            entry_type=EntryType.DEBIT,
+            amount=amount,
+        )
+        db_session.add(entry)
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.get_category_spending_breakdown(user_id=sample_user.id, today=date(2026, 9, 15))
+
+    item_map = {item.category_name: item for item in report.items}
+
+    # Healthy (< 80%)
+    item_h = item_map["Kategori Healthy"]
+    assert item_h.budget_limit == Decimal("100000.00")
+    assert item_h.budget_spent_pct == Decimal("50.0")
+    assert item_h.budget_status == "HEALTHY"
+
+    # Warning min (== 80%)
+    item_w_min = item_map["Kategori Warning Min"]
+    assert item_w_min.budget_limit == Decimal("100000.00")
+    assert item_w_min.budget_spent_pct == Decimal("80.0")
+    assert item_w_min.budget_status == "WARNING"
+
+    # Warning max (== 100%)
+    item_w_max = item_map["Kategori Warning Max"]
+    assert item_w_max.budget_limit == Decimal("100000.00")
+    assert item_w_max.budget_spent_pct == Decimal("100.0")
+    assert item_w_max.budget_status == "WARNING"
+
+    # Over budget (> 100%)
+    item_o = item_map["Kategori Over"]
+    assert item_o.budget_limit == Decimal("100000.00")
+    assert item_o.budget_spent_pct == Decimal("120.0")
+    assert item_o.budget_status == "OVER_BUDGET"
+
+    # None budget
+    item_nb = item_map["Kategori Tanpa Budget"]
+    assert item_nb.budget_limit is None
+    assert item_nb.budget_spent_pct is None
+    assert item_nb.budget_status is None
+
+    # Zero budget (0.00)
+    item_zb = item_map["Kategori Nol Budget"]
+    assert item_zb.budget_limit == Decimal("0.00")
+    assert item_zb.budget_spent_pct is None
+    assert item_zb.budget_status is None
+
+
+
 
 
