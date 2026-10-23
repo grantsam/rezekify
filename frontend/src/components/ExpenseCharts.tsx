@@ -240,7 +240,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
             <div
               role="region"
               aria-label="Grafik pengeluaran 7 hari terakhir vs ambang batas aman runway"
-              className="space-y-3"
+              className="space-y-3 min-h-[224px] flex flex-col justify-between"
             >
               {/* Screen-reader accessible transcript */}
               <div className="sr-only">
@@ -419,7 +419,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               </div>
             </div>
           ) : period === 'monthly' && monthlyData ? (
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center py-2 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center py-2 flex-1 min-h-[224px]">
               {/* Left Column: Segmented SVG Donut Ring */}
               <div className="md:col-span-5 flex items-center justify-center relative">
                 <svg viewBox="0 0 160 160" className="w-40 h-40">

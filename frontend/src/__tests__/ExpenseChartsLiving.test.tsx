@@ -54,6 +54,45 @@ describe('ExpenseCharts Living SVG & Stability', () => {
     expect(card.className).toContain('justify-between');
   });
 
+  it('enforces min-h-[224px] zero-CLS layout lock on both Daily and Monthly chart containers', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
+      if (endpoint.includes('period=monthly')) return mockMonthlyData;
+      return mockDailyData;
+    });
+
+    render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Min')).toBeInTheDocument();
+    });
+
+    const dailyContainer = screen.getByRole('region', {
+      name: /Grafik pengeluaran 7 hari terakhir/i,
+    });
+    expect(dailyContainer.className).toContain('min-h-[224px]');
+    expect(dailyContainer.className).toContain('space-y-3');
+    expect(dailyContainer.className).toContain('flex');
+    expect(dailyContainer.className).toContain('flex-col');
+    expect(dailyContainer.className).toContain('justify-between');
+
+    const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
+    fireEvent.click(monthlyBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Makanan & Minuman')).toBeInTheDocument();
+    });
+
+    const monthlyContainer = screen.getByText('Makanan & Minuman').closest('.grid');
+    expect(monthlyContainer).not.toBeNull();
+    expect(monthlyContainer?.className).toContain('min-h-[224px]');
+    expect(monthlyContainer?.className).toContain('grid');
+    expect(monthlyContainer?.className).toContain('flex-1');
+  });
+
   it('renders Daily View with SVG curved area wave, dailyAreaGradient, Y-axis gridlines, and baseline divider', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
 
