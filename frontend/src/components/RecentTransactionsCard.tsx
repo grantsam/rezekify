@@ -52,9 +52,9 @@ export const RecentTransactionsCard: React.FC<RecentTransactionsCardProps> = ({
             variant="flat"
             onPress={onViewAll}
             endContent={<ArrowRight className="w-3.5 h-3.5" />}
-            className="bg-slate-100 dark:bg-zinc-800 hover:bg-zinc-700 text-slate-700 dark:text-slate-200 hover:text-emerald-500 dark:hover:text-emerald-400 border border-slate-200/80 dark:border-zinc-800/80 min-h-[36px] rounded-xl text-xs font-bold px-3 transition-all"
+            className="shrink-0 min-w-0 max-w-[200px] bg-slate-100 dark:bg-zinc-800 hover:bg-zinc-700 text-slate-700 dark:text-slate-200 hover:text-emerald-500 dark:hover:text-emerald-400 border border-slate-200/80 dark:border-zinc-800/80 min-h-[36px] rounded-xl text-xs font-bold px-3 transition-all"
           >
-            Lihat Semua di Buku Besar
+            <span className="truncate">Lihat Semua<span className="hidden xl:inline"> di Buku Besar</span></span>
           </Button>
         )}
       </div>

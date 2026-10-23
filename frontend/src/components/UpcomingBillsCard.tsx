@@ -43,20 +43,30 @@ export const UpcomingBillsCard: React.FC<Props> = ({
     return (
       <div
         data-testid="upcoming-bills-empty"
-        className="bg-[#141417] border border-zinc-800/80 rounded-2xl p-5 mb-6 text-zinc-300 shadow-sm flex items-center justify-between gap-4"
+        className="w-full h-full bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] p-6 shadow-lg shadow-black/5 text-slate-900 dark:text-white flex flex-col justify-between"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-zinc-800/80">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Tagihan Mendatang (H-7)</h3>
           </div>
-          <div>
-            <h4 className="text-sm font-semibold text-zinc-100">Semua Komitmen Aman</h4>
-            <p className="text-xs text-zinc-400 mt-0.5">Tidak ada tagihan atau komitmen jatuh tempo dalam 7 hari kedepan.</p>
-          </div>
+          <Chip size="sm" variant="flat" color="success" className="text-xs font-medium shrink-0">
+            H-7 Bersih
+          </Chip>
         </div>
-        <Chip size="sm" variant="flat" color="success" className="text-xs font-medium shrink-0">
-          H-7 Bersih
-        </Chip>
+        <div className="py-8 my-auto text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mx-auto mb-3">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white">Semua Komitmen Aman</h4>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-xs mx-auto">
+            Tidak ada tagihan atau komitmen jatuh tempo dalam 7 hari kedepan.
+          </p>
+        </div>
+        <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800/80 text-[11px] text-slate-500 dark:text-zinc-400 flex items-center justify-between">
+          <span>Status Siklus: Terkendali</span>
+          <span className="text-emerald-500 font-semibold">Bebas Tunggakan</span>
+        </div>
       </div>
     );
   }
