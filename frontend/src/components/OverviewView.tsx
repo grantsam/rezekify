@@ -16,6 +16,7 @@ import {
   Smartphone,
   Banknote,
   Plus,
+  CreditCard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
@@ -326,7 +327,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           {accounts
             .filter((acc) => acc.is_active !== false)
             .map((acc) => {
+              const isLiability = acc.account_type === 'LIABILITY';
               const getAccountIcon = (type: string) => {
+                if (type === 'LIABILITY') return CreditCard;
                 if (type === 'EWALLET') return Smartphone;
                 if (type === 'CASH') return Banknote;
                 return Building2;
@@ -335,13 +338,34 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               return (
                 <div
                   key={acc.id}
-                  className="flex items-center gap-2 px-3.5 py-1.5 min-h-[36px] rounded-full bg-white/80 dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 shadow-xs shrink-0 transition-all hover:border-emerald-500/40"
+                  className={`flex items-center gap-2 px-3.5 py-1.5 min-h-[36px] rounded-full shadow-xs shrink-0 transition-all ${
+                    isLiability
+                      ? 'bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/30 dark:border-rose-500/20 text-rose-950 dark:text-rose-100 hover:border-rose-500/50'
+                      : 'bg-white/80 dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 hover:border-emerald-500/40'
+                  }`}
                 >
-                  <AccIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <AccIcon className={`w-3.5 h-3.5 shrink-0 ${isLiability ? 'text-rose-500' : 'text-emerald-500'}`} />
                   <span className="font-semibold text-slate-700 dark:text-zinc-300">{acc.name}:</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
-                    {formatRupiah(acc.current_balance)}
+                  <span
+                    className={`font-mono font-bold tabular-nums ${
+                      isLiability ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'
+                    }`}
+                  >
+                    {isLiability ? `Tagihan ${formatRupiah(acc.current_balance)}` : formatRupiah(acc.current_balance)}
                   </span>
+                  {isLiability && Number(acc.current_balance) > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenManualModal?.();
+                      }}
+                      className="ml-1 px-2 py-0.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-600 dark:text-rose-300 text-[10px] font-extrabold transition-all cursor-pointer select-none"
+                      aria-label={`Lunasi tagihan ${acc.name}`}
+                    >
+                      Lunasi
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -434,6 +458,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   {formatRupiah(summary?.operational_free_cash ?? 0)}
                 </span>
               </div>
+              {Number(summary?.total_liability_debt || 0) > 0 && (
+                <div data-testid="liability-debt-badge" className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                  <CreditCard className="w-3 h-3 text-rose-500 shrink-0" />
+                  <span>Tagihan Berjalan: {formatRupiah(summary?.total_liability_debt || 0)}</span>
+                </div>
+              )}
               <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
                 Sisa uang yang bebas kamu pakai jajan tanpa ganggu tagihan & tabungan.
               </p>

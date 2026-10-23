@@ -185,6 +185,89 @@ describe('OverviewView Component', () => {
     expect(handleOpenCreateAccount).toHaveBeenCalledTimes(1);
   });
 
+  it('renders liability account capsule with rose accent, CreditCard icon, Tagihan label, and Lunasi button', () => {
+    const handleOpenManualModal = vi.fn();
+    const liabilityAccounts: Account[] = [
+      { id: 'acc-spaylater', name: 'Shopee PayLater', account_type: 'LIABILITY', current_balance: 450000, is_active: true },
+    ];
+
+    render(
+      <OverviewView
+        summary={mockSummary}
+        vaults={mockVaults}
+        accounts={liabilityAccounts}
+        transactions={mockTransactions}
+        isLoading={false}
+        refreshTrigger={0}
+        onNavigateToVaults={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+        onOpenManualModal={handleOpenManualModal}
+      />
+    );
+
+    const strip = screen.getByTestId('account-capsule-strip');
+    expect(strip).toBeInTheDocument();
+
+    const capsule = within(strip).getByText('Shopee PayLater:').closest('div');
+    expect(capsule).toBeInTheDocument();
+    expect(capsule).toHaveClass('bg-rose-500/5');
+
+    expect(within(strip).getByText(/Tagihan Rp\s*450\.000/)).toBeInTheDocument();
+
+    const lunasiBtn = within(strip).getByRole('button', { name: /Lunasi tagihan Shopee PayLater/i });
+    expect(lunasiBtn).toBeInTheDocument();
+    fireEvent.click(lunasiBtn);
+    expect(handleOpenManualModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides Lunasi button when liability account balance is 0', () => {
+    const liabilityAccounts: Account[] = [
+      { id: 'acc-spaylater', name: 'Shopee PayLater', account_type: 'LIABILITY', current_balance: 0, is_active: true },
+    ];
+
+    render(
+      <OverviewView
+        summary={mockSummary}
+        vaults={mockVaults}
+        accounts={liabilityAccounts}
+        transactions={mockTransactions}
+        isLoading={false}
+        refreshTrigger={0}
+        onNavigateToVaults={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+      />
+    );
+
+    const strip = screen.getByTestId('account-capsule-strip');
+    expect(within(strip).getByText('Shopee PayLater:')).toBeInTheDocument();
+    expect(within(strip).getByText(/Tagihan Rp\s*0/)).toBeInTheDocument();
+    expect(within(strip).queryByRole('button', { name: /Lunasi tagihan Shopee PayLater/i })).not.toBeInTheDocument();
+  });
+
+  it('renders liability debt badge in Uang Bebas Pakai card when total_liability_debt > 0', () => {
+    const summaryWithDebt: DashboardSummaryResponse = {
+      ...mockSummary,
+      total_liability_debt: 750000,
+    };
+
+    render(
+      <OverviewView
+        summary={summaryWithDebt}
+        vaults={mockVaults}
+        accounts={mockAccounts}
+        transactions={mockTransactions}
+        isLoading={false}
+        refreshTrigger={0}
+        onNavigateToVaults={vi.fn()}
+        onOpenCreateAccount={vi.fn()}
+      />
+    );
+
+    const badge = screen.getByTestId('liability-debt-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent(/Tagihan Berjalan:\s*Rp\s*750\.000/);
+  });
+
   it('renders negative remaining budget correctly when today_spent exceeds daily runway in 3-Card Bento layout', () => {
     const overspentSummary: DashboardSummaryResponse = {
       ...mockSummary,
