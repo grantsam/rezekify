@@ -303,4 +303,79 @@ describe('ExpenseCharts Living SVG & Stability', () => {
       expect(d).not.toContain('Infinity');
     });
   });
+
+  it('renders dual-meter budget indicators and status badges in monthly breakdown', async () => {
+    const mockMonthlyWithBudgets = {
+      period: 'monthly' as const,
+      cycle_start_date: '2026-09-01',
+      cycle_end_date: '2026-09-19',
+      total_spent: 2000000,
+      items: [
+        {
+          category_id: 'cat-1',
+          category_name: 'Makanan & Minuman',
+          amount: 500000,
+          percentage: 25.0,
+          color: '#10B981',
+          budget_limit: 1000000,
+          budget_spent_pct: 50.0,
+          budget_status: 'HEALTHY' as const,
+        },
+        {
+          category_id: 'cat-2',
+          category_name: 'Transportasi',
+          amount: 850000,
+          percentage: 42.5,
+          color: '#06B6D4',
+          budget_limit: 1000000,
+          budget_spent_pct: 85.0,
+          budget_status: 'WARNING' as const,
+        },
+        {
+          category_id: 'cat-3',
+          category_name: 'Belanja',
+          amount: 550000,
+          percentage: 27.5,
+          color: '#F59E0B',
+          budget_limit: 500000,
+          budget_spent_pct: 110.0,
+          budget_status: 'OVER_BUDGET' as const,
+        },
+        {
+          category_id: 'cat-4',
+          category_name: 'Lain-lain',
+          amount: 100000,
+          percentage: 5.0,
+          color: '#8B5CF6',
+          budget_limit: null,
+          budget_spent_pct: null,
+          budget_status: null,
+        },
+      ],
+    };
+
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockMonthlyWithBudgets);
+
+    render(
+      <MemoryRouter>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
+
+    const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
+    fireEvent.click(monthlyBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Makanan & Minuman')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Sisa Rp 500\.000/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sisa Rp 150\.000/i)).toBeInTheDocument();
+    expect(screen.getByText(/Lewat Rp 50\.000/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tanpa limit/i)).toBeInTheDocument();
+
+    const overBudgetFill = screen.getByTestId('budget-progress-fill-cat-3');
+    expect(overBudgetFill).toBeInTheDocument();
+    expect(overBudgetFill.style.width).toBe('100%');
+  });
 });

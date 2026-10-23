@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Card, CardBody } from '@heroui/react';
-import { BarChart3, AlertCircle } from 'lucide-react';
+import { BarChart3, AlertCircle, CheckCircle2, AlertTriangle, TrendingUp, Target } from 'lucide-react';
 import { apiFetch } from '../services/apiClient';
+import { formatRupiah } from '../utils/formatters';
 import { SpendingBreakdownResponse, DailySpendingResponse, MonthlySpendingResponse } from '../types/api';
 
 interface Props {
@@ -486,6 +487,22 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                 {monthlyData.items.map((item, idx) => {
                   const isHovered = hoveredCategoryIndex === idx;
                   const itemColor = resolveCategoryColor(item.color, idx);
+                  const hasBudget = Boolean(item.budget_limit && item.budget_limit > 0);
+                  const diff = hasBudget && item.budget_limit ? item.budget_limit - item.amount : 0;
+                  const status =
+                    item.budget_status ||
+                    (diff < 0
+                      ? 'OVER_BUDGET'
+                      : item.budget_limit && item.amount >= item.budget_limit * 0.8
+                      ? 'WARNING'
+                      : 'HEALTHY');
+
+                  const budgetFillColor =
+                    status === 'OVER_BUDGET'
+                      ? 'bg-rose-500'
+                      : status === 'WARNING'
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500';
 
                   return (
                     <div
@@ -507,6 +524,29 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                           <span className="text-slate-800 dark:text-slate-200 font-extrabold truncate">
                             {item.category_name}
                           </span>
+                          {hasBudget ? (
+                            status === 'OVER_BUDGET' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                <TrendingUp className="w-3 h-3 text-rose-500 shrink-0" />
+                                <span>Lewat {formatRupiah(Math.abs(diff))}</span>
+                              </span>
+                            ) : status === 'WARNING' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                                <span>Sisa {formatRupiah(diff)}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                                <span>Sisa {formatRupiah(diff)}</span>
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700/60">
+                              <Target className="w-3 h-3 shrink-0" />
+                              <span>Tanpa limit</span>
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 font-mono tabular-nums shrink-0 ml-2">
                           <span className="text-slate-500 dark:text-zinc-400 font-bold text-[11px]">
@@ -514,25 +554,49 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                           </span>
                           <span className="text-slate-800 dark:text-slate-200 font-extrabold">
                             Rp {item.amount.toLocaleString('id-ID')}
+                            {hasBudget && item.budget_limit && (
+                              <span className="text-slate-400 dark:text-zinc-500 font-normal">
+                                {' '}/ Rp {item.budget_limit.toLocaleString('id-ID')}
+                              </span>
+                            )}
                           </span>
                         </div>
                       </div>
-                      <div
-                        role="progressbar"
-                        aria-label={`${item.category_name}: ${item.percentage}%`}
-                        aria-valuenow={item.percentage}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        className="w-full h-1.5 bg-slate-100 dark:bg-zinc-900 rounded-full overflow-hidden"
-                      >
+                      {hasBudget ? (
                         <div
-                          className="h-full rounded-full transition-all duration-300"
-                          style={{
-                            width: `${item.percentage}%`,
-                            backgroundColor: itemColor,
-                          }}
-                        />
-                      </div>
+                          role="progressbar"
+                          aria-label={`${item.category_name} budget: ${Math.round(item.budget_spent_pct || 0)}%`}
+                          aria-valuenow={Math.min(100, item.budget_spent_pct || 0)}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          className="w-full h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden mt-1.5"
+                        >
+                          <div
+                            data-testid={`budget-progress-fill-${item.category_id || item.category_name}`}
+                            className={`h-full rounded-full transition-all duration-300 ${budgetFillColor}`}
+                            style={{
+                              width: `${Math.min(100, item.budget_spent_pct || 0)}%`,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          role="progressbar"
+                          aria-label={`${item.category_name}: ${item.percentage}%`}
+                          aria-valuenow={item.percentage}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          className="w-full h-1.5 bg-slate-100 dark:bg-zinc-900 rounded-full overflow-hidden"
+                        >
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${item.percentage}%`,
+                              backgroundColor: itemColor,
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
