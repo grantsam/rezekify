@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ExpenseCharts } from '../components/ExpenseCharts';
+import { ExpenseCharts, PALETTE, resolveCategoryColor } from '../components/ExpenseCharts';
 import * as apiClient from '../services/apiClient';
 
 describe('ExpenseCharts Living SVG & Stability', () => {
@@ -168,5 +168,71 @@ describe('ExpenseCharts Living SVG & Stability', () => {
       expect(screen.getByText('Min')).toBeInTheDocument();
     });
     expect(card.className).toContain('min-h-[380px]');
+  });
+
+  it('decouples backend fallback #64748b to vibrant PALETTE colors in monthly donut and legend', async () => {
+    const mockSlateData = {
+      period: 'monthly' as const,
+      cycle_start_date: '2026-09-01',
+      cycle_end_date: '2026-09-19',
+      total_spent: 500000,
+      items: [
+        { category_id: 'c1', category_name: 'Makan', amount: 300000, percentage: 60.0, color: '#64748b' },
+        { category_id: 'c2', category_name: 'Transport', amount: 200000, percentage: 40.0, color: '#64748B' },
+      ],
+    };
+
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockSlateData);
+
+    const { container } = render(<ExpenseCharts />);
+    const monthlyBtn = screen.getByRole('tab', { name: /Bulanan \(Monthly\)/i });
+    fireEvent.click(monthlyBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Makan')).toBeInTheDocument();
+    });
+
+    const circles = container.querySelectorAll('svg[viewBox="0 0 160 160"] circle[stroke]');
+    const arcCircles = Array.from(circles).filter((c) => c.getAttribute('stroke') !== 'currentColor');
+    expect(arcCircles.length).toBe(2);
+
+    expect(arcCircles[0].getAttribute('stroke')?.toLowerCase()).not.toBe('#64748b');
+    expect(arcCircles[1].getAttribute('stroke')?.toLowerCase()).not.toBe('#64748b');
+    expect(arcCircles[0].getAttribute('stroke')?.toLowerCase()).toBe(PALETTE[0].toLowerCase());
+    expect(arcCircles[1].getAttribute('stroke')?.toLowerCase()).toBe(PALETTE[1].toLowerCase());
+
+    expect(resolveCategoryColor('#64748b', 0)).toBe(PALETTE[0]);
+    expect(resolveCategoryColor('#64748B', 1)).toBe(PALETTE[1]);
+    expect(resolveCategoryColor(null, 2)).toBe(PALETTE[2]);
+    expect(resolveCategoryColor(undefined, 3)).toBe(PALETTE[3]);
+    expect(resolveCategoryColor('#FF0000', 0)).toBe('#FF0000');
+  });
+
+  it('sanitizes SVG curve coordinates when daily items contain only 1 item or 0 expenses', async () => {
+    const singleItemDaily = {
+      period: 'daily' as const,
+      daily_safe_runway: 50000,
+      total_spent_in_period: 10000,
+      items: [
+        { date: '2026-09-19', day_label: 'Sab', amount: 10000, safe_runway_threshold: 50000, is_over_budget: false },
+      ],
+    };
+
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(singleItemDaily);
+
+    const { container } = render(<ExpenseCharts />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Sab')).toBeInTheDocument();
+    });
+
+    const paths = container.querySelectorAll('svg[viewBox="0 0 560 160"] path');
+    expect(paths.length).toBeGreaterThan(0);
+    paths.forEach((p) => {
+      const d = p.getAttribute('d') || '';
+      expect(d).not.toBe('');
+      expect(d).not.toContain('NaN');
+      expect(d).not.toContain('Infinity');
+    });
   });
 });

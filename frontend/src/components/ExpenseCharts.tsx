@@ -8,8 +8,15 @@ interface Props {
   refreshTrigger?: number;
 }
 
-const PALETTE = ['#10B981', '#06B6D4', '#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#64748B'];
-const CIRCUMFERENCE = 2 * Math.PI * 60; // radius 60 ≈ 376.991
+export const PALETTE = ['#10B981', '#06B6D4', '#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6'];
+export const CIRCUMFERENCE = 2 * Math.PI * 60; // radius 60 ≈ 376.991
+
+export function resolveCategoryColor(color: string | null | undefined, index: number): string {
+  if (!color || color.toLowerCase() === '#64748b') {
+    return PALETTE[index % PALETTE.length];
+  }
+  return color;
+}
 
 function formatCompactRupiah(amount: number): string {
   if (amount >= 1_000_000_000) {
@@ -76,10 +83,20 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
     const stepX = count > 1 ? (endX - startX) / (count - 1) : 0;
 
     const pts = dailyData.items.map((item, idx) => {
-      const x = startX + idx * stepX;
-      const y = 140 - (item.amount / maxDailyAmount) * 120;
-      return { x, y };
+      const x = count > 1 ? startX + idx * stepX : (startX + endX) / 2;
+      const y = 140 - (Math.max(0, item.amount) / maxDailyAmount) * 120;
+      return {
+        x: Number.isFinite(x) ? x : startX,
+        y: Number.isFinite(y) ? y : 140,
+      };
     });
+
+    if (pts.length === 1) {
+      const p = pts[0];
+      const cPath = `M ${p.x - 10} ${p.y} L ${p.x + 10} ${p.y}`;
+      const aPath = `M ${p.x - 10} ${p.y} L ${p.x + 10} ${p.y} L ${p.x + 10} 140 L ${p.x - 10} 140 Z`;
+      return { curvePath: cPath, areaPath: aPath, points: pts };
+    }
 
     let cPath = `M ${pts[0].x} ${pts[0].y}`;
     for (let i = 1; i < pts.length; i++) {
@@ -421,7 +438,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                           cy="80"
                           r="60"
                           fill="transparent"
-                          stroke={item.color || PALETTE[idx % PALETTE.length]}
+                          stroke={resolveCategoryColor(item.color, idx)}
                           strokeWidth={isHovered ? 18 : 14}
                           strokeDasharray={`${arcLength} ${CIRCUMFERENCE}`}
                           strokeDashoffset={-offset}
@@ -448,7 +465,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               <div className="md:col-span-7 flex flex-col justify-center space-y-2.5">
                 {monthlyData.items.map((item, idx) => {
                   const isHovered = hoveredCategoryIndex === idx;
-                  const itemColor = item.color || PALETTE[idx % PALETTE.length];
+                  const itemColor = resolveCategoryColor(item.color, idx);
 
                   return (
                     <div
