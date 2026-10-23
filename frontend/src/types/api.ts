@@ -242,7 +242,21 @@ export interface MonthlySpendingResponse {
   items: CategorySpendingItemModel[];
 }
 
-export type SpendingBreakdownResponse = DailySpendingResponse | MonthlySpendingResponse;
+export interface CashflowSummaryResponse {
+  period: 'cashflow';
+  cycle_start_date: string;
+  cycle_end_date: string;
+  total_income: number;
+  total_expense: number;
+  net_cashflow: number;
+  savings_rate: number;
+  status: 'HEALTHY' | 'WARNING' | 'CRITICAL';
+}
+
+export type SpendingBreakdownResponse =
+  | DailySpendingResponse
+  | MonthlySpendingResponse
+  | CashflowSummaryResponse;
 
 export interface TransactionCreateRequest {
   transaction_type: 'EXPENSE' | 'INCOME' | 'TRANSFER';

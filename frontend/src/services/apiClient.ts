@@ -31,6 +31,7 @@ import {
   VoiceChatResponse,
   ChatMessageItem,
   EnrichedChatResponse,
+  CashflowSummaryResponse,
 } from '../types/api';
 
 const TOKEN_KEY = 'rezekify_auth_token';
@@ -464,6 +465,10 @@ export async function submitChatVoice(blob: Blob, caption?: string): Promise<Enr
   });
 }
 
+export async function getCashflowSummary(): Promise<CashflowSummaryResponse> {
+  return apiFetch<CashflowSummaryResponse>('/analytics/cashflow-summary');
+}
+
 export const apiClient = {
   updateAccount,
   deactivateAccount,
@@ -492,6 +497,7 @@ export const apiClient = {
   submitChatMessage,
   submitChatReceipt,
   submitChatVoice,
+  getCashflowSummary,
   apiFetch,
   setAuthToken,
   getAuthToken,

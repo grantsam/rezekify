@@ -35,6 +35,7 @@ import {
   submitChatReceipt,
   submitChatVoice,
   distributeToVaults,
+  apiClient,
 } from '../services/apiClient';
 import {
   Account,
@@ -52,6 +53,7 @@ import {
   CategoryUpdateRequest,
   ChatMessageItem,
   EnrichedChatResponse,
+  CashflowSummaryResponse,
 } from '../types/api';
 
 describe('apiClient authentication headers and utilities', () => {
@@ -1466,6 +1468,36 @@ describe('distributeToVaults API client method', () => {
         body: JSON.stringify(mockRequest),
       })
     );
+  });
+
+  it('getCashflowSummary calls /analytics/cashflow-summary and returns CashflowSummaryResponse', async () => {
+    const mockCashflow: CashflowSummaryResponse = {
+      period: 'cashflow',
+      cycle_start_date: '2026-10-01',
+      cycle_end_date: '2026-10-23',
+      total_income: 10000000,
+      total_expense: 4000000,
+      net_cashflow: 6000000,
+      savings_rate: 60.0,
+      status: 'HEALTHY',
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockCashflow,
+    });
+
+    const result = await apiClient.getCashflowSummary();
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/analytics/cashflow-summary'),
+      expect.objectContaining({
+        headers: expect.any(Object),
+      })
+    );
+    expect(result).toEqual(mockCashflow);
+    expect(result.period).toBe('cashflow');
+    expect(result.status).toBe('HEALTHY');
   });
 });
 
