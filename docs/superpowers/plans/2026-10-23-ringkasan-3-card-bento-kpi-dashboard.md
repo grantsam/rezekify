@@ -40,17 +40,17 @@
   - Card 3: `Dana Terkunci di Pos` + Active vaults count + H-7 status + `Alokasikan Dana (Lump-Sum)` button.
 - Simulation drawer renders directly below the 3 cards.
 
-- [ ] **Step 1: Write/update failing tests in `frontend/src/__tests__/OverviewView.test.tsx`**
+- [x] **Step 1: Write/update failing tests in `frontend/src/__tests__/OverviewView.test.tsx`**
 Add tests asserting:
 - Rendering of all 3 KPI cards (`Jatah Belanja Hari Ini`, `Kas Bebas Operasional`, `Dana Terkunci di Pos`).
 - Presence and clicking of `Catat Manual` and `Alokasikan Dana (Lump-Sum)` buttons.
 - Absence of the raw math equation strip (`Total Kas − Terkunci di Pos`).
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 Run: `npm --prefix frontend test src/__tests__/OverviewView.test.tsx`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement 3-Card Bento Header in `OverviewView.tsx`**
+- [x] **Step 3: Implement 3-Card Bento Header in `OverviewView.tsx`**
 - Replace the giant Hero Card container with:
   ```tsx
   <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
@@ -64,14 +64,14 @@ Expected: FAIL.
 - Render Contextual Survival Guidance banner cleanly above the analytics chart when tone is not 'HEALTHY'.
 - Update `DashboardPage.tsx` to pass `onOpenManualModal={modals.onOpenManualModal}` and `onOpenLumpSumModal={() => setIsLumpSumModalOpen(true)}` to `OverviewView`.
 
-- [ ] **Step 4: Update `AllPhasesE2EIntegration.test.tsx`**
+- [x] **Step 4: Update `AllPhasesE2EIntegration.test.tsx`**
 Synchronize test queries to match the 3-card bento structure.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 Run: `npm --prefix frontend test src/__tests__/OverviewView.test.tsx src/__tests__/AllPhasesE2EIntegration.test.tsx`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add frontend/src/components/OverviewView.tsx frontend/src/pages/DashboardPage.tsx frontend/src/__tests__/OverviewView.test.tsx frontend/src/__tests__/AllPhasesE2EIntegration.test.tsx
 git commit -m "feat(cockpit): transform OverviewView into familiar 3-Card Bento KPI dashboard"
@@ -84,27 +84,27 @@ git commit -m "feat(cockpit): transform OverviewView into familiar 3-Card Bento 
 **Files:**
 - Entire frontend & backend test matrices.
 
-- [ ] **Step 1: Run full frontend Vitest test suite**
+- [x] **Step 1: Run full frontend Vitest test suite**
 Run: `npm --prefix frontend test -- --run`
 Expected: All suites PASS.
 
-- [ ] **Step 2: Run TypeScript strict check and production build**
+- [x] **Step 2: Run TypeScript strict check and production build**
 Run: `cd frontend && npm run build`
 Expected: Clean build with 0 errors.
 
-- [ ] **Step 3: Run Impeccable static detector check**
+- [x] **Step 3: Run Impeccable static detector check**
 Run: `"C:/Users/grant/.claude/plugins/cache/impeccable/impeccable/4.3.1/skills/impeccable/scripts/impeccable.cmd" detect --json frontend/src`
 Expected: 0 findings.
 
-- [ ] **Step 4: Rebuild and restart Docker frontend container**
+- [x] **Step 4: Rebuild and restart Docker frontend container**
 Run: `docker compose build frontend && docker compose up -d frontend`
 Expected: Container rebuilt and healthy.
 
-- [ ] **Step 5: Run backend pytest suite**
+- [x] **Step 5: Run backend pytest suite**
 Run: `pytest tests/test_all_phases_e2e_lifecycle.py`
 Expected: 1/1 passed.
 
-- [ ] **Step 6: Commit final verification**
+- [x] **Step 6: Commit final verification**
 ```bash
 git commit --allow-empty -m "chore(audit): verify Ringkasan 3-card bento KPI dashboard test matrix"
 ```
