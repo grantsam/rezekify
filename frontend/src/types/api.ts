@@ -31,6 +31,7 @@ export interface Category {
   category_type?: CategoryType | string;
   icon?: string;
   color?: string;
+  monthly_budget?: number | null;
 }
 
 export interface CategoryCreateRequest {
@@ -38,6 +39,7 @@ export interface CategoryCreateRequest {
   category_type?: CategoryType;
   icon?: string;
   color?: string;
+  monthly_budget?: number | null;
 }
 
 export interface CategoryUpdateRequest {
@@ -45,6 +47,7 @@ export interface CategoryUpdateRequest {
   category_type?: CategoryType;
   icon?: string;
   color?: string;
+  monthly_budget?: number | null;
 }
 
 export interface Account {
@@ -223,7 +226,12 @@ export interface CategorySpendingItemModel {
   amount: number;
   percentage: number;
   color: string;
+  budget_limit?: number | null;
+  budget_spent_pct?: number | null;
+  budget_status?: 'HEALTHY' | 'WARNING' | 'OVER_BUDGET' | null;
 }
+
+export type SpendingBreakdownItem = CategorySpendingItemModel;
 
 export interface MonthlySpendingResponse {
   period: 'monthly';

@@ -26,9 +26,12 @@ import {
   CheckCircle2,
   Loader2,
   Layers,
+  Target,
+  RotateCcw,
 } from 'lucide-react';
 import { Category, CategoryType } from '../types/api';
 import { apiClient } from '../services/apiClient';
+import { formatRupiah } from '../utils/formatters';
 
 export interface CategoryManagerModalProps {
   isOpen: boolean;
@@ -80,6 +83,12 @@ export const AVAILABLE_ICONS = [
   { key: 'gift', label: 'Hadiah', icon: Gift },
 ];
 
+export const BUDGET_QUICK_CHIPS = [
+  { label: '+500rb', amount: 500_000 },
+  { label: '+1jt', amount: 1_000_000 },
+  { label: '+2jt', amount: 2_000_000 },
+];
+
 export function getCategoryIcon(iconKey?: string): React.ComponentType<{ className?: string }> {
   if (!iconKey) return Tag;
   const normalized = iconKey.toLowerCase().trim();
@@ -95,6 +104,8 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const [activeTab, setActiveTab] = useState<CategoryType>('EXPENSE');
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
   const [name, setName] = useState<string>('');
+  const [monthlyBudget, setMonthlyBudget] = useState<number | null>(null);
+  const [budgetString, setBudgetString] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('#10b981');
   const [selectedIcon, setSelectedIcon] = useState<string>('tag');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -130,8 +141,35 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     observer.observe(node, { attributes: true, attributeFilter: ['aria-labelledby'] });
   }, []);
 
+  // ponytail: Simple regex digit stripping and Intl.NumberFormat; upgrade to mask library if multi-currency or live decimal editing needed.
+  const handleBudgetChange = (raw: string) => {
+    const cleaned = raw.replace(/\D/g, '');
+    if (!cleaned) {
+      setMonthlyBudget(null);
+      setBudgetString('');
+      return;
+    }
+    const parsed = parseInt(cleaned, 10);
+    setMonthlyBudget(parsed);
+    setBudgetString(new Intl.NumberFormat('id-ID').format(parsed));
+  };
+
+  const handleAddBudgetChip = (amount: number) => {
+    const current = monthlyBudget || 0;
+    const next = current + amount;
+    setMonthlyBudget(next);
+    setBudgetString(new Intl.NumberFormat('id-ID').format(next));
+  };
+
+  const handleResetBudget = () => {
+    setMonthlyBudget(null);
+    setBudgetString('');
+  };
+
   const resetForm = () => {
     setName('');
+    setMonthlyBudget(null);
+    setBudgetString('');
     setSelectedColor('#10b981');
     setSelectedIcon('tag');
     setEditingCategory(null);
@@ -141,6 +179,14 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const handleStartEdit = (cat: Category) => {
     setEditingCategory(cat);
     setName(cat.name);
+    const budgetNum = cat.monthly_budget != null && !isNaN(Number(cat.monthly_budget)) ? Number(cat.monthly_budget) : null;
+    if (budgetNum !== null && budgetNum > 0) {
+      setMonthlyBudget(budgetNum);
+      setBudgetString(new Intl.NumberFormat('id-ID').format(budgetNum));
+    } else {
+      setMonthlyBudget(null);
+      setBudgetString('');
+    }
     setSelectedColor(cat.color || '#10b981');
     setSelectedIcon(cat.icon || 'tag');
     setErrorMsg(null);
@@ -176,6 +222,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
           category_type: (editingCategory.category_type as CategoryType) || activeTab,
           icon: selectedIcon,
           color: selectedColor,
+          monthly_budget: monthlyBudget,
         });
 
         setLocalCategories((prev) =>
@@ -191,6 +238,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
           category_type: activeTab,
           icon: selectedIcon,
           color: selectedColor,
+          monthly_budget: monthlyBudget,
         });
 
         setLocalCategories((prev) => [...prev, created]);
@@ -346,6 +394,55 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   </div>
                 </div>
 
+                {/* Monthly Budget Input */}
+                <div>
+                  <label
+                    htmlFor="category-budget-input"
+                    className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5"
+                  >
+                    Batas Anggaran Bulanan (opsional)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs sm:text-sm font-bold text-slate-400 dark:text-zinc-500 pointer-events-none select-none">
+                      Rp
+                    </span>
+                    <input
+                      id="category-budget-input"
+                      type="text"
+                      inputMode="numeric"
+                      value={budgetString}
+                      onChange={(e) => handleBudgetChange(e.target.value)}
+                      placeholder="0"
+                      disabled={isSubmitting}
+                      className="w-full bg-white dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl pl-11 pr-4 py-2 text-xs sm:text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium disabled:opacity-50 min-h-[38px]"
+                    />
+                  </div>
+                  {/* Quick Increment Chips */}
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {BUDGET_QUICK_CHIPS.map((chip) => (
+                      <button
+                        key={chip.label}
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => handleAddBudgetChip(chip.amount)}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-emerald-500 hover:border-emerald-500/50 border border-slate-200 dark:border-zinc-700/80 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer select-none disabled:opacity-50"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                    <button
+                      key="reset"
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleResetBudget}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-slate-100 dark:bg-zinc-800/60 text-slate-500 dark:text-zinc-400 hover:text-rose-500 hover:border-rose-500/40 border border-slate-200 dark:border-zinc-700/80 transition-all min-h-[38px] min-w-[38px] flex items-center gap-1.5 justify-center cursor-pointer select-none disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Color Swatch Picker */}
                 <div>
                   <label className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-2">
@@ -471,7 +568,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           key={cat.id}
                           className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 hover:border-zinc-700/60 transition-all"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div
                               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs"
                               style={{
@@ -482,12 +579,32 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                             >
                               <IconComp className="w-4 h-4" />
                             </div>
-                            <span
-                              data-testid="category-item-name"
-                              className="font-extrabold text-sm text-slate-900 dark:text-white"
-                            >
-                              {cat.name}
-                            </span>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 min-w-0">
+                              <span
+                                data-testid="category-item-name"
+                                className="font-extrabold text-sm text-slate-900 dark:text-white truncate"
+                              >
+                                {cat.name}
+                              </span>
+                              {(() => {
+                                const budgetNum = cat.monthly_budget != null && !isNaN(Number(cat.monthly_budget)) ? Number(cat.monthly_budget) : null;
+                                const hasBudget = budgetNum !== null && budgetNum > 0;
+                                return (
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold w-fit tracking-tight ${
+                                      hasBudget
+                                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                                        : 'bg-slate-200/60 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700/60'
+                                    }`}
+                                  >
+                                    <Target className="w-3 h-3 shrink-0" />
+                                    <span>
+                                      {hasBudget ? `${formatRupiah(budgetNum)}/bln` : 'Tanpa limit'}
+                                    </span>
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           </div>
 
                           {/* Action Buttons / Confirm State */}

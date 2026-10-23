@@ -167,6 +167,7 @@ describe('CategoryManagerModal Component', () => {
         category_type: 'EXPENSE',
         icon: 'heart',
         color: '#f43f5e',
+        monthly_budget: null,
       });
       expect(handleSuccess).toHaveBeenCalled();
     });
@@ -220,6 +221,7 @@ describe('CategoryManagerModal Component', () => {
         category_type: 'EXPENSE',
         icon: 'coffee',
         color: '#f59e0b',
+        monthly_budget: null,
       });
       expect(handleSuccess).toHaveBeenCalled();
     });
@@ -301,5 +303,129 @@ describe('CategoryManagerModal Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Tambah Kategori/i }));
 
     expect(await screen.findByText('Kategori sudah ada.')).toBeInTheDocument();
+  });
+
+  it('renders monthly budget input with Rp prefix and quick increment chips', () => {
+    render(
+      <CategoryManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        categories={sampleCategories}
+      />
+    );
+
+    expect(screen.getByLabelText(/Batas Anggaran Bulanan/i)).toBeInTheDocument();
+    expect(screen.getByText('Rp')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+500rb' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+1jt' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+2jt' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
+  });
+
+  it('increments and resets budget value using quick chips', () => {
+    render(
+      <CategoryManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        categories={sampleCategories}
+      />
+    );
+
+    const budgetInput = screen.getByLabelText(/Batas Anggaran Bulanan/i);
+    expect(budgetInput).toHaveValue('');
+
+    // Click +500rb -> 500.000
+    fireEvent.click(screen.getByRole('button', { name: '+500rb' }));
+    expect(budgetInput).toHaveValue('500.000');
+
+    // Click +1jt -> 1.500.000
+    fireEvent.click(screen.getByRole('button', { name: '+1jt' }));
+    expect(budgetInput).toHaveValue('1.500.000');
+
+    // Click +2jt -> 3.500.000
+    fireEvent.click(screen.getByRole('button', { name: '+2jt' }));
+    expect(budgetInput).toHaveValue('3.500.000');
+
+    // Click Reset -> empty
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(budgetInput).toHaveValue('');
+  });
+
+  it('submits category creation with monthly_budget to apiClient.createCategory', async () => {
+    const handleSuccess = vi.fn();
+    const newCategory: Category = {
+      id: 'cat-new-2',
+      name: 'Belanja Mingguan',
+      category_type: 'EXPENSE',
+      icon: 'shopping-bag',
+      color: '#10b981',
+      monthly_budget: 1500000,
+    };
+
+    const createSpy = vi.spyOn(apiClient, 'createCategory').mockResolvedValue(newCategory);
+
+    render(
+      <CategoryManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={handleSuccess}
+        categories={sampleCategories}
+      />
+    );
+
+    const nameInput = screen.getByLabelText(/Nama Kategori/i);
+    fireEvent.change(nameInput, { target: { value: 'Belanja Mingguan' } });
+
+    // Click chips: +500rb then +1jt => 1.500.000
+    fireEvent.click(screen.getByRole('button', { name: '+500rb' }));
+    fireEvent.click(screen.getByRole('button', { name: '+1jt' }));
+
+    fireEvent.click(screen.getByRole('button', { name: /Tambah Kategori/i }));
+
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith({
+        name: 'Belanja Mingguan',
+        category_type: 'EXPENSE',
+        icon: 'tag',
+        color: '#10b981',
+        monthly_budget: 1500000,
+      });
+      expect(handleSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it('renders budget limit badge on budgeted category in category list', () => {
+    const categoriesWithBudget: Category[] = [
+      {
+        id: 'cat-budget-1',
+        name: 'Makan & Minum',
+        category_type: 'EXPENSE',
+        icon: 'utensils',
+        color: '#ef4444',
+        monthly_budget: 1500000,
+      },
+      {
+        id: 'cat-budget-2',
+        name: 'Langganan Internet',
+        category_type: 'EXPENSE',
+        icon: 'zap',
+        color: '#3b82f6',
+        monthly_budget: null,
+      },
+    ];
+
+    render(
+      <CategoryManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        categories={categoriesWithBudget}
+      />
+    );
+
+    expect(screen.getByText('Rp 1.500.000/bln')).toBeInTheDocument();
+    expect(screen.getByText('Tanpa limit')).toBeInTheDocument();
   });
 });
