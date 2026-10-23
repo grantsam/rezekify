@@ -192,7 +192,7 @@ describe('DashboardPage Component', () => {
     });
   });
 
-  it('opens and closes AccountModal from sidebar + Rekening action', async () => {
+  it('opens and closes AccountModal from capsule strip Tambah Akun action', async () => {
     vi.spyOn(apiClient, 'apiFetch').mockImplementation(async (endpoint: string) => {
       if (endpoint === '/dashboard/summary') return mockSummary;
       if (endpoint.startsWith('/transactions')) return mockTransactions;
@@ -209,7 +209,7 @@ describe('DashboardPage Component', () => {
       expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
     });
 
-    const openBtn = screen.getByRole('button', { name: /\+ Rekening/i });
+    const openBtn = screen.getByRole('button', { name: /Tambah Akun/i });
     fireEvent.click(openBtn);
 
     await waitFor(() => {

@@ -18,7 +18,7 @@ describe('Navigation Shell Components', () => {
     { id: 'acc-2', name: 'GoPay', account_type: 'EWALLET', current_balance: 350000, is_active: true },
   ];
 
-  it('renders Sidebar with brand, navigation links, and account balances', () => {
+  it('renders Sidebar with brand and navigation links without accounts list', () => {
     const handleViewChange = vi.fn();
     const handleOpenCreateAccount = vi.fn();
     const handleLogout = vi.fn();
@@ -41,11 +41,10 @@ describe('Navigation Shell Components', () => {
     expect(screen.getByText('Komitmen & Vaults')).toBeInTheDocument();
     expect(screen.getByText('Pengaturan')).toBeInTheDocument();
 
-    // Accounts
-    expect(screen.getByText('BCA Utama')).toBeInTheDocument();
-    expect(screen.getByText('Rp 2.500.000')).toBeInTheDocument();
-    expect(screen.getByText('GoPay')).toBeInTheDocument();
-    expect(screen.getByText('Rp 350.000')).toBeInTheDocument();
+    // Accounts should NOT be rendered in Sidebar
+    expect(screen.queryByText('Rekening Kas')).not.toBeInTheDocument();
+    expect(screen.queryByText('BCA Utama')).not.toBeInTheDocument();
+    expect(screen.queryByText('GoPay')).not.toBeInTheDocument();
 
     // Telegram status & User
     expect(screen.getByText(/Terhubung/i)).toBeInTheDocument();
@@ -61,16 +60,12 @@ describe('Navigation Shell Components', () => {
     fireEvent.click(screen.getByRole('button', { name: /AI Copilot/i }));
     expect(handleViewChange).toHaveBeenCalledWith('chat');
 
-    // Click add account
-    fireEvent.click(screen.getByRole('button', { name: /Rekening/i }));
-    expect(handleOpenCreateAccount).toHaveBeenCalledTimes(1);
-
     // Click logout
     fireEvent.click(screen.getByRole('button', { name: /Keluar/i }));
     expect(handleLogout).toHaveBeenCalledTimes(1);
   });
 
-  it('toggles Sidebar collapse state cleanly', () => {
+  it('toggles Sidebar collapse state cleanly without accounts', () => {
     const { rerender } = render(
       <Sidebar
         activeView="overview"
@@ -98,10 +93,7 @@ describe('Navigation Shell Components', () => {
     );
 
     expect(screen.queryByText('Ringkasan')).not.toBeInTheDocument();
-    const collapsedAccounts = screen.getByLabelText('Daftar Rekening Ringkas');
-    expect(collapsedAccounts).toBeInTheDocument();
-    expect(screen.getByTitle('BCA Utama: Rp 2.500.000')).toBeInTheDocument();
-    expect(screen.getByTitle('GoPay: Rp 350.000')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Daftar Rekening Ringkas')).not.toBeInTheDocument();
   });
 
   it('renders BottomDock with 4 tabs and elevated center AI Copilot button with onQuickCapturePress', () => {

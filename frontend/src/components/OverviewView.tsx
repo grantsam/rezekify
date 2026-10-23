@@ -13,6 +13,9 @@ import {
   PlusCircle,
   Layers,
   RotateCcw,
+  Smartphone,
+  Banknote,
+  Plus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
@@ -313,6 +316,46 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           onDraftConsumed={() => setQuickCaptureDraft(undefined)}
         />
       </div>
+
+      {/* ACCOUNT CAPSULE STRIP (REVOLUT / WISE STYLE) */}
+      {accounts && accounts.length > 0 && (
+        <div
+          data-testid="account-capsule-strip"
+          className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar text-xs select-none"
+        >
+          {accounts
+            .filter((acc) => acc.is_active !== false)
+            .map((acc) => {
+              const getAccountIcon = (type: string) => {
+                if (type === 'EWALLET') return Smartphone;
+                if (type === 'CASH') return Banknote;
+                return Building2;
+              };
+              const AccIcon = getAccountIcon(acc.account_type);
+              return (
+                <div
+                  key={acc.id}
+                  className="flex items-center gap-2 px-3.5 py-1.5 min-h-[36px] rounded-full bg-white/80 dark:bg-[#141417] border border-slate-200/80 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 shadow-xs shrink-0 transition-all hover:border-emerald-500/40"
+                >
+                  <AccIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span className="font-semibold text-slate-700 dark:text-zinc-300">{acc.name}:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                    Rp {acc.current_balance.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              );
+            })}
+
+          <button
+            type="button"
+            onClick={onOpenCreateAccount}
+            className="flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold shrink-0 transition-all cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Tambah Akun</span>
+          </button>
+        </div>
+      )}
 
       {/* 3-CARD BENTO KPI HEADER */}
       {/* ponytail: 3-card bento KPI header; upgrade to customizable widget grid if users require card reordering */}

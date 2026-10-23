@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OverviewView } from '../components/OverviewView';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
@@ -133,6 +133,50 @@ describe('OverviewView Component', () => {
     // Mathematical Reconciliation Strip is absent
     expect(screen.queryByText('Terkunci di Pos/Tagihan:')).not.toBeInTheDocument();
     expect(screen.queryByText('Bebas Pakai:')).not.toBeInTheDocument();
+  });
+
+  it('renders Account Capsule Strip with active accounts and triggers onOpenCreateAccount', () => {
+    const handleOpenCreateAccount = vi.fn();
+    const testAccounts: Account[] = [
+      { id: 'acc-1', name: 'BCA Utama', account_type: 'BANK', current_balance: 3000000, is_active: true },
+      { id: 'acc-2', name: 'GoPay', account_type: 'EWALLET', current_balance: 500000, is_active: true },
+      { id: 'acc-3', name: 'Tunai Dompet', account_type: 'CASH', current_balance: 150000, is_active: true },
+      { id: 'acc-4', name: 'Akun Nonaktif', account_type: 'BANK', current_balance: 0, is_active: false },
+    ];
+
+    render(
+      <OverviewView
+        summary={mockSummary}
+        vaults={mockVaults}
+        accounts={testAccounts}
+        transactions={mockTransactions}
+        isLoading={false}
+        refreshTrigger={0}
+        onNavigateToVaults={vi.fn()}
+        onOpenCreateAccount={handleOpenCreateAccount}
+      />
+    );
+
+    const strip = screen.getByTestId('account-capsule-strip');
+    expect(strip).toBeInTheDocument();
+
+    expect(within(strip).getByText('BCA Utama:')).toBeInTheDocument();
+    expect(within(strip).getByText('Rp 3.000.000')).toBeInTheDocument();
+
+    expect(within(strip).getByText('GoPay:')).toBeInTheDocument();
+    expect(within(strip).getByText('Rp 500.000')).toBeInTheDocument();
+
+    expect(within(strip).getByText('Tunai Dompet:')).toBeInTheDocument();
+    expect(within(strip).getByText('Rp 150.000')).toBeInTheDocument();
+
+    // Inactive account should not be rendered
+    expect(within(strip).queryByText('Akun Nonaktif:')).not.toBeInTheDocument();
+
+    // Tambah Akun button
+    const tambahAkunBtn = within(strip).getByRole('button', { name: /Tambah Akun/i });
+    expect(tambahAkunBtn).toBeInTheDocument();
+    fireEvent.click(tambahAkunBtn);
+    expect(handleOpenCreateAccount).toHaveBeenCalledTimes(1);
   });
 
   it('renders negative remaining budget correctly when today_spent exceeds daily runway in 3-Card Bento layout', () => {
