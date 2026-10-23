@@ -687,6 +687,74 @@ def test_update_expense_with_vault_id(db_session, sample_user):
         )
 
 
+def test_expense_on_liability_account_increases_balance(db_session, sample_user):
+    spaylater = Account(
+        user_id=sample_user.id,
+        name="Shopee PayLater",
+        account_type=AccountType.LIABILITY,
+        current_balance=Decimal("0.00"),
+    )
+    cat = Category(
+        user_id=sample_user.id,
+        name="Elektronik",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([spaylater, cat])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    service.record_expense(
+        user_id=sample_user.id,
+        account_id=spaylater.id,
+        category_id=cat.id,
+        amount=Decimal("150000.00"),
+        description="Beli Mouse Logitech",
+    )
+
+    db_session.refresh(spaylater)
+    assert spaylater.current_balance == Decimal("150000.00")
+
+
+def test_transfer_to_liability_account_decreases_balance(db_session, sample_user):
+    bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    spaylater = Account(
+        user_id=sample_user.id,
+        name="Shopee PayLater",
+        account_type=AccountType.LIABILITY,
+        current_balance=Decimal("300000.00"),
+    )
+    db_session.add_all([bca, spaylater])
+    db_session.commit()
+
+    service = LedgerService(db_session)
+    tx = service.record_transfer(
+        user_id=sample_user.id,
+        from_account_id=bca.id,
+        to_account_id=spaylater.id,
+        amount=Decimal("300000.00"),
+        description="Pelunasan Shopee PayLater",
+    )
+
+    db_session.refresh(bca)
+    db_session.refresh(spaylater)
+    assert bca.current_balance == Decimal("700000.00")
+    assert spaylater.current_balance == Decimal("0.00")
+
+    # Deleting transaction reverses it
+    service.delete_transaction(user_id=sample_user.id, transaction_id=tx.id)
+
+    db_session.refresh(bca)
+    db_session.refresh(spaylater)
+    assert bca.current_balance == Decimal("1000000.00")
+    assert spaylater.current_balance == Decimal("300000.00")
+
+
+
 def test_ledger_mutations_use_row_locking(db_session, sample_user):
     acc1 = Account(
         user_id=sample_user.id,

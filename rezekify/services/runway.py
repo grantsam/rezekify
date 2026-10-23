@@ -60,6 +60,7 @@ class RunwayReport(NamedTuple):
     today_spent: Decimal = Decimal("0.00")
     safe_runway_threshold: Decimal = Decimal("30000.00")
     survival_guidance: Optional[SurvivalGuidance] = None
+    total_liability_debt: Decimal = Decimal("0.00")
 
 
 class SimulationReport(NamedTuple):
@@ -68,6 +69,7 @@ class SimulationReport(NamedTuple):
     daily_drop_amount: Decimal
     is_safe: bool
     advice: str
+    total_liability_debt: Decimal = Decimal("0.00")
 
 
 class DailyBreakdownItem(NamedTuple):
@@ -223,7 +225,18 @@ class RunwayService:
             .scalar()
         )
 
-        operational_free = max(Decimal("0.00"), liquid_sum - vault_sum)
+        # Total active liability debt
+        liability_sum = (
+            self.db.query(func.coalesce(func.sum(Account.current_balance), Decimal("0.00")))
+            .filter(
+                Account.user_id == user_id,
+                Account.account_type == AccountType.LIABILITY,
+                Account.is_active == True,
+            )
+            .scalar()
+        )
+
+        operational_free = max(Decimal("0.00"), liquid_sum - vault_sum - liability_sum)
 
         # Calculate days remaining until monthly cycle day
         cycle_day = int(user.monthly_cycle_day)
@@ -290,6 +303,7 @@ class RunwayService:
             today_spent=today_spent,
             safe_runway_threshold=threshold,
             survival_guidance=guidance,
+            total_liability_debt=liability_sum,
         )
         _runway_cache[(user_id, today)] = (report, time.time())
         return report
@@ -358,6 +372,7 @@ class RunwayService:
             daily_drop_amount=drop,
             is_safe=is_safe,
             advice=advice,
+            total_liability_debt=current.total_liability_debt,
         )
 
     def get_daily_spending_breakdown(

@@ -983,6 +983,159 @@ def test_category_breakdown_with_budgets_and_edge_cases(db_session, sample_user)
     assert item_zb.budget_status is None
 
 
+def test_calculate_runway_deducts_liability_debt(db_session, sample_user):
+    sample_user.monthly_cycle_day = 25
+    bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("2000000.00"),
+        is_active=True,
+    )
+    vault = Vault(
+        user_id=sample_user.id,
+        name="Dana Darurat",
+        vault_type=VaultType.SAVINGS,
+        target_amount=Decimal("1000000.00"),
+        allocated_amount=Decimal("500000.00"),
+        is_locked=True,
+    )
+    spaylater = Account(
+        user_id=sample_user.id,
+        name="Shopee PayLater",
+        account_type=AccountType.LIABILITY,
+        current_balance=Decimal("300000.00"),
+        is_active=True,
+    )
+    db_session.add_all([bca, vault, spaylater])
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 18), use_cache=False)
+
+    # 2.000.000 liquid - 500.000 vault - 300.000 liability = 1.200.000 operational free
+    assert report.total_liquid_cash == Decimal("2000000.00")
+    assert report.vault_locked_cash == Decimal("500000.00")
+    assert report.total_liability_debt == Decimal("300000.00")
+    assert report.operational_free_cash == Decimal("1200000.00")
+
+
+def test_calculate_runway_clamps_when_liability_exceeds_liquid_cash(db_session, sample_user):
+    sample_user.monthly_cycle_day = 25
+    bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("500000.00"),
+        is_active=True,
+    )
+    spaylater = Account(
+        user_id=sample_user.id,
+        name="Shopee PayLater",
+        account_type=AccountType.LIABILITY,
+        current_balance=Decimal("1000000.00"),
+        is_active=True,
+    )
+    db_session.add_all([bca, spaylater])
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 18), use_cache=False)
+
+    # 500.000 liquid - 0 vault - 1.000.000 liability = -500.000 -> clamped to 0.00
+    assert report.total_liability_debt == Decimal("1000000.00")
+    assert report.operational_free_cash == Decimal("0.00")
+    assert report.daily_safe_runway == Decimal("0.00")
+    assert report.health_status == "CRITICAL"
+
+
+def test_deactivated_liability_account_excluded_from_runway(db_session, sample_user):
+    sample_user.monthly_cycle_day = 25
+    bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("2000000.00"),
+        is_active=True,
+    )
+    inactive_cc = Account(
+        user_id=sample_user.id,
+        name="Closed Card",
+        account_type=AccountType.LIABILITY,
+        current_balance=Decimal("500000.00"),
+        is_active=False,
+    )
+    db_session.add_all([bca, inactive_cc])
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 18), use_cache=False)
+
+    assert report.total_liability_debt == Decimal("0.00")
+    assert report.operational_free_cash == Decimal("2000000.00")
+
+
+def test_multiple_liability_accounts_sum(db_session, sample_user):
+    sample_user.monthly_cycle_day = 25
+    bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("3000000.00"),
+        is_active=True,
+    )
+    cc = Account(
+        user_id=sample_user.id,
+        name="Mandiri CC",
+        account_type=AccountType.LIABILITY,
+        current_balance=Decimal("1500000.00"),
+        is_active=True,
+    )
+    gopaylater = Account(
+        user_id=sample_user.id,
+        name="GoPay Later",
+        account_type=AccountType.LIABILITY,
+        current_balance=Decimal("500000.00"),
+        is_active=True,
+    )
+    db_session.add_all([bca, cc, gopaylater])
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.calculate_runway(user_id=sample_user.id, today=date(2026, 9, 18), use_cache=False)
+
+    assert report.total_liability_debt == Decimal("2000000.00")
+    assert report.operational_free_cash == Decimal("1000000.00")
+
+
+def test_simulate_purchase_includes_liability_debt(db_session, sample_user):
+    sample_user.monthly_cycle_day = 25
+    bca = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("1000000.00"),
+    )
+    spaylater = Account(
+        user_id=sample_user.id,
+        name="Shopee PayLater",
+        account_type=AccountType.LIABILITY,
+        current_balance=Decimal("300000.00"),
+    )
+    db_session.add_all([bca, spaylater])
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    # Liquid: 1M, Liability: 300K -> Free: 700K. Days: 7.
+    # Purchase: 200,000 -> Projected free: 500,000 -> Projected daily: 71428.57
+    sim = service.simulate_purchase(
+        user_id=sample_user.id, planned_amount=Decimal("200000.00"), today=date(2026, 9, 18)
+    )
+    assert sim.total_liability_debt == Decimal("300000.00")
+    assert sim.projected_daily_runway == Decimal("71428.57")
+
+
+
 
 
 

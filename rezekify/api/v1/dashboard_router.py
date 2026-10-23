@@ -67,6 +67,7 @@ class DashboardSummaryResponse(BaseModel):
     total_liquid_cash: Decimal
     vault_locked_cash: Decimal
     operational_free_cash: Decimal
+    total_liability_debt: Decimal = Decimal("0.00")
     days_remaining: int
     daily_safe_runway: Decimal
     health_status: str
@@ -99,6 +100,7 @@ class SimulatePurchaseResponse(BaseModel):
     daily_drop_amount: Decimal
     is_safe: bool
     advice: str
+    total_liability_debt: Decimal = Decimal("0.00")
 
 
 
@@ -158,6 +160,7 @@ def get_dashboard_summary(
         total_liquid_cash=report.total_liquid_cash,
         vault_locked_cash=report.vault_locked_cash,
         operational_free_cash=report.operational_free_cash,
+        total_liability_debt=report.total_liability_debt,
         days_remaining=report.days_remaining,
         daily_safe_runway=report.daily_safe_runway,
         health_status=report.health_status,
@@ -564,6 +567,7 @@ def simulate_purchase_endpoint(
         daily_drop_amount=sim.daily_drop_amount,
         is_safe=sim.is_safe,
         advice=sim.advice,
+        total_liability_debt=sim.total_liability_debt,
     )
 
 

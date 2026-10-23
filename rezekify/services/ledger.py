@@ -7,7 +7,16 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from rezekify.db.models import Account, Category, EntryType, LedgerEntry, Transaction, Vault, VaultType
+from rezekify.db.models import (
+    Account,
+    AccountType,
+    Category,
+    EntryType,
+    LedgerEntry,
+    Transaction,
+    Vault,
+    VaultType,
+)
 from rezekify.services.runway import RunwayService
 from rezekify.services.vault_reconciliation import (
     VaultReconciliationResult,
@@ -59,7 +68,10 @@ class LedgerService:
             )
             if not cat:
                 raise ValueError("Category not found or access denied.")
-        account.current_balance -= amount
+        if account.account_type == AccountType.LIABILITY:
+            account.current_balance += amount
+        else:
+            account.current_balance -= amount
 
         tx = Transaction(
             user_id=user_id,
@@ -194,8 +206,15 @@ class LedgerService:
         from_acc = acc1 if acc1.id == from_account_id else acc2
         to_acc = acc2 if acc2.id == to_account_id else acc1
 
-        from_acc.current_balance -= amount
-        to_acc.current_balance += amount
+        if from_acc.account_type == AccountType.LIABILITY:
+            from_acc.current_balance += amount
+        else:
+            from_acc.current_balance -= amount
+
+        if to_acc.account_type == AccountType.LIABILITY:
+            to_acc.current_balance -= amount
+        else:
+            to_acc.current_balance += amount
 
         tx = Transaction(
             user_id=user_id,
@@ -245,10 +264,16 @@ class LedgerService:
                     .with_for_update()
                     .one()
                 )
-                if entry.entry_type == EntryType.CREDIT:
-                    acc.current_balance += entry.amount
-                elif entry.entry_type == EntryType.DEBIT:
-                    acc.current_balance -= entry.amount
+                if acc.account_type == AccountType.LIABILITY:
+                    if entry.entry_type == EntryType.CREDIT:
+                        acc.current_balance -= entry.amount
+                    elif entry.entry_type == EntryType.DEBIT:
+                        acc.current_balance += entry.amount
+                else:
+                    if entry.entry_type == EntryType.CREDIT:
+                        acc.current_balance += entry.amount
+                    elif entry.entry_type == EntryType.DEBIT:
+                        acc.current_balance -= entry.amount
 
         self.db.delete(tx)
         self.db.flush()
@@ -295,10 +320,16 @@ class LedgerService:
                     .with_for_update()
                     .one()
                 )
-                if entry.entry_type == EntryType.CREDIT:
-                    acc.current_balance += entry.amount
-                elif entry.entry_type == EntryType.DEBIT:
-                    acc.current_balance -= entry.amount
+                if acc.account_type == AccountType.LIABILITY:
+                    if entry.entry_type == EntryType.CREDIT:
+                        acc.current_balance -= entry.amount
+                    elif entry.entry_type == EntryType.DEBIT:
+                        acc.current_balance += entry.amount
+                else:
+                    if entry.entry_type == EntryType.CREDIT:
+                        acc.current_balance += entry.amount
+                    elif entry.entry_type == EntryType.DEBIT:
+                        acc.current_balance -= entry.amount
 
         # Step C: Determine transaction type
         if transaction_type:
@@ -367,7 +398,10 @@ class LedgerService:
                 if not cat:
                     raise ValueError("Category not found or access denied.")
 
-            new_acc.current_balance -= amount
+            if new_acc.account_type == AccountType.LIABILITY:
+                new_acc.current_balance += amount
+            else:
+                new_acc.current_balance -= amount
 
             new_entries = [
                 LedgerEntry(
@@ -456,8 +490,15 @@ class LedgerService:
             if not from_acc or not to_acc or from_acc.id != from_account_id or to_acc.id != to_account_id:
                 raise ValueError("Source or destination account not found or access denied.")
 
-            from_acc.current_balance -= amount
-            to_acc.current_balance += amount
+            if from_acc.account_type == AccountType.LIABILITY:
+                from_acc.current_balance += amount
+            else:
+                from_acc.current_balance -= amount
+
+            if to_acc.account_type == AccountType.LIABILITY:
+                to_acc.current_balance -= amount
+            else:
+                to_acc.current_balance += amount
 
             new_entries = [
                 LedgerEntry(
