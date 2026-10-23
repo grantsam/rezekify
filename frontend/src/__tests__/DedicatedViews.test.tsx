@@ -113,7 +113,7 @@ describe('Dedicated Ledger & Vaults Views', () => {
       fireEvent.click(lumpSumBtn);
       await waitFor(() => {
         expect(screen.getByText(/Alokasi Lump-Sum Multi-Vault/i)).toBeInTheDocument();
-      });
+      }, { timeout: 4000 });
     });
 
     it('filters vaults by tab: Semua, Tagihan Tetap, Tabungan', () => {

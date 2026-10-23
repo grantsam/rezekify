@@ -515,7 +515,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                           : 'hover:bg-slate-50 dark:hover:bg-zinc-900/50'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-xs mb-1.5">
+                      <div className="flex items-center justify-between text-xs gap-2 mb-1">
                         <div className="flex items-center gap-2 min-w-0">
                           <span
                             className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -524,29 +524,6 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                           <span className="text-slate-800 dark:text-slate-200 font-extrabold truncate">
                             {item.category_name}
                           </span>
-                          {hasBudget ? (
-                            status === 'OVER_BUDGET' ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                                <TrendingUp className="w-3 h-3 text-rose-500 shrink-0" />
-                                <span>Lewat {formatRupiah(Math.abs(diff))}</span>
-                              </span>
-                            ) : status === 'WARNING' ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                                <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
-                                <span>Sisa {formatRupiah(diff)}</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                                <span>Sisa {formatRupiah(diff)}</span>
-                              </span>
-                            )
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700/60">
-                              <Target className="w-3 h-3 shrink-0" />
-                              <span>Tanpa limit</span>
-                            </span>
-                          )}
                         </div>
                         <div className="flex items-center gap-2 font-mono tabular-nums shrink-0 ml-2">
                           <span className="text-slate-500 dark:text-zinc-400 font-bold text-[11px]">
@@ -561,6 +538,36 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                             )}
                           </span>
                         </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        {hasBudget ? (
+                          status === 'OVER_BUDGET' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                              <TrendingUp className="w-3 h-3 text-rose-500 shrink-0" />
+                              <span>Lewat {formatRupiah(Math.abs(diff))}</span>
+                            </span>
+                          ) : status === 'WARNING' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                              <span>Sisa {formatRupiah(diff)}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                              <span>Sisa {formatRupiah(diff)}</span>
+                            </span>
+                          )
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700/60">
+                            <Target className="w-3 h-3 shrink-0" />
+                            <span>Tanpa limit</span>
+                          </span>
+                        )}
+                        {hasBudget && item.budget_spent_pct != null && (
+                          <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 font-semibold">
+                            {Math.round(item.budget_spent_pct)}% terpakai
+                          </span>
+                        )}
                       </div>
                       {hasBudget ? (
                         <div
