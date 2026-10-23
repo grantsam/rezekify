@@ -1,5 +1,6 @@
 """Categories Management Router."""
 
+from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,6 +18,7 @@ class CategoryCreateRequest(BaseModel):
     category_type: CategoryType = CategoryType.EXPENSE
     icon: str = "tag"
     color: str = "#64748b"
+    monthly_budget: Optional[Decimal] = None
 
 
 class CategoryUpdateRequest(BaseModel):
@@ -24,6 +26,7 @@ class CategoryUpdateRequest(BaseModel):
     category_type: Optional[CategoryType] = None
     icon: Optional[str] = None
     color: Optional[str] = None
+    monthly_budget: Optional[Decimal] = None
 
 
 class CategoryResponse(BaseModel):
@@ -32,6 +35,7 @@ class CategoryResponse(BaseModel):
     category_type: CategoryType
     icon: Optional[str] = "tag"
     color: Optional[str] = "#64748b"
+    monthly_budget: Optional[Decimal] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,6 +70,7 @@ def create_category(
         category_type=req.category_type,
         icon=req.icon.strip() if req.icon else "tag",
         color=req.color.strip() if req.color else "#64748b",
+        monthly_budget=req.monthly_budget,
     )
     db.add(cat)
     db.commit()
@@ -100,6 +105,8 @@ def update_category(
         cat.icon = req.icon.strip()
     if req.color is not None:
         cat.color = req.color.strip()
+    if "monthly_budget" in req.model_dump(exclude_unset=True):
+        cat.monthly_budget = req.monthly_budget
 
     db.commit()
     db.refresh(cat)

@@ -132,3 +132,98 @@ def test_categories_crud_and_isolation():
     # 10. Check deleted -> 404 on subsequent update & delete
     assert client.put(f"/api/v1/categories/{cat_id}", json={"name": "Kuliner"}, headers=headers_a).status_code == 404
     assert client.delete(f"/api/v1/categories/{cat_id}", headers=headers_a).status_code == 404
+
+
+def test_category_monthly_budget_crud_and_isolation():
+    app.dependency_overrides[get_db] = override_get_db
+
+    uid_a = uuid.uuid4().hex[:8]
+    uid_b = uuid.uuid4().hex[:8]
+
+    # Register User A
+    res_a = client.post(
+        "/api/v1/auth/register",
+        json={"email": f"budget_a_{uid_a}@example.com", "password": "Password123!", "full_name": "Budget User A"},
+    )
+    token_a = res_a.json()["access_token"]
+    headers_a = {"Authorization": f"Bearer {token_a}"}
+
+    # Register User B
+    res_b = client.post(
+        "/api/v1/auth/register",
+        json={"email": f"budget_b_{uid_b}@example.com", "password": "Password123!", "full_name": "Budget User B"},
+    )
+    token_b = res_b.json()["access_token"]
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    # 1. Creating category with monthly_budget: 1500000.00
+    create_res = client.post(
+        "/api/v1/categories",
+        json={
+            "name": "Makan & Minum",
+            "category_type": "EXPENSE",
+            "icon": "utensils",
+            "color": "#ef4444",
+            "monthly_budget": 1500000.00,
+        },
+        headers=headers_a,
+    )
+    assert create_res.status_code == 200
+    cat_data = create_res.json()
+    cat_id = cat_data["id"]
+    assert Decimal(str(cat_data["monthly_budget"])) == Decimal("1500000.00")
+
+    # 2. Verifying isolation (another user cannot see or modify this category)
+    list_b = client.get("/api/v1/categories", headers=headers_b)
+    assert list_b.status_code == 200
+    b_cat_ids = [c["id"] for c in list_b.json()]
+    assert cat_id not in b_cat_ids
+
+    put_b = client.put(
+        f"/api/v1/categories/{cat_id}",
+        json={"monthly_budget": 999999.00},
+        headers=headers_b,
+    )
+    assert put_b.status_code == 404
+
+    # 3. Updating monthly_budget to 2000000.00
+    put_a = client.put(
+        f"/api/v1/categories/{cat_id}",
+        json={"monthly_budget": 2000000.00},
+        headers=headers_a,
+    )
+    assert put_a.status_code == 200
+    assert Decimal(str(put_a.json()["monthly_budget"])) == Decimal("2000000.00")
+
+    # Partial update without monthly_budget preserves existing budget
+    put_name = client.put(
+        f"/api/v1/categories/{cat_id}",
+        json={"name": "Makan & Minum Mewah"},
+        headers=headers_a,
+    )
+    assert put_name.status_code == 200
+    assert put_name.json()["name"] == "Makan & Minum Mewah"
+    assert Decimal(str(put_name.json()["monthly_budget"])) == Decimal("2000000.00")
+
+    # Verify listing reflects updated monthly_budget
+    list_a = client.get("/api/v1/categories", headers=headers_a)
+    assert list_a.status_code == 200
+    cat_in_list = next((c for c in list_a.json() if c["id"] == cat_id), None)
+    assert cat_in_list is not None
+    assert Decimal(str(cat_in_list["monthly_budget"])) == Decimal("2000000.00")
+
+    # 4. Clearing monthly_budget to None
+    put_clear = client.put(
+        f"/api/v1/categories/{cat_id}",
+        json={"monthly_budget": None},
+        headers=headers_a,
+    )
+    assert put_clear.status_code == 200
+    assert put_clear.json()["monthly_budget"] is None
+
+    # Verify listing reflects None
+    list_a_cleared = client.get("/api/v1/categories", headers=headers_a)
+    cat_in_list_cleared = next((c for c in list_a_cleared.json() if c["id"] == cat_id), None)
+    assert cat_in_list_cleared is not None
+    assert cat_in_list_cleared["monthly_budget"] is None
+
