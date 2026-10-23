@@ -1135,6 +1135,333 @@ def test_simulate_purchase_includes_liability_debt(db_session, sample_user):
     assert sim.projected_daily_runway == Decimal("71428.57")
 
 
+def test_get_cashflow_summary_healthy(db_session, sample_user):
+    from rezekify.services.ledger import LedgerService
+    from rezekify.services.runway import CashflowSummaryReport
+    sample_user.monthly_cycle_day = 1
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("15000000.00"),
+    )
+    cat_inc = Category(
+        user_id=sample_user.id,
+        name="Gaji",
+        category_type=CategoryType.INCOME,
+    )
+    cat_exp = Category(
+        user_id=sample_user.id,
+        name="Makan",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([acc, cat_inc, cat_exp])
+    db_session.commit()
+
+    ledger = LedgerService(db_session)
+    ref_date = date(2026, 9, 15)
+    tx_time = datetime(2026, 9, 5, 10, 0, tzinfo=timezone.utc)
+
+    ledger.record_income(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_inc.id,
+        amount=Decimal("10000000.00"),
+        description="Gaji Bulanan",
+        transaction_date=tx_time,
+    )
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_exp.id,
+        amount=Decimal("6000000.00"),
+        description="Biaya Hidup",
+        transaction_date=tx_time,
+    )
+
+    service = RunwayService(db_session)
+    report = service.get_cashflow_summary(user_id=sample_user.id, today=ref_date)
+
+    assert isinstance(report, CashflowSummaryReport)
+    assert report.cycle_start_date == date(2026, 9, 1)
+    assert report.cycle_end_date == date(2026, 9, 15)
+    assert report.total_income == Decimal("10000000.00")
+    assert report.total_expense == Decimal("6000000.00")
+    assert report.net_cashflow == Decimal("4000000.00")
+    assert report.savings_rate == Decimal("40.0")
+    assert report.status == "HEALTHY"
+
+
+def test_get_cashflow_summary_warning(db_session, sample_user):
+    from rezekify.services.ledger import LedgerService
+    sample_user.monthly_cycle_day = 1
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("15000000.00"),
+    )
+    cat_inc = Category(
+        user_id=sample_user.id,
+        name="Gaji",
+        category_type=CategoryType.INCOME,
+    )
+    cat_exp = Category(
+        user_id=sample_user.id,
+        name="Sewa",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([acc, cat_inc, cat_exp])
+    db_session.commit()
+
+    ledger = LedgerService(db_session)
+    ref_date = date(2026, 9, 15)
+    tx_time = datetime(2026, 9, 5, 10, 0, tzinfo=timezone.utc)
+
+    ledger.record_income(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_inc.id,
+        amount=Decimal("10000000.00"),
+        description="Gaji",
+        transaction_date=tx_time,
+    )
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_exp.id,
+        amount=Decimal("9000000.00"),
+        description="Sewa & Keperluan",
+        transaction_date=tx_time,
+    )
+
+    service = RunwayService(db_session)
+    report = service.get_cashflow_summary(user_id=sample_user.id, today=ref_date)
+
+    assert report.total_income == Decimal("10000000.00")
+    assert report.total_expense == Decimal("9000000.00")
+    assert report.net_cashflow == Decimal("1000000.00")
+    assert report.savings_rate == Decimal("10.0")
+    assert report.status == "WARNING"
+
+
+def test_get_cashflow_summary_negative_deficit(db_session, sample_user):
+    from rezekify.services.ledger import LedgerService
+    sample_user.monthly_cycle_day = 1
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("15000000.00"),
+    )
+    cat_inc = Category(
+        user_id=sample_user.id,
+        name="Freelance",
+        category_type=CategoryType.INCOME,
+    )
+    cat_exp = Category(
+        user_id=sample_user.id,
+        name="Belanja",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([acc, cat_inc, cat_exp])
+    db_session.commit()
+
+    ledger = LedgerService(db_session)
+    ref_date = date(2026, 9, 15)
+    tx_time = datetime(2026, 9, 5, 10, 0, tzinfo=timezone.utc)
+
+    ledger.record_income(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_inc.id,
+        amount=Decimal("5000000.00"),
+        description="Freelance",
+        transaction_date=tx_time,
+    )
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_exp.id,
+        amount=Decimal("7000000.00"),
+        description="Belanja Besar",
+        transaction_date=tx_time,
+    )
+
+    service = RunwayService(db_session)
+    report = service.get_cashflow_summary(user_id=sample_user.id, today=ref_date)
+
+    assert report.total_income == Decimal("5000000.00")
+    assert report.total_expense == Decimal("7000000.00")
+    assert report.net_cashflow == Decimal("-2000000.00")
+    assert report.savings_rate == Decimal("0.0")
+    assert report.status == "CRITICAL"
+
+
+def test_get_cashflow_summary_zero_income_and_zero_expense(db_session, sample_user):
+    sample_user.monthly_cycle_day = 1
+    db_session.commit()
+
+    service = RunwayService(db_session)
+    report = service.get_cashflow_summary(user_id=sample_user.id, today=date(2026, 9, 15))
+
+    assert report.total_income == Decimal("0.00")
+    assert report.total_expense == Decimal("0.00")
+    assert report.net_cashflow == Decimal("0.00")
+    assert report.savings_rate == Decimal("0.0")
+    assert report.status == "WARNING"
+
+
+def test_get_cashflow_summary_cycle_date_boundary_isolation(db_session, sample_user):
+    from rezekify.services.ledger import LedgerService
+    sample_user.monthly_cycle_day = 25
+    acc = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("15000000.00"),
+    )
+    cat_inc = Category(
+        user_id=sample_user.id,
+        name="Income",
+        category_type=CategoryType.INCOME,
+    )
+    cat_exp = Category(
+        user_id=sample_user.id,
+        name="Expense",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([acc, cat_inc, cat_exp])
+    db_session.commit()
+
+    ledger = LedgerService(db_session)
+
+    # 1. Before cycle start: Aug 24 -> excluded
+    ledger.record_income(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_inc.id,
+        amount=Decimal("1000000.00"),
+        description="Old Income",
+        transaction_date=datetime(2026, 8, 24, 23, 59, tzinfo=timezone.utc),
+    )
+    # 2. On cycle start: Aug 25 -> included
+    ledger.record_income(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_inc.id,
+        amount=Decimal("3000000.00"),
+        description="Cycle Start Income",
+        transaction_date=datetime(2026, 8, 25, 1, 0, tzinfo=timezone.utc),
+    )
+    # 3. Inside cycle: Sept 5 -> included
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_exp.id,
+        amount=Decimal("1500000.00"),
+        description="Mid Cycle Expense",
+        transaction_date=datetime(2026, 9, 5, 12, 0, tzinfo=timezone.utc),
+    )
+    # 4. On cycle end: Sept 20 -> included
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_exp.id,
+        amount=Decimal("500000.00"),
+        description="Cycle End Expense",
+        transaction_date=datetime(2026, 9, 20, 18, 0, tzinfo=timezone.utc),
+    )
+    # 5. After cycle end: Sept 21 -> excluded
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc.id,
+        category_id=cat_exp.id,
+        amount=Decimal("2000000.00"),
+        description="Future Expense",
+        transaction_date=datetime(2026, 9, 21, 9, 0, tzinfo=timezone.utc),
+    )
+
+    service = RunwayService(db_session)
+    report = service.get_cashflow_summary(user_id=sample_user.id, today=date(2026, 9, 20))
+
+    assert report.cycle_start_date == date(2026, 8, 25)
+    assert report.cycle_end_date == date(2026, 9, 20)
+    assert report.total_income == Decimal("3000000.00")
+    assert report.total_expense == Decimal("2000000.00")
+    assert report.net_cashflow == Decimal("1000000.00")
+
+
+def test_get_cashflow_summary_internal_transfers_excluded(db_session, sample_user):
+    from rezekify.services.ledger import LedgerService
+    sample_user.monthly_cycle_day = 1
+    acc1 = Account(
+        user_id=sample_user.id,
+        name="BCA",
+        account_type=AccountType.BANK,
+        current_balance=Decimal("10000000.00"),
+    )
+    acc2 = Account(
+        user_id=sample_user.id,
+        name="GoPay",
+        account_type=AccountType.EWALLET,
+        current_balance=Decimal("1000000.00"),
+    )
+    cat_inc = Category(
+        user_id=sample_user.id,
+        name="Income",
+        category_type=CategoryType.INCOME,
+    )
+    cat_exp = Category(
+        user_id=sample_user.id,
+        name="Expense",
+        category_type=CategoryType.EXPENSE,
+    )
+    db_session.add_all([acc1, acc2, cat_inc, cat_exp])
+    db_session.commit()
+
+    ledger = LedgerService(db_session)
+    ref_date = date(2026, 9, 15)
+    tx_time = datetime(2026, 9, 10, 10, 0, tzinfo=timezone.utc)
+
+    # 1. Income
+    ledger.record_income(
+        user_id=sample_user.id,
+        account_id=acc1.id,
+        category_id=cat_inc.id,
+        amount=Decimal("5000000.00"),
+        description="Gaji",
+        transaction_date=tx_time,
+    )
+    # 2. Expense
+    ledger.record_expense(
+        user_id=sample_user.id,
+        account_id=acc1.id,
+        category_id=cat_exp.id,
+        amount=Decimal("2000000.00"),
+        description="Makan",
+        transaction_date=tx_time,
+    )
+    # 3. Internal transfer (BCA -> GoPay)
+    ledger.record_transfer(
+        user_id=sample_user.id,
+        from_account_id=acc1.id,
+        to_account_id=acc2.id,
+        amount=Decimal("1000000.00"),
+        description="Top up GoPay",
+        transaction_date=tx_time,
+    )
+
+    service = RunwayService(db_session)
+    report = service.get_cashflow_summary(user_id=sample_user.id, today=ref_date)
+
+    # Internal transfer must be excluded: income remains 5M, expense remains 2M
+    assert report.total_income == Decimal("5000000.00")
+    assert report.total_expense == Decimal("2000000.00")
+    assert report.net_cashflow == Decimal("3000000.00")
+
+
+
 
 
 

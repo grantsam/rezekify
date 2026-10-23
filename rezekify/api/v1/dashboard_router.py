@@ -139,7 +139,18 @@ class MonthlySpendingResponse(BaseModel):
     items: List[CategorySpendingItemModel]
 
 
-SpendingBreakdownResponse = Union[DailySpendingResponse, MonthlySpendingResponse]
+class CashflowSummaryResponse(BaseModel):
+    period: Literal["cashflow"] = "cashflow"
+    cycle_start_date: date
+    cycle_end_date: date
+    total_income: Decimal
+    total_expense: Decimal
+    net_cashflow: Decimal
+    savings_rate: Decimal
+    status: Literal["HEALTHY", "WARNING", "CRITICAL"]
+
+
+SpendingBreakdownResponse = Union[DailySpendingResponse, MonthlySpendingResponse, CashflowSummaryResponse]
 
 
 @dashboard_router.get("/summary", response_model=DashboardSummaryResponse)
@@ -575,12 +586,13 @@ def simulate_purchase_endpoint(
 
 @analytics_router.get("/spending-breakdown", response_model=SpendingBreakdownResponse)
 def get_spending_breakdown(
-    period: str = Query("daily", pattern="^(daily|monthly)$"),
+    period: str = Query("daily", pattern="^(daily|monthly|cashflow)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Returns spending analytics for either 'daily' (7-day trend vs runway)
-    or 'monthly' (category breakdown for active cycle). Rejects yearly queries (422) for zero-bloat efficiency."""
+    """Returns spending analytics for 'daily' (7-day trend vs runway),
+    'monthly' (category breakdown for active cycle), or 'cashflow' (net cashflow and savings rate).
+    Rejects yearly queries (422) for zero-bloat efficiency."""
     service = RunwayService(db)
     if period == "daily":
         daily_report = service.get_daily_spending_breakdown(user_id=current_user.id, days=7)
@@ -598,6 +610,19 @@ def get_spending_breakdown(
                 )
                 for item in daily_report.items
             ],
+        )
+
+    if period == "cashflow":
+        cashflow_report = service.get_cashflow_summary(user_id=current_user.id)
+        return CashflowSummaryResponse(
+            period="cashflow",
+            cycle_start_date=cashflow_report.cycle_start_date,
+            cycle_end_date=cashflow_report.cycle_end_date,
+            total_income=cashflow_report.total_income,
+            total_expense=cashflow_report.total_expense,
+            net_cashflow=cashflow_report.net_cashflow,
+            savings_rate=cashflow_report.savings_rate,
+            status=cashflow_report.status,
         )
 
     monthly_report = service.get_category_spending_breakdown(user_id=current_user.id)
@@ -619,4 +644,24 @@ def get_spending_breakdown(
             )
             for item in monthly_report.items
         ],
+    )
+
+
+@dashboard_router.get("/analytics/cashflow-summary", response_model=CashflowSummaryResponse)
+@analytics_router.get("/cashflow-summary", response_model=CashflowSummaryResponse)
+def get_cashflow_summary_endpoint(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Calculates active cycle net cashflow, savings rate, and financial health status."""
+    report = RunwayService(db).get_cashflow_summary(user_id=current_user.id)
+    return CashflowSummaryResponse(
+        period="cashflow",
+        cycle_start_date=report.cycle_start_date,
+        cycle_end_date=report.cycle_end_date,
+        total_income=report.total_income,
+        total_expense=report.total_expense,
+        net_cashflow=report.net_cashflow,
+        savings_rate=report.savings_rate,
+        status=report.status,
     )

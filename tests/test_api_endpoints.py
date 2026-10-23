@@ -1614,5 +1614,85 @@ def test_dashboard_summary_includes_survival_guidance(client, auth_headers):
     assert len(guidance["tactical_action"]) > 0
 
 
+def test_api_spending_breakdown_cashflow_and_dedicated_endpoint(sample_user, db_session):
+    """Tests that period=cashflow query parameter and dedicated /analytics/cashflow-summary return CashflowSummaryResponse."""
+    from rezekify.core.security import create_access_token
+    from rezekify.services.ledger import LedgerService
+    from rezekify.db.models import Account, AccountType, Category, CategoryType
+    from datetime import datetime, timezone
+
+    with db_override(db_session):
+        token = create_access_token({"sub": str(sample_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        acc = Account(
+            user_id=sample_user.id,
+            name="Bank Central",
+            account_type=AccountType.BANK,
+            current_balance=Decimal("10000000.00"),
+        )
+        cat_inc = Category(
+            user_id=sample_user.id,
+            name="Salary",
+            category_type=CategoryType.INCOME,
+        )
+        cat_exp = Category(
+            user_id=sample_user.id,
+            name="Groceries",
+            category_type=CategoryType.EXPENSE,
+        )
+        db_session.add_all([acc, cat_inc, cat_exp])
+        db_session.commit()
+
+        ledger = LedgerService(db_session)
+        now = datetime.now(timezone.utc)
+        ledger.record_income(
+            user_id=sample_user.id,
+            account_id=acc.id,
+            category_id=cat_inc.id,
+            amount=Decimal("10000000.00"),
+            description="Monthly Paycheck",
+            transaction_date=now,
+        )
+        ledger.record_expense(
+            user_id=sample_user.id,
+            account_id=acc.id,
+            category_id=cat_exp.id,
+            amount=Decimal("4000000.00"),
+            description="Supermarket",
+            transaction_date=now,
+        )
+
+        # 1. Test /api/v1/analytics/spending-breakdown?period=cashflow
+        res1 = client.get("/api/v1/analytics/spending-breakdown?period=cashflow", headers=headers)
+        assert res1.status_code == 200
+        data1 = res1.json()
+        assert data1["period"] == "cashflow"
+        assert "cycle_start_date" in data1
+        assert "cycle_end_date" in data1
+        assert Decimal(str(data1["total_income"])) == Decimal("10000000.00")
+        assert Decimal(str(data1["total_expense"])) == Decimal("4000000.00")
+        assert Decimal(str(data1["net_cashflow"])) == Decimal("6000000.00")
+        assert Decimal(str(data1["savings_rate"])) == Decimal("60.0")
+        assert data1["status"] == "HEALTHY"
+
+        # 2. Test dedicated endpoint /api/v1/dashboard/analytics/cashflow-summary
+        res2 = client.get("/api/v1/dashboard/analytics/cashflow-summary", headers=headers)
+        assert res2.status_code == 200
+        data2 = res2.json()
+        assert data2["period"] == "cashflow"
+        assert Decimal(str(data2["net_cashflow"])) == Decimal("6000000.00")
+        assert data2["status"] == "HEALTHY"
+
+        # 3. Test dedicated endpoint /api/v1/analytics/cashflow-summary
+        res3 = client.get("/api/v1/analytics/cashflow-summary", headers=headers)
+        assert res3.status_code == 200
+        data3 = res3.json()
+        assert data3["period"] == "cashflow"
+        assert Decimal(str(data3["net_cashflow"])) == Decimal("6000000.00")
+        assert data3["status"] == "HEALTHY"
+
+
+
 
 

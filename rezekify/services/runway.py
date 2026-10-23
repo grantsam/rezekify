@@ -7,7 +7,7 @@ import time
 from typing import Dict, List, Literal, NamedTuple, Optional
 from uuid import UUID
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from rezekify.db.models import (
@@ -104,6 +104,16 @@ class CategorySpendingBreakdownReport(NamedTuple):
     cycle_end_date: date
     total_spent: Decimal
     items: List[CategoryBreakdownItem]
+
+
+class CashflowSummaryReport(NamedTuple):
+    cycle_start_date: date
+    cycle_end_date: date
+    total_income: Decimal
+    total_expense: Decimal
+    net_cashflow: Decimal
+    savings_rate: Decimal
+    status: Literal["HEALTHY", "WARNING", "CRITICAL"]
 
 
 # In-memory TTL cache: (user_id, today) -> (RunwayReport, timestamp)
@@ -529,3 +539,105 @@ class RunwayService:
             total_spent=total_spent,
             items=items,
         )
+
+    def get_cashflow_summary(
+        self, user_id: UUID, today: Optional[date] = None
+    ) -> CashflowSummaryReport:
+        """Computes net cashflow, savings rate, and financial health status for current billing cycle."""
+        if today is None:
+            today = date.today()
+
+        user = self.db.query(User).filter_by(id=user_id).one()
+        cycle_day = user.monthly_cycle_day
+
+        if today.day >= cycle_day:
+            _, max_days = monthrange(today.year, today.month)
+            effective_day = min(cycle_day, max_days)
+            cycle_start = date(today.year, today.month, effective_day)
+        else:
+            if today.month == 1:
+                prev_year = today.year - 1
+                prev_month = 12
+            else:
+                prev_year = today.year
+                prev_month = today.month - 1
+            _, max_days = monthrange(prev_year, prev_month)
+            effective_day = min(cycle_day, max_days)
+            cycle_start = date(prev_year, prev_month, effective_day)
+
+        cycle_end = today
+
+        # Exclude internal transfers where both debit and credit entries have account_id != None
+        transfer_tx_subquery = (
+            self.db.query(LedgerEntry.transaction_id)
+            .filter(
+                LedgerEntry.user_id == user_id,
+                LedgerEntry.account_id.isnot(None),
+            )
+            .group_by(LedgerEntry.transaction_id)
+            .having(func.count(func.distinct(LedgerEntry.entry_type)) >= 2)
+        )
+
+        total_income_raw = (
+            self.db.query(func.coalesce(func.sum(LedgerEntry.amount), Decimal("0.00")))
+            .join(Transaction, LedgerEntry.transaction_id == Transaction.id)
+            .outerjoin(Category, LedgerEntry.category_id == Category.id)
+            .filter(
+                Transaction.user_id == user_id,
+                LedgerEntry.entry_type == EntryType.CREDIT,
+                func.date(Transaction.transaction_date) >= cycle_start.isoformat(),
+                func.date(Transaction.transaction_date) <= cycle_end.isoformat(),
+                or_(
+                    Category.category_type == CategoryType.INCOME,
+                    and_(LedgerEntry.account_id.is_(None), LedgerEntry.vault_id.is_(None)),
+                ),
+                Transaction.id.notin_(transfer_tx_subquery),
+            )
+            .scalar()
+        ) or Decimal("0.00")
+
+        total_expense_raw = (
+            self.db.query(func.coalesce(func.sum(LedgerEntry.amount), Decimal("0.00")))
+            .join(Transaction, LedgerEntry.transaction_id == Transaction.id)
+            .outerjoin(Category, LedgerEntry.category_id == Category.id)
+            .filter(
+                Transaction.user_id == user_id,
+                LedgerEntry.entry_type == EntryType.DEBIT,
+                func.date(Transaction.transaction_date) >= cycle_start.isoformat(),
+                func.date(Transaction.transaction_date) <= cycle_end.isoformat(),
+                or_(
+                    Category.category_type == CategoryType.EXPENSE,
+                    and_(LedgerEntry.account_id.is_(None), LedgerEntry.vault_id.is_(None)),
+                ),
+                Transaction.id.notin_(transfer_tx_subquery),
+            )
+            .scalar()
+        ) or Decimal("0.00")
+
+        total_income = Decimal(str(total_income_raw)).quantize(Decimal("0.01"))
+        total_expense = Decimal(str(total_expense_raw)).quantize(Decimal("0.01"))
+        net_cashflow = (total_income - total_expense).quantize(Decimal("0.01"))
+
+        if total_income > Decimal("0.00"):
+            raw_savings_rate = ((net_cashflow / total_income) * Decimal("100")).quantize(Decimal("0.1"))
+            savings_rate = max(Decimal("0.0"), raw_savings_rate)
+        else:
+            savings_rate = Decimal("0.0")
+
+        if net_cashflow < Decimal("0.00"):
+            status: Literal["HEALTHY", "WARNING", "CRITICAL"] = "CRITICAL"
+        elif savings_rate >= Decimal("20.0"):
+            status = "HEALTHY"
+        else:
+            status = "WARNING"
+
+        return CashflowSummaryReport(
+            cycle_start_date=cycle_start,
+            cycle_end_date=cycle_end,
+            total_income=total_income,
+            total_expense=total_expense,
+            net_cashflow=net_cashflow,
+            savings_rate=savings_rate,
+            status=status,
+        )
+
