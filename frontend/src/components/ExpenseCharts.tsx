@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Card, CardBody } from '@heroui/react';
-import { BarChart3, AlertCircle, CheckCircle2, AlertTriangle, TrendingUp, Target } from 'lucide-react';
+import { BarChart3, AlertCircle, CheckCircle2, AlertTriangle, TrendingUp, TrendingDown, Target, ArrowDownUp } from 'lucide-react';
 import { apiFetch } from '../services/apiClient';
 import { formatRupiah } from '../utils/formatters';
-import { SpendingBreakdownResponse, DailySpendingResponse, MonthlySpendingResponse } from '../types/api';
+import { SpendingBreakdownResponse, DailySpendingResponse, MonthlySpendingResponse, CashflowSummaryResponse } from '../types/api';
 
 interface Props {
   refreshTrigger?: number;
@@ -36,16 +36,18 @@ function formatCompactRupiah(amount: number): string {
 export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   // ponytail: url period toggle; upgrade to custom date ranges if datepicker filter is added.
-  const period: 'daily' | 'monthly' = searchParams.get('period') === 'monthly' ? 'monthly' : 'daily';
+  const rawPeriod = searchParams.get('period');
+  const period: 'daily' | 'monthly' | 'cashflow' =
+    rawPeriod === 'monthly' ? 'monthly' : rawPeriod === 'cashflow' ? 'cashflow' : 'daily';
 
-  const handlePeriodChange = (newPeriod: 'daily' | 'monthly') => {
+  const handlePeriodChange = (newPeriod: 'daily' | 'monthly' | 'cashflow') => {
     if (newPeriod === period) return;
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (newPeriod === 'monthly') {
-        next.set('period', 'monthly');
-      } else {
+      if (newPeriod === 'daily') {
         next.delete('period');
+      } else {
+        next.set('period', newPeriod);
       }
       return next;
     }, { replace: true });
@@ -61,7 +63,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await apiFetch<SpendingBreakdownResponse>(`/analytics/spending-breakdown?period=${period}`);
+      const res = await apiFetch<SpendingBreakdownResponse>('/analytics/spending-breakdown?period=' + period);
       setData(res);
     } catch (err: any) {
       setError(err?.message || 'Gagal memuat analitik.');
@@ -76,6 +78,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
 
   const dailyData = data?.period === 'daily' ? (data as DailySpendingResponse) : null;
   const monthlyData = data?.period === 'monthly' ? (data as MonthlySpendingResponse) : null;
+  const cashflowData = data?.period === 'cashflow' ? (data as CashflowSummaryResponse) : null;
 
   const maxDailyAmount = dailyData?.items.reduce(
     (max, item) => Math.max(max, item.amount, item.safe_runway_threshold, dailyData.daily_safe_runway || 0),
@@ -88,7 +91,9 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
 
   const hasExpenses = period === 'daily'
     ? dailyData?.items.some((i) => i.amount > 0)
-    : (monthlyData?.items && monthlyData.items.length > 0);
+    : period === 'monthly'
+    ? (monthlyData?.items && monthlyData.items.length > 0)
+    : Boolean(cashflowData);
 
   // ponytail: fixed 7-point cubic bezier curve; upgrade to d3-shape if points become dynamic or exceed 30.
   const { curvePath, areaPath, points } = useMemo(() => {
@@ -146,7 +151,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
               <div
                 role="tablist"
                 aria-label="Pilih rentang waktu analitik"
-                className="flex bg-slate-100 dark:bg-zinc-900/60 p-1 rounded-2xl text-xs border border-slate-200/80 dark:border-zinc-800/80 shrink-0 w-[240px]"
+                className="flex items-center bg-slate-100 dark:bg-zinc-900/60 p-1 rounded-2xl text-xs border border-slate-200/80 dark:border-zinc-800/80 shrink-0 gap-1"
               >
                 <Button
                   size="sm"
@@ -154,7 +159,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   role="tab"
                   aria-selected={period === 'daily'}
                   onPress={() => handlePeriodChange('daily')}
-                  className={`flex-1 min-h-[38px] px-2 py-1 rounded-xl font-extrabold transition-all text-xs ${
+                  className={`min-h-[38px] px-2.5 py-1 rounded-xl font-extrabold transition-all text-xs ${
                     period === 'daily'
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
                       : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
@@ -168,7 +173,7 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                   role="tab"
                   aria-selected={period === 'monthly'}
                   onPress={() => handlePeriodChange('monthly')}
-                  className={`flex-1 min-h-[38px] px-2 py-1 rounded-xl font-extrabold transition-all text-xs ${
+                  className={`min-h-[38px] px-2.5 py-1 rounded-xl font-extrabold transition-all text-xs ${
                     period === 'monthly'
                       ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/20'
                       : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-transparent'
@@ -176,12 +181,29 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                 >
                   Bulanan (Monthly)
                 </Button>
+                <Button
+                  size="sm"
+                  role="tab"
+                  aria-selected={period === 'cashflow'}
+                  variant={period === 'cashflow' ? 'solid' : 'light'}
+                  onPress={() => handlePeriodChange('cashflow')}
+                  className={`h-7 px-2.5 text-[11px] font-extrabold rounded-lg transition-all min-h-[38px] ${
+                    period === 'cashflow'
+                      ? 'bg-emerald-500 text-white shadow-xs'
+                      : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  startContent={<ArrowDownUp className="w-3 h-3 shrink-0" />}
+                >
+                  Arus Kas (Cashflow)
+                </Button>
               </div>
             </div>
             <div className="flex items-center justify-between gap-2 min-h-[28px]">
               <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium truncate">
                 {period === 'daily'
                   ? 'Tren belanja 7 hari terakhir vs ambang batas Daily Safe Runway'
+                  : period === 'cashflow'
+                  ? 'Perbandingan pemasukan vs pengeluaran dan rasio tabungan siklus berjalan'
                   : 'Distribusi pengeluaran per kategori pada siklus berjalan'}
               </p>
               {period === 'daily' && threshold > 0 && (
@@ -609,6 +631,169 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
                 })}
               </div>
             </div>
+          ) : period === 'cashflow' && cashflowData ? (
+            <div data-testid="cashflow-canvas-container" className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center py-2 flex-1 min-h-[224px]">
+              {/* Left Column (md:col-span-5): SVG Bi-Directional Donut Gauge */}
+              <div className="md:col-span-5 flex items-center justify-center relative">
+                {(() => {
+                  const totalFlow = cashflowData.total_income + cashflowData.total_expense;
+                  const incomeArc = totalFlow > 0 ? (cashflowData.total_income / totalFlow) * CIRCUMFERENCE : 0;
+                  const expenseArc = totalFlow > 0 ? (cashflowData.total_expense / totalFlow) * CIRCUMFERENCE : 0;
+
+                  return (
+                    <svg viewBox="0 0 160 160" data-testid="cashflow-donut-gauge" className="w-40 h-40">
+                      {/* Background track circle */}
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="60"
+                        fill="transparent"
+                        stroke="currentColor"
+                        strokeWidth="14"
+                        className="text-slate-100 dark:text-zinc-800/60"
+                      />
+
+                      {/* Income Arc (Emerald #10B981) */}
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="60"
+                        fill="transparent"
+                        stroke="#10B981"
+                        strokeWidth="14"
+                        strokeDasharray={`${incomeArc} ${CIRCUMFERENCE}`}
+                        strokeDashoffset={0}
+                        transform="rotate(-90 80 80)"
+                        className="transition-all duration-300 ease-out"
+                      />
+
+                      {/* Expense Arc (Rose #F43F5E) */}
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="60"
+                        fill="transparent"
+                        stroke="#F43F5E"
+                        strokeWidth="14"
+                        strokeDasharray={`${expenseArc} ${CIRCUMFERENCE}`}
+                        strokeDashoffset={-incomeArc}
+                        transform="rotate(-90 80 80)"
+                        className="transition-all duration-300 ease-out"
+                      />
+
+                      {/* Center Text */}
+                      <text x="80" y="65" textAnchor="middle" className="text-[10px] font-bold fill-slate-500 dark:fill-zinc-400 select-none">
+                        Rasio Tabungan
+                      </text>
+                      <text x="80" y="85" textAnchor="middle" data-testid="center-savings-rate" className="text-base font-black font-mono fill-slate-900 dark:fill-white tabular-nums select-none">
+                        {cashflowData.savings_rate.toFixed(1)}%
+                      </text>
+                      <text
+                        x="80"
+                        y="102"
+                        textAnchor="middle"
+                        className={`text-[10px] font-extrabold select-none ${cashflowData.net_cashflow >= 0 ? 'fill-emerald-500' : 'fill-rose-500'}`}
+                      >
+                        {cashflowData.net_cashflow >= 0 ? 'Surplus' : 'Defisit'}
+                      </text>
+                    </svg>
+                  );
+                })()}
+              </div>
+
+              {/* Right Column (md:col-span-7): Telemetry Cards */}
+              <div className="md:col-span-7 flex flex-col justify-center space-y-3.5">
+                {/* Telemetry Cards in 2-col layout */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 font-semibold mb-1">
+                      <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-500">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                      </div>
+                      <span>Pemasukan</span>
+                    </div>
+                    <p className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-white tabular-nums">
+                      Rp {cashflowData.total_income.toLocaleString('id-ID')}
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 font-semibold mb-1">
+                      <div className="p-1 rounded-md bg-rose-500/10 text-rose-500">
+                        <TrendingDown className="w-3.5 h-3.5" />
+                      </div>
+                      <span>Pengeluaran</span>
+                    </div>
+                    <p className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-white tabular-nums">
+                      Rp {cashflowData.total_expense.toLocaleString('id-ID')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Net Cashflow row */}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold block">Arus Kas Bersih</span>
+                    <span className={`text-sm sm:text-base font-black font-mono tabular-nums ${
+                      cashflowData.net_cashflow >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                    }`}>
+                      {cashflowData.net_cashflow >= 0 ? '+' : ''}Rp {cashflowData.net_cashflow.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div>
+                    {cashflowData.status === 'HEALTHY' ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <span>Sangat Sehat</span>
+                      </span>
+                    ) : cashflowData.status === 'WARNING' ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                        <span>Cukup Seimbang</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                        <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+                        <span>Arus Kas Negatif</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Savings Rate Progress Bar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500 dark:text-zinc-400 font-semibold">Rasio Tabungan</span>
+                    <span className="text-slate-400 dark:text-zinc-500 font-medium text-[11px]">
+                      Target Ideal: 20%
+                    </span>
+                  </div>
+                  <div
+                    data-testid="savings-rate-progress"
+                    className="relative w-full h-2.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden"
+                  >
+                    {/* Benchmark target indicator at 20% */}
+                    <div
+                      className="absolute top-0 bottom-0 left-[20%] w-0.5 bg-slate-400 dark:bg-zinc-500 z-10"
+                      title="Target Ideal: 20%"
+                    />
+                    {/* Fill clamped between 0 and 100% */}
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        cashflowData.savings_rate >= 20
+                          ? 'bg-emerald-500'
+                          : cashflowData.savings_rate > 0
+                          ? 'bg-amber-500'
+                          : 'bg-rose-500'
+                      }`}
+                      style={{
+                        width: `${Math.max(0, Math.min(100, cashflowData.savings_rate))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : null}
         </div>
 
@@ -626,6 +811,15 @@ export const ExpenseCharts: React.FC<Props> = ({ refreshTrigger = 0 }) => {
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold px-2 pt-3 min-h-[32px]">
             <span>{monthlyData.items.length} Kategori Pengeluaran Terdata</span>
             <span>Distribusi Siklus Berjalan</span>
+          </div>
+        ) : period === 'cashflow' && cashflowData ? (
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold px-2 pt-3 min-h-[32px]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Pemasukan
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Pengeluaran
+            </span>
           </div>
         ) : null}
       </CardBody>

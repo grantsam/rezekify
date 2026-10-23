@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { ExpenseCharts, PALETTE, resolveCategoryColor } from '../components/ExpenseCharts';
 import * as apiClient from '../services/apiClient';
 
@@ -377,5 +377,175 @@ describe('ExpenseCharts Living SVG & Stability', () => {
     const overBudgetFill = screen.getByTestId('budget-progress-fill-cat-3');
     expect(overBudgetFill).toBeInTheDocument();
     expect(overBudgetFill.style.width).toBe('100%');
+  });
+
+  it('renders 3-tab toggle including "Arus Kas (Cashflow)" and updates URL search param', async () => {
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDailyData);
+
+    function LocationDisplay() {
+      const location = useLocation();
+      return <div data-testid="location-search">{location.search}</div>;
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <ExpenseCharts />
+        <LocationDisplay />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Min')).toBeInTheDocument();
+    });
+
+    const cashflowBtn = screen.getByRole('tab', { name: /Arus Kas \(Cashflow\)/i });
+    expect(cashflowBtn).toBeInTheDocument();
+    expect(cashflowBtn).toHaveAttribute('aria-selected', 'false');
+
+    fireEvent.click(cashflowBtn);
+
+    await waitFor(() => {
+      expect(cashflowBtn).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('location-search')).toHaveTextContent('period=cashflow');
+    });
+  });
+
+  it('renders Cashflow View with SVG bi-directional gauge, savings rate, and telemetry cards', async () => {
+    const mockCashflow = {
+      period: 'cashflow' as const,
+      cycle_start_date: '2026-09-01',
+      cycle_end_date: '2026-09-19',
+      total_income: 10000000,
+      total_expense: 6500000,
+      net_cashflow: 3500000,
+      savings_rate: 35.0,
+      status: 'HEALTHY' as const,
+    };
+
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockCashflow);
+
+    render(
+      <MemoryRouter initialEntries={['/?period=cashflow']}>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-canvas-container')).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByText(/Perbandingan pemasukan vs pengeluaran dan rasio tabungan siklus berjalan/i)
+    ).toBeInTheDocument();
+
+    const gauge = screen.getByTestId('cashflow-donut-gauge');
+    expect(gauge).toBeInTheDocument();
+    expect(screen.getAllByText('Rasio Tabungan').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId('center-savings-rate')).toHaveTextContent('35.0%');
+    expect(screen.getByText('Surplus')).toBeInTheDocument();
+
+    expect(screen.getAllByText('Pemasukan').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Rp 10.000.000')).toBeInTheDocument();
+    expect(screen.getAllByText('Pengeluaran').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Rp 6.500.000')).toBeInTheDocument();
+
+    expect(screen.getByText('Arus Kas Bersih')).toBeInTheDocument();
+    expect(screen.getByText('+Rp 3.500.000')).toBeInTheDocument();
+    expect(screen.getByText('Sangat Sehat')).toBeInTheDocument();
+
+    expect(screen.getByTestId('savings-rate-progress')).toBeInTheDocument();
+  });
+
+  it('renders Deficit Mode with CRITICAL badge "Arus Kas Negatif" and negative cashflow', async () => {
+    const mockDeficit = {
+      period: 'cashflow' as const,
+      cycle_start_date: '2026-09-01',
+      cycle_end_date: '2026-09-19',
+      total_income: 3000000,
+      total_expense: 4500000,
+      net_cashflow: -1500000,
+      savings_rate: -50.0,
+      status: 'CRITICAL' as const,
+    };
+
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockDeficit);
+
+    render(
+      <MemoryRouter initialEntries={['/?period=cashflow']}>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-canvas-container')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Defisit')).toBeInTheDocument();
+    expect(screen.getByText('Arus Kas Negatif')).toBeInTheDocument();
+    expect(screen.getByTestId('center-savings-rate')).toHaveTextContent('-50.0%');
+    expect(screen.getByText(/Rp -1\.500\.000|-Rp 1\.500\.000/)).toBeInTheDocument();
+  });
+
+  it('handles zero income and zero expense without division by zero or NaN', async () => {
+    const mockZeroCashflow = {
+      period: 'cashflow' as const,
+      cycle_start_date: '2026-09-01',
+      cycle_end_date: '2026-09-19',
+      total_income: 0,
+      total_expense: 0,
+      net_cashflow: 0,
+      savings_rate: 0.0,
+      status: 'WARNING' as const,
+    };
+
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockZeroCashflow);
+
+    render(
+      <MemoryRouter initialEntries={['/?period=cashflow']}>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-canvas-container')).toBeInTheDocument();
+    });
+
+    const gauge = screen.getByTestId('cashflow-donut-gauge');
+    expect(gauge).toBeInTheDocument();
+
+    const gaugeHtml = gauge.outerHTML;
+    expect(gaugeHtml).not.toContain('NaN');
+    expect(gaugeHtml).not.toContain('Infinity');
+
+    expect(screen.getByTestId('center-savings-rate')).toHaveTextContent('0.0%');
+    expect(screen.getByText('Cukup Seimbang')).toBeInTheDocument();
+  });
+
+  it('enforces min-h-[224px] layout lock on Cashflow chart container for zero CLS', async () => {
+    const mockCashflow = {
+      period: 'cashflow' as const,
+      cycle_start_date: '2026-09-01',
+      cycle_end_date: '2026-09-19',
+      total_income: 8000000,
+      total_expense: 4000000,
+      net_cashflow: 4000000,
+      savings_rate: 50.0,
+      status: 'HEALTHY' as const,
+    };
+
+    vi.spyOn(apiClient, 'apiFetch').mockResolvedValue(mockCashflow);
+
+    render(
+      <MemoryRouter initialEntries={['/?period=cashflow']}>
+        <ExpenseCharts />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cashflow-canvas-container')).toBeInTheDocument();
+    });
+
+    const container = screen.getByTestId('cashflow-canvas-container');
+    expect(container.className).toContain('min-h-[224px]');
   });
 });
