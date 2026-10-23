@@ -340,7 +340,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   <AccIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   <span className="font-semibold text-slate-700 dark:text-zinc-300">{acc.name}:</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
-                    Rp {acc.current_balance.toLocaleString('id-ID')}
+                    {formatRupiah(acc.current_balance)}
                   </span>
                 </div>
               );
