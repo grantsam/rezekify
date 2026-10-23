@@ -149,6 +149,7 @@ class Category(Base):
     category_type = Column(SQLEnum(CategoryType, native_enum=False), nullable=False)
     icon = Column(String(50), default="tag")
     color = Column(String(20), default="#64748b")
+    monthly_budget = Column(Numeric(15, 2), nullable=True)
 
     user = relationship("User", back_populates="categories")
 
