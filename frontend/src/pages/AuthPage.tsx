@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@heroui/react';
 import {
   Lock,
@@ -351,8 +351,18 @@ export const AuthPage: React.FC = () => {
             )}
 
             {/* Forms */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === 'register' && (
+            {/* ponytail: form key-based mode crossfade; upgrade to shared layout animations if inputs preserve state across modes */}
+            <AnimatePresence mode="wait">
+              <motion.form
+                key={mode}
+                onSubmit={handleSubmit}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-4"
+              >
+                {mode === 'register' && (
                 <div>
                   <label htmlFor="auth-fullname" className="block text-xs font-extrabold text-slate-800 dark:text-zinc-200 mb-1.5">
                     Nama Lengkap
@@ -431,20 +441,22 @@ export const AuthPage: React.FC = () => {
                     </div>
                   )}
 
-                  <Button
-                    type="submit"
-                    isDisabled={isSubmitting}
-                    className="w-full mt-4 bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-50 active:scale-[0.99] min-h-[48px] text-sm"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-white" />
-                    ) : (
-                      <>
-                        <span>{mode === 'login' ? 'Masuk ke Rezekify' : 'Buat Akun Sekarang'}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </Button>
+                  <motion.div whileTap={{ scale: 0.98 }} className="w-full">
+                    <Button
+                      type="submit"
+                      isDisabled={isSubmitting}
+                      className="w-full mt-4 bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-50 active:scale-[0.99] min-h-[48px] text-sm"
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                      ) : (
+                        <>
+                          <span>{mode === 'login' ? 'Masuk ke Rezekify' : 'Buat Akun Sekarang'}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
                 </>
               )}
 
@@ -468,20 +480,22 @@ export const AuthPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    isDisabled={isSubmitting}
-                    className="w-full mt-4 bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-50 active:scale-[0.99] min-h-[48px] text-sm"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-white" />
-                    ) : (
-                      <>
-                        <span>Kirim Kode Verifikasi</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </Button>
+                  <motion.div whileTap={{ scale: 0.98 }} className="w-full">
+                    <Button
+                      type="submit"
+                      isDisabled={isSubmitting}
+                      className="w-full mt-4 bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-50 active:scale-[0.99] min-h-[48px] text-sm"
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                      ) : (
+                        <>
+                          <span>Kirim Kode Verifikasi</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
 
                   <button
                     type="button"
@@ -545,20 +559,22 @@ export const AuthPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    isDisabled={isSubmitting}
-                    className="w-full mt-4 bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-50 active:scale-[0.99] min-h-[48px] text-sm"
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-white" />
-                    ) : (
-                      <>
-                        <span>Perbarui Kata Sandi</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </Button>
+                  <motion.div whileTap={{ scale: 0.98 }} className="w-full">
+                    <Button
+                      type="submit"
+                      isDisabled={isSubmitting}
+                      className="w-full mt-4 bg-gradient-to-r from-[#0F766E] to-[#10B981] hover:from-[#0F766E]/90 hover:to-[#10B981]/90 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-50 active:scale-[0.99] min-h-[48px] text-sm"
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                      ) : (
+                        <>
+                          <span>Perbarui Kata Sandi</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
 
                   <div className="flex items-center justify-between pt-2 text-xs">
                     <button
@@ -586,7 +602,8 @@ export const AuthPage: React.FC = () => {
                   </div>
                 </>
               )}
-            </form>
+            </motion.form>
+          </AnimatePresence>
 
             <div className="mt-8 pt-4 border-t border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-center gap-2">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Developed by</span>

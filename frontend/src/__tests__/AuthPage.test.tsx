@@ -388,4 +388,20 @@ describe('AuthPage Component', () => {
       expect(screen.getByRole('button', { name: /Kirim ulang kode \(\d+s\)/i })).toBeDisabled();
     });
   });
+
+  it('maintains active mode form container during transitions', () => {
+    const { container } = renderAuthPage();
+    const form = container.querySelector('form');
+    expect(form).toBeInTheDocument();
+    expect(form?.className).toContain('space-y-4');
+
+    // Switch to register
+    fireEvent.click(screen.getByRole('button', { name: /Daftar Akun/i }));
+    expect(container.querySelector('form')).toBeInTheDocument();
+
+    // Switch to forgot password
+    fireEvent.click(screen.getByRole('button', { name: /Masuk \(Login\)/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lupa kata sandi\?/i }));
+    expect(container.querySelector('form')).toBeInTheDocument();
+  });
 });
