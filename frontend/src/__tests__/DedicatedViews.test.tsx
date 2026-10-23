@@ -109,7 +109,7 @@ describe('Dedicated Ledger & Vaults Views', () => {
       fireEvent.click(screen.getByRole('button', { name: /\+ Tambah Vault/i }));
       expect(handleOpenCreateVault).toHaveBeenCalledTimes(1);
 
-      const lumpSumBtn = screen.getByRole('button', { name: /Alokasikan Dana \/ Lump-Sum/i });
+      const lumpSumBtn = screen.getByRole('button', { name: /Alokasikan Dana \(Lump-Sum\)/i });
       expect(lumpSumBtn).toBeInTheDocument();
       fireEvent.click(lumpSumBtn);
       await waitFor(() => {

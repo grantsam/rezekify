@@ -184,7 +184,7 @@ describe('ChatMessageList Component', () => {
 
     // Accordion button exists with correct count
     const accordionBtn = screen.getByRole('button', {
-      name: /💭 Proses Berpikir & Aktivitas \(1 langkah\)/i,
+      name: /Proses Berpikir & Aktivitas \(1 langkah\)/i,
     });
     expect(accordionBtn).toBeInTheDocument();
     expect(accordionBtn).toHaveAttribute('aria-expanded', 'false');

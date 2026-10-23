@@ -12,6 +12,7 @@ import {
   Bot,
   CheckCircle2,
   Sparkles,
+  Coffee,
   Send,
   KeyRound,
   Eye,
@@ -184,7 +185,7 @@ export const AuthPage: React.FC = () => {
             <div className="absolute -top-3 right-4 z-20 bg-white/95 dark:bg-[#141417] backdrop-blur-xl border border-slate-200/80 dark:border-zinc-800/80 p-3 rounded-2xl shadow-xl transition-all duration-300 ease-out flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#10B981]" />
               <p className="text-[11px] font-bold text-slate-800 dark:text-white">
-                Otomatis Terkategori oleh AI ✨
+                Otomatis Terkategori oleh AI <Sparkles className="w-3.5 h-3.5 text-emerald-400 inline ml-1" />
               </p>
             </div>
 
@@ -208,7 +209,7 @@ export const AuthPage: React.FC = () => {
                 <div className="flex justify-end">
                   <div className="bg-[#10B981] text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] shadow-md">
                     <p className="text-xs font-semibold">
-                      "Barusan beli kopi & makan siang Rp 65.000 via QRIS Mandiri" ☕
+                      "Barusan beli kopi & makan siang Rp 65.000 via QRIS Mandiri" <Coffee className="w-4 h-4 text-emerald-400 inline mr-1" />
                     </p>
                     <span className="text-[9px] font-medium text-emerald-100 block text-right mt-1">12:38 PM</span>
                   </div>

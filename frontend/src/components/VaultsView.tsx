@@ -92,11 +92,11 @@ export const VaultsView: React.FC<VaultsViewProps> = ({
             size="sm"
             variant="flat"
             onPress={() => setIsLumpSumModalOpen(true)}
-            aria-label="⚡ Alokasikan Dana / Lump-Sum"
+            aria-label="Alokasikan Dana (Lump-Sum)"
             startContent={<Sparkles className="w-4 h-4 text-emerald-500" />}
             className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold min-h-[40px] px-4 rounded-2xl text-xs border border-emerald-500/30 transition-all"
           >
-            ⚡ Alokasikan Dana / Lump-Sum
+            Alokasikan Dana (Lump-Sum)
           </Button>
 
           <Button

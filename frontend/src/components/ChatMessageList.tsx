@@ -171,7 +171,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                     aria-expanded={isTraceOpen}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-900/80 dark:hover:bg-zinc-800/80 border border-slate-200 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 text-xs font-semibold transition-all active:scale-[0.99] w-fit shadow-xs"
                   >
-                    <span>💭</span>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400 inline mr-1 animate-pulse" />
                     <span>
                       {traces.length > 0
                         ? `Proses Berpikir & Aktivitas (${traces.length} langkah)`

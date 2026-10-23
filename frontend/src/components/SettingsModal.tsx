@@ -404,7 +404,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   ) : (
                     <div className="p-4 bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 rounded-2xl space-y-2 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                      <p>✅ Bot Telegram aktif dan siap menerima pesan.</p>
+                      <p className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400 inline shrink-0" /> Bot Telegram aktif dan siap menerima pesan.</p>
                       <p>Anda dapat mencatat pengeluaran langsung via teks santai, foto struk belanja, atau pesan suara.</p>
                     </div>
                   )}

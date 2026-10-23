@@ -12,6 +12,7 @@ import {
   Calendar,
   Sparkles,
   RotateCcw,
+  X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardSummaryResponse, Vault, Account, Transaction } from '../types/api';
@@ -502,14 +503,20 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 onPress={() => setIsSimulationOpen(!isSimulationOpen)}
                 aria-expanded={isSimulationOpen}
                 aria-controls="runway-simulation-panel"
-                startContent={!isSimulationOpen ? <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> : undefined}
+                startContent={
+                  !isSimulationOpen ? (
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                  ) : (
+                    <X className="w-3.5 h-3.5 text-emerald-500" />
+                  )
+                }
                 className={`min-h-[38px] text-xs font-extrabold rounded-xl transition-all ${
                   isSimulationOpen
                     ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                     : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200/80 dark:border-zinc-700/80'
                 }`}
               >
-                {isSimulationOpen ? '✕ Tutup Simulasi' : 'Cek Dampak Belanja'}
+                {isSimulationOpen ? 'Tutup Simulasi' : 'Cek Dampak Belanja'}
               </Button>
             </div>
 
@@ -738,7 +745,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                       disabled={simulationNominal <= 0}
                       className="min-h-[38px] bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs px-4 rounded-xl shadow-md shadow-emerald-900/20 transition-all shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Lanjut Catat Pengeluaran ➔
+                      Lanjut Catat Pengeluaran <ArrowRight className="w-3.5 h-3.5 ml-1 inline" />
                     </Button>
                   </div>
                 </motion.div>
