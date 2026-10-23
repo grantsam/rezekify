@@ -97,19 +97,21 @@ describe('OverviewView Component', () => {
     );
 
     // Card 1: Jatah Belanja Hari Ini
-    const statusTitle = screen.getByText(/STATUS:\s*Aman Terkendali/i);
+    const statusTitle = screen.getByText(/Kondisi:\s*Aman Terkendali/i);
     expect(statusTitle).toHaveClass('text-emerald-600');
     expect(screen.getByText('Jatah Belanja Hari Ini')).toBeInTheDocument();
     expect(screen.getAllByText(/Rp\s*133\.333/)[0]).toBeInTheDocument();
+    expect(screen.getByText('Batas belanja harianmu biar tetap aman sampai siklus baru.')).toBeInTheDocument();
     expect(screen.getByText('Terpakai:')).toBeInTheDocument();
     expect(screen.getAllByText(/Rp\s*35\.000/)[0]).toBeInTheDocument();
     expect(screen.getByText(/Sisa Rp\s*98\.333/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Cek Dampak Belanja/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Simulasi Belanja$/i })).toBeInTheDocument();
 
-    // Card 2: Kas Bebas Operasional
-    expect(screen.getByText('LIKUIDITAS BERSIH')).toBeInTheDocument();
-    expect(screen.getByText('Kas Bebas Operasional')).toBeInTheDocument();
+    // Card 2: Uang Bebas Pakai
+    expect(screen.getByText('UANG BEBAS PAKAI')).toBeInTheDocument();
+    expect(screen.getByText('Siap Digunakan')).toBeInTheDocument();
     expect(screen.getAllByText(/Rp\s*2\.000\.000/)[0]).toBeInTheDocument();
+    expect(screen.getByText('Sisa uang yang bebas kamu pakai jajan tanpa ganggu tagihan & tabungan.')).toBeInTheDocument();
     expect(screen.getByText('Total Kas:')).toBeInTheDocument();
     expect(screen.getByText(/15 hari lagi/i)).toBeInTheDocument();
 
@@ -118,14 +120,15 @@ describe('OverviewView Component', () => {
     fireEvent.click(manualBtn);
     expect(handleOpenManualModal).toHaveBeenCalledTimes(1);
 
-    // Card 3: Dana Terkunci di Pos
-    expect(screen.getByText('DANA TERKUNCI & POS')).toBeInTheDocument();
-    expect(screen.getByText('Dana Terkunci di Pos')).toBeInTheDocument();
+    // Card 3: Sudah Diamankan di Pos
+    expect(screen.getByText('SUDAH DIAMANKAN DI POS')).toBeInTheDocument();
+    expect(screen.getByText('Tabungan & Tagihan')).toBeInTheDocument();
     expect(screen.getAllByText(/Rp\s*1\.000\.000/)[0]).toBeInTheDocument();
+    expect(screen.getByText('Disisihkan untuk bayar tagihan dan tabungan impianmu.')).toBeInTheDocument();
     expect(screen.getByText('2 Pos Aktif')).toBeInTheDocument();
     expect(screen.getByText('H-7 Bersih')).toBeInTheDocument();
 
-    const lumpSumBtn = screen.getByRole('button', { name: /Alokasikan Dana \(Lump-Sum\)/i });
+    const lumpSumBtn = screen.getByRole('button', { name: /Bagi Uang ke Pos \(Lump-Sum\)/i });
     expect(lumpSumBtn).toBeInTheDocument();
     fireEvent.click(lumpSumBtn);
     expect(handleOpenLumpSumModal).toHaveBeenCalledTimes(1);
@@ -201,7 +204,7 @@ describe('OverviewView Component', () => {
       />
     );
 
-    const statusTitle = screen.getByText(/STATUS:\s*Waspada/i);
+    const statusTitle = screen.getByText(/Kondisi:\s*Waspada/i);
     expect(statusTitle).toHaveClass('text-amber-600');
     expect(screen.getByText(/\+Rp\s*50\.000/)).toBeInTheDocument();
     expect(screen.queryByText('Terkunci di Pos/Tagihan:')).not.toBeInTheDocument();
@@ -268,7 +271,8 @@ describe('OverviewView Component', () => {
     expect(vaultProgress).toHaveAttribute('aria-valuenow', '67');
 
     // Redundant simulate button in vaults card is removed
-    expect(screen.queryByRole('button', { name: /^Simulasi Belanja$/i })).not.toBeInTheDocument();
+    const vaultsCard = screen.getByText('Komitmen & Vaults Prioritas').closest('.p-6') as HTMLElement;
+    expect(within(vaultsCard).queryByRole('button', { name: /^Simulasi Belanja$/i })).not.toBeInTheDocument();
 
     // View all vaults button
     const viewAllVaultsBtn = screen.getByRole('button', { name: /Lihat Semua Vault/i });
@@ -440,7 +444,7 @@ describe('OverviewView Component', () => {
         />
       );
 
-      const toggleBtn = screen.getByRole('button', { name: /Cek Dampak Belanja/i });
+      const toggleBtn = screen.getByRole('button', { name: /^Simulasi Belanja$/i });
       expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
       expect(screen.queryByTestId('runway-simulation-panel')).not.toBeInTheDocument();
 
@@ -467,7 +471,7 @@ describe('OverviewView Component', () => {
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Simulasi Belanja$/i }));
       const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
 
       // Type planned amount: 500,000 -> projected free cash = 1,500,000 -> projected daily = 100,000 -> delta = 33,333
@@ -493,7 +497,7 @@ describe('OverviewView Component', () => {
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Simulasi Belanja$/i }));
       const input = screen.getByPlaceholderText(/Misal: 150\.000/i) as HTMLInputElement;
 
       // Quick chips have descriptive aria-labels
@@ -534,7 +538,7 @@ describe('OverviewView Component', () => {
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Simulasi Belanja$/i }));
       const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
 
       // Projected runway: (600,000 - 150,000) / 15 = 30,000.
@@ -564,7 +568,7 @@ describe('OverviewView Component', () => {
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Simulasi Belanja$/i }));
       const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
 
       // Amount exceeds free cash (200,000 > 100,000)
@@ -589,7 +593,7 @@ describe('OverviewView Component', () => {
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Simulasi Belanja$/i }));
       const input = screen.getByPlaceholderText(/Misal: 150\.000/i);
 
       fireEvent.change(input, { target: { value: 'abc-50.000xyz' } });
@@ -610,7 +614,7 @@ describe('OverviewView Component', () => {
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Cek Dampak Belanja/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Simulasi Belanja$/i }));
 
       // Projected calculation card has aria-live="polite"
       const projectedCard = screen.getByTestId('projected-card');

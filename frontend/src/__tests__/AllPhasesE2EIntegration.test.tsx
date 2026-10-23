@@ -118,7 +118,7 @@ describe('All Phases (6, 7, 8, 9, 10) End-to-End Frontend Integration', () => {
     expect(simulationActionBtn).toBeInTheDocument();
 
     // 3. Phase 6 Test: Expand simulation panel, type planned amount, verify projection and quick-capture prefill
-    const expandSimBtn = screen.getByRole('button', { name: /Cek Dampak Belanja/i });
+    const expandSimBtn = screen.getByRole('button', { name: /^Simulasi Belanja$/i });
     fireEvent.click(expandSimBtn);
 
     const simPanel = await screen.findByTestId('runway-simulation-panel');

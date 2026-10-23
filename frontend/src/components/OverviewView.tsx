@@ -366,7 +366,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div>
               <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-zinc-800/60 pb-3 mb-3">
                 <span className={`text-[10px] font-extrabold uppercase tracking-wider ${statusConfig.titleColor}`}>
-                  STATUS: {statusConfig.label}
+                  Kondisi: {statusConfig.label}
                 </span>
                 <span className={`w-2 h-2 rounded-full ${statusConfig.dotColor || 'bg-emerald-500'}`} />
               </div>
@@ -377,6 +377,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 </span>
                 <span className="text-slate-500 dark:text-zinc-400 text-xs font-bold">/ hari</span>
               </div>
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
+                Batas belanja harianmu biar tetap aman sampai siklus baru.
+              </p>
 
               {/* Progress bar */}
               <div className="mt-3.5 space-y-1.5">
@@ -410,29 +413,29 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               }`}
               startContent={<Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
             >
-              {isSimulationOpen ? 'Tutup Simulasi' : 'Cek Dampak Belanja'}
+              {isSimulationOpen ? 'Tutup Simulasi' : 'Simulasi Belanja'}
             </Button>
           </CardBody>
         </Card>
 
-        {/* Card 2: Kas Bebas Operasional */}
+        {/* Card 2: Uang Bebas Pakai */}
         <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 p-6 flex flex-col justify-between">
           <CardBody className="p-0 flex flex-col justify-between h-full space-y-4">
             <div>
               <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-zinc-800/60 pb-3 mb-3">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500">
-                  LIKUIDITAS BERSIH
+                  UANG BEBAS PAKAI
                 </span>
                 <Wallet className="w-3.5 h-3.5 text-emerald-500" />
               </div>
-              <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">Kas Bebas Operasional</p>
+              <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">Siap Digunakan</p>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-2xl sm:text-3xl font-mono font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
                   {formatRupiah(summary?.operational_free_cash ?? 0)}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
-                Saldo kas setelah dipotong seluruh komitmen tagihan dan pos simpanan.
+                Sisa uang yang bebas kamu pakai jajan tanpa ganggu tagihan & tabungan.
               </p>
               <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-zinc-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
                 <span>Total Kas: <strong className="font-mono text-slate-700 dark:text-zinc-200">{formatRupiah(summary?.total_liquid_cash ?? 0)}</strong></span>
@@ -452,24 +455,24 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </CardBody>
         </Card>
 
-        {/* Card 3: Dana Terkunci di Pos */}
+        {/* Card 3: Sudah Diamankan di Pos */}
         <Card className="bg-white/80 dark:bg-[#141417]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-[28px] shadow-lg shadow-black/5 p-6 flex flex-col justify-between">
           <CardBody className="p-0 flex flex-col justify-between h-full space-y-4">
             <div>
               <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-zinc-800/60 pb-3 mb-3">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-500 dark:text-amber-400">
-                  DANA TERKUNCI & POS
+                  SUDAH DIAMANKAN DI POS
                 </span>
                 <Lock className="w-3.5 h-3.5 text-amber-500" />
               </div>
-              <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">Dana Terkunci di Pos</p>
+              <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">Tabungan & Tagihan</p>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="text-2xl sm:text-3xl font-mono font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
                   {formatRupiah(summary?.vault_locked_cash ?? 0)}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-2">
-                Dana yang diamankan di rekening untuk melunasi tagihan dan target tabungan.
+                Disisihkan untuk bayar tagihan dan tabungan impianmu.
               </p>
               <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-zinc-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
                 <span>{vaults.length} Pos Aktif</span>
@@ -484,7 +487,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               className="w-full min-h-[38px] text-xs font-extrabold rounded-2xl bg-slate-100 dark:bg-zinc-900/80 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800/80 transition-all"
               startContent={<Layers className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
             >
-              Alokasikan Dana (Lump-Sum)
+              Bagi Uang ke Pos (Lump-Sum)
             </Button>
           </CardBody>
         </Card>
