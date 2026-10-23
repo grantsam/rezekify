@@ -234,4 +234,93 @@ describe('AccountModal Component', () => {
       expect(handleClose).toHaveBeenCalled();
     });
   });
+
+  it('renders LIABILITY option in account type selection with CreditCard icon', () => {
+    render(<AccountModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    const liabilityButton = screen.getByRole('radio', { name: /PayLater \/ Kredit/i });
+    expect(liabilityButton).toBeInTheDocument();
+    expect(liabilityButton.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('adapts initial balance label and placeholder when LIABILITY is selected', () => {
+    render(<AccountModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    const liabilityButton = screen.getByRole('radio', { name: /PayLater \/ Kredit/i });
+    fireEvent.click(liabilityButton);
+
+    expect(screen.getByLabelText(/Saldo Tagihan Awal \(Rp\)/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Contoh: 750.000')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Contoh: BCA Card, SpayLater, Kredivo')).toBeInTheDocument();
+    expect(screen.getByText('Nominal tagihan atau cicilan berjalan saat ini (Rp)')).toBeInTheDocument();
+  });
+
+  it('submits account creation with LIABILITY account_type', async () => {
+    const apiFetchSpy = vi.spyOn(apiClient, 'apiFetch').mockResolvedValue({
+      id: 'acc-liability-1',
+      name: 'SpayLater',
+      account_type: 'LIABILITY',
+      current_balance: 750000,
+      is_active: true,
+    });
+    const handleSuccess = vi.fn().mockResolvedValue(undefined);
+    const handleClose = vi.fn();
+
+    render(<AccountModal isOpen={true} onClose={handleClose} onSuccess={handleSuccess} />);
+
+    const liabilityButton = screen.getByRole('radio', { name: /PayLater \/ Kredit/i });
+    fireEvent.click(liabilityButton);
+
+    fireEvent.change(screen.getByLabelText(/Nama Rekening/i), {
+      target: { value: 'SpayLater' },
+    });
+
+    fireEvent.change(screen.getByLabelText(/Saldo Tagihan Awal \(Rp\)/i), {
+      target: { value: '750000' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Akun/i }));
+
+    await waitFor(() => {
+      expect(apiFetchSpy).toHaveBeenCalledWith(
+        '/accounts',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'SpayLater',
+            account_type: 'LIABILITY',
+            initial_balance: 750000,
+          }),
+        })
+      );
+      expect(handleSuccess).toHaveBeenCalled();
+      expect(handleClose).toHaveBeenCalled();
+    });
+  });
+
+  it('loads existing LIABILITY account into edit mode correctly', () => {
+    const mockLiabilityAccount: Account = {
+      id: 'acc-edit-liability',
+      name: 'Kredivo',
+      account_type: 'LIABILITY',
+      current_balance: 1250000,
+      is_active: true,
+    };
+
+    render(
+      <AccountModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        accountToEdit={mockLiabilityAccount}
+      />
+    );
+
+    expect(screen.getByText(/Edit Rekening/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nama Rekening/i)).toHaveValue('Kredivo');
+    const liabilityRadio = screen.getByRole('radio', { name: /PayLater \/ Kredit/i });
+    expect(liabilityRadio).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByLabelText(/Saldo Saat Ini/i)).toBeDisabled();
+    expect(screen.getByDisplayValue(/1\.250\.000/)).toBeInTheDocument();
+  });
 });

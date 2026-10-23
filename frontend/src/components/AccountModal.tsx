@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Loader2, Building2, Wallet, Coins, AlertTriangle } from 'lucide-react';
+import { Loader2, Building2, Wallet, Coins, AlertTriangle, CreditCard } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from '@heroui/react';
 import { Account, AccountType } from '../types/api';
 import { apiFetch, updateAccount, deactivateAccount } from '../services/apiClient';
@@ -15,6 +15,7 @@ const ACCOUNT_TYPE_OPTIONS: { type: AccountType; label: string; icon: React.FC<{
   { type: 'BANK', label: 'Bank', icon: Building2 },
   { type: 'EWALLET', label: 'E-Wallet', icon: Wallet },
   { type: 'CASH', label: 'Cash', icon: Coins },
+  { type: 'LIABILITY', label: 'PayLater / Kredit', icon: CreditCard },
 ];
 
 export const AccountModal: React.FC<AccountModalProps> = ({
@@ -189,14 +190,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Contoh: BCA Utama, GoPay, Dompet Tunai"
+                    placeholder={
+                      accountType === 'LIABILITY'
+                        ? 'Contoh: BCA Card, SpayLater, Kredivo'
+                        : 'Contoh: BCA Utama, GoPay, Dompet Tunai'
+                    }
                     className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-medium"
                   />
                 </div>
 
                 <div>
                   <span className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">Tipe Akun</span>
-                  <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-zinc-900/60 p-1.5 rounded-2xl border border-slate-200 dark:border-zinc-800/80 text-xs" role="radiogroup" aria-label="Tipe Akun">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-100 dark:bg-zinc-900/60 p-1.5 rounded-2xl border border-slate-200 dark:border-zinc-800/80 text-xs" role="radiogroup" aria-label="Tipe Akun">
                     {ACCOUNT_TYPE_OPTIONS.map(({ type, label, icon: Icon }) => (
                       <Button
                         key={type}
@@ -219,7 +224,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 {!accountToEdit ? (
                   <div>
                     <label htmlFor="initial-balance" className="block text-xs font-extrabold text-slate-600 dark:text-slate-300 mb-1.5">
-                      Saldo Awal (Rp)
+                      {accountType === 'LIABILITY' ? 'Saldo Tagihan Awal (Rp)' : 'Saldo Awal (Rp)'}
                     </label>
                     <input
                       id="initial-balance"
@@ -228,9 +233,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       step="any"
                       value={initialBalance}
                       onChange={(e) => setInitialBalance(e.target.value)}
-                      placeholder="0"
+                      placeholder={accountType === 'LIABILITY' ? 'Contoh: 750.000' : '0'}
                       className="w-full bg-slate-50 dark:bg-[#0c0c0e] border border-slate-200 dark:border-zinc-800 focus:border-zinc-600 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none transition-all font-mono font-bold"
                     />
+                    {accountType === 'LIABILITY' && (
+                      <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                        Nominal tagihan atau cicilan berjalan saat ini (Rp)
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div>

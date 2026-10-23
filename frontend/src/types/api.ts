@@ -144,6 +144,7 @@ export interface DashboardSummaryResponse {
   health_status: HealthStatus;
   upcoming_bills: UpcomingBill[];
   survival_guidance?: SurvivalGuidance;
+  total_liability_debt?: number;
 }
 
 export interface LedgerEntry {
